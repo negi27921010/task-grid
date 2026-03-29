@@ -75,8 +75,9 @@ export function useCurrentUserProvider() {
 
       if (profile) {
         setCurrentUser(profile);
-      } else if (users.length > 0) {
-        setCurrentUser(users[0]);
+      } else {
+        console.warn('[Auth] No user profile found for', session.user.email);
+        setCurrentUser({ ...FALLBACK_USER, email: session.user.email, full_name: session.user.email });
       }
       setIsLoading(false);
     }

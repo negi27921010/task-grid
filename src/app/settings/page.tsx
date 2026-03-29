@@ -22,6 +22,7 @@ import {
   X,
   ShieldCheck,
   ShieldAlert,
+  KeyRound,
 } from 'lucide-react';
 import type { User, UserRole } from '@/lib/types';
 
@@ -116,6 +117,9 @@ export default function SettingsPage() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deleteConfirmUser, setDeleteConfirmUser] = useState<User | null>(null);
+  const [resetPwUser, setResetPwUser] = useState<User | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [resetPwLoading, setResetPwLoading] = useState(false);
 
   const userIsAdmin = isAdmin(currentUser);
 
@@ -142,12 +146,22 @@ export default function SettingsPage() {
           refreshUsers();
           toast('User added successfully', 'success');
         },
+        onError: (err: Error) => {
+          toast(`Failed to add user: ${err.message}`, 'error');
+        },
       }
     );
   };
 
   const handleEditUser = (data: { full_name: string; email: string; role: UserRole; department: string }) => {
     if (!editingUser) return;
+    if (editingUser.role === 'admin' && data.role !== 'admin') {
+      const otherAdmins = allUsers.filter(u => u.role === 'admin' && u.id !== editingUser.id);
+      if (otherAdmins.length === 0) {
+        toast('Cannot demote the last admin', 'error');
+        return;
+      }
+    }
     updateUser.mutate(
       { id: editingUser.id, updates: data },
       {
@@ -155,6 +169,9 @@ export default function SettingsPage() {
           setEditingUser(null);
           refreshUsers();
           toast('User updated', 'success');
+        },
+        onError: (err: Error) => {
+          toast(`Failed to update user: ${err.message}`, 'error');
         },
       }
     );
@@ -167,6 +184,14 @@ export default function SettingsPage() {
       setDeleteConfirmUser(null);
       return;
     }
+    if (deleteConfirmUser.role === 'admin') {
+      const otherAdmins = allUsers.filter(u => u.role === 'admin' && u.id !== deleteConfirmUser.id);
+      if (otherAdmins.length === 0) {
+        toast('Cannot delete the last admin', 'error');
+        setDeleteConfirmUser(null);
+        return;
+      }
+    }
     deleteUserMutation.mutate(deleteConfirmUser.id, {
       onSuccess: () => {
         setDeleteConfirmUser(null);
@@ -174,6 +199,31 @@ export default function SettingsPage() {
         toast('User removed', 'success');
       },
     });
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetPwUser?.email || !newPassword) return;
+    if (newPassword.length < 8) {
+      toast('Password must be at least 8 characters', 'error');
+      return;
+    }
+    setResetPwLoading(true);
+    try {
+      const res = await fetch('/api/admin/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resetPwUser.email, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Failed to reset password');
+      toast(`Password reset for ${resetPwUser.full_name}`, 'success');
+      setResetPwUser(null);
+      setNewPassword('');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Failed to reset password', 'error');
+    } finally {
+      setResetPwLoading(false);
+    }
   };
 
   const allUsers = users ?? [];
@@ -273,6 +323,16 @@ export default function SettingsPage() {
                         <td className="px-4 py-3 text-sm text-gray-500">{user.email || '—'}</td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
+                            {user.email && (
+                              <button
+                                onClick={() => { setResetPwUser(user); setNewPassword(''); }}
+                                className="rounded p-1.5 text-gray-400 transition-colors hover:bg-amber-50 hover:text-amber-600"
+                                aria-label={`Reset password for ${user.full_name}`}
+                                title="Reset Password"
+                              >
+                                <KeyRound className="h-3.5 w-3.5" />
+                              </button>
+                            )}
                             <button
                               onClick={() => setEditingUser(user)}
                               className="rounded p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
@@ -389,6 +449,35 @@ export default function SettingsPage() {
               <Button variant="destructive" size="sm" onClick={handleDeleteUser} disabled={deleteUserMutation.isPending}>
                 Remove User
               </Button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Root>
+
+        {/* Reset Password Dialog */}
+        <Dialog.Root open={!!resetPwUser} onOpenChange={(open) => { if (!open) { setResetPwUser(null); setNewPassword(''); } }}>
+          <Dialog.Content className="max-w-sm">
+            <Dialog.Title>Reset Password</Dialog.Title>
+            <Dialog.Description>
+              Set a new password for <strong>{resetPwUser?.full_name}</strong> ({resetPwUser?.email}).
+            </Dialog.Description>
+            <div className="mt-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  placeholder="Minimum 8 characters"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" size="sm" onClick={() => { setResetPwUser(null); setNewPassword(''); }}>Cancel</Button>
+                <Button variant="primary" size="sm" onClick={handleResetPassword} disabled={resetPwLoading || newPassword.length < 8}>
+                  {resetPwLoading ? 'Resetting...' : 'Reset Password'}
+                </Button>
+              </div>
             </div>
           </Dialog.Content>
         </Dialog.Root>

@@ -374,10 +374,12 @@ export async function getTasksByOwner(ownerId: string): Promise<Task[]> {
 
 export async function getTasksByDepartment(deptId: string, userIds: string[]): Promise<Task[]> {
   if (userIds.length === 0) return [];
+  const ownerFilter = userIds.map(id => `owner_id.eq.${id}`).join(',');
+  const assigneeFilter = userIds.map(id => `assignee_ids.cs.{${id}}`).join(',');
   const { data, error } = await sb()
     .from('tasks')
     .select('*')
-    .in('owner_id', userIds)
+    .or(`${ownerFilter},${assigneeFilter}`)
     .order('position', { ascending: true });
   if (error) throw error;
   return mapRows(data ?? []);

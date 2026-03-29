@@ -39,10 +39,6 @@ export async function getProjectById(id: string): Promise<Project | null> {
   return data ? mapRow(data) : null;
 }
 
-export async function getProjectsByDepartment(deptId: string): Promise<Project[]> {
-  return getProjects();
-}
-
 export interface CreateProjectInput {
   name: string;
   description?: string;

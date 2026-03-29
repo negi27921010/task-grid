@@ -1,7 +1,6 @@
 export type TaskStatus = 'not_started' | 'in_progress' | 'blocked' | 'completed' | 'cancelled';
 export type Priority = 'P1' | 'P2' | 'P3' | 'P4';
 export type AgingStatus = 'overdue' | 'at_risk' | 'on_track' | 'no_eta' | 'stale';
-export type CollaboratorRole = 'collaborator' | 'reviewer' | 'observer';
 export type TaskDepthLabel = 'Task' | 'Subtask' | 'Microtask' | string;
 
 export interface TaskComment {
@@ -52,13 +51,6 @@ export interface Task {
   children_count?: number;
   comments_count?: number;
   aging_status?: AgingStatus;
-}
-
-export interface TaskCollaborator {
-  task_id: string;
-  user_id: string;
-  role: CollaboratorRole;
-  added_at: string;
 }
 
 export interface CreateTaskInput {

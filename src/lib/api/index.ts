@@ -1,5 +1,4 @@
 export {
-  getTasks,
   getRootTasks,
   getChildTasks,
   getTaskById,
@@ -26,7 +25,6 @@ export {
 export {
   getProjects,
   getProjectById,
-  getProjectsByDepartment,
   createProject,
   updateProject,
   deleteProject,
@@ -40,5 +38,4 @@ export {
   createUser,
   updateUser,
   deleteUser,
-  getUsersSync,
 } from './users';

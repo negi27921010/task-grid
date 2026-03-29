@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { cn } from '@/lib/utils/cn';
 import { TaskCard } from './task-card';
@@ -34,7 +35,7 @@ interface KanbanColumnProps {
   onSelectTask?: (taskId: string) => void;
 }
 
-export function KanbanColumn({ status, tasks, isLoading, onSelectTask }: KanbanColumnProps) {
+export const KanbanColumn = memo(function KanbanColumn({ status, tasks, isLoading, onSelectTask }: KanbanColumnProps) {
   const { isOver, setNodeRef } = useDroppable({
     id: status,
   });
@@ -85,7 +86,7 @@ export function KanbanColumn({ status, tasks, isLoading, onSelectTask }: KanbanC
       </div>
     </div>
   );
-}
+});
 
 /* ─── Skeleton Card ─── */
 

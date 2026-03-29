@@ -7,6 +7,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { PriorityDot, AgingBadge } from '@/components/ui/badge';
 import { Tooltip } from '@/components/ui/tooltip';
 import { StatusSelect } from './status-select';
+import { BlockerReasonDialog } from './blocker-reason-dialog';
 import { useChildTasks, useChangeTaskStatus } from '@/lib/hooks/use-tasks';
 import { useUsers } from '@/lib/hooks/use-users';
 import { computeAgingStatus, getAgingLabel } from '@/lib/utils/aging';
@@ -16,7 +17,7 @@ import type { Task, TaskStatus, AgingStatus } from '@/lib/types';
 const AGING_BORDER_COLORS: Record<AgingStatus, string> = {
   overdue: 'border-l-red-500',
   at_risk: 'border-l-amber-500',
-  on_track: 'border-l-green-500',
+  on_track: 'border-l-emerald-500',
   no_eta: 'border-l-transparent',
   stale: 'border-l-slate-400',
 };
@@ -24,10 +25,12 @@ const AGING_BORDER_COLORS: Record<AgingStatus, string> = {
 interface HybridListItemProps {
   task: Task;
   depth?: number;
+  onSelectTask?: (taskId: string) => void;
 }
 
-export function HybridListItem({ task, depth = 0 }: HybridListItemProps) {
+export function HybridListItem({ task, depth = 0, onSelectTask }: HybridListItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [blockerOpen, setBlockerOpen] = useState(false);
 
   const hasChildren = (task.children_count ?? 0) > 0;
   const { data: children, isLoading: childrenLoading } = useChildTasks(
@@ -51,7 +54,22 @@ export function HybridListItem({ task, depth = 0 }: HybridListItemProps) {
 
   const handleStatusChange = useCallback(
     (status: TaskStatus) => {
+      if (status === 'blocked') {
+        setBlockerOpen(true);
+        return;
+      }
+      if (status === 'completed' && hasChildren) {
+        const childrenDone = (children ?? []).every(c => c.status === 'completed' || c.status === 'cancelled');
+        if (!childrenDone) return;
+      }
       changeStatus.mutate({ id: task.id, status });
+    },
+    [changeStatus, task.id, hasChildren, children]
+  );
+
+  const handleBlockerConfirm = useCallback(
+    (reason: string) => {
+      changeStatus.mutate({ id: task.id, status: 'blocked', metadata: { blocker_reason: reason } });
     },
     [changeStatus, task.id]
   );
@@ -98,9 +116,11 @@ export function HybridListItem({ task, depth = 0 }: HybridListItemProps) {
         <span
           className={cn(
             'min-w-0 flex-1 truncate text-sm font-medium text-slate-900',
-            isCompleted && 'line-through text-slate-500'
+            isCompleted && 'line-through text-slate-500',
+            onSelectTask && 'cursor-pointer hover:text-blue-600'
           )}
           title={task.title}
+          onClick={() => onSelectTask?.(task.id)}
         >
           {task.title}
         </span>
@@ -172,7 +192,7 @@ export function HybridListItem({ task, depth = 0 }: HybridListItemProps) {
                       <div className="h-2 w-2 animate-pulse rounded-full bg-slate-200" />
                       <div
                         className="h-4 animate-pulse rounded bg-slate-200"
-                        style={{ width: `${120 + Math.random() * 80}px` }}
+                        style={{ width: `${[150, 180][i - 1] ?? 160}px` }}
                       />
                     </div>
                   ))}
@@ -183,6 +203,7 @@ export function HybridListItem({ task, depth = 0 }: HybridListItemProps) {
                     key={child.id}
                     task={child}
                     depth={depth + 1}
+                    onSelectTask={onSelectTask}
                   />
                 ))
               ) : null}
@@ -190,6 +211,11 @@ export function HybridListItem({ task, depth = 0 }: HybridListItemProps) {
           )}
         </div>
       </div>
+      <BlockerReasonDialog
+        open={blockerOpen}
+        onOpenChange={setBlockerOpen}
+        onConfirm={handleBlockerConfirm}
+      />
     </div>
   );
 }

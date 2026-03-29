@@ -11,7 +11,6 @@ interface InlineCreateRowProps {
   depth?: number;
   onCancel: () => void;
   onCreated: () => void;
-  colSpan?: number;
 }
 
 export function InlineCreateRow({
@@ -20,7 +19,6 @@ export function InlineCreateRow({
   depth = 0,
   onCancel,
   onCreated,
-  colSpan,
 }: InlineCreateRowProps) {
   const [title, setTitle] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -83,7 +81,8 @@ export function InlineCreateRow({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={handleKeyDown}
-            onBlur={handleSubmit}
+            onBlur={() => { if (!title.trim()) onCancel(); }}
+            aria-label="New task title"
             placeholder="Task title... (Enter to save, Esc to cancel)"
             className={cn(
               'w-full rounded border border-blue-300 bg-white px-2 py-1 text-sm text-slate-900',

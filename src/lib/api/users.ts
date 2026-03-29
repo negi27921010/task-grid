@@ -100,7 +100,3 @@ export async function deleteUser(id: string): Promise<void> {
   const { error } = await sb().from('users').delete().eq('id', id);
   if (error) throw error;
 }
-
-export async function getUsersSync(): Promise<User[]> {
-  return getUsers();
-}

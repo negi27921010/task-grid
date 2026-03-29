@@ -21,9 +21,15 @@ export function useSearch() {
     setIsSearching(true);
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
-      const found = await taskApi.searchAllTasks(query);
-      setResults(found);
-      setIsSearching(false);
+      try {
+        const found = await taskApi.searchAllTasks(query);
+        setResults(found);
+      } catch (err) {
+        console.error('[Search] Failed:', err);
+        setResults([]);
+      } finally {
+        setIsSearching(false);
+      }
     }, 300);
 
     return () => clearTimeout(debounceRef.current);

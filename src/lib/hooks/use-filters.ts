@@ -50,10 +50,12 @@ export function useFilters() {
       filters: { ...filters },
       sort: [...sort],
     };
-    const updated = [...presets, preset];
-    setPresets(updated);
-    savePresetsToStorage(updated);
-  }, [filters, sort, presets]);
+    setPresets(prev => {
+      const updated = [...prev, preset];
+      savePresetsToStorage(updated);
+      return updated;
+    });
+  }, [filters, sort]);
 
   const loadPreset = useCallback((preset: SavedFilterPreset) => {
     setFiltersState(preset.filters);
@@ -61,10 +63,12 @@ export function useFilters() {
   }, []);
 
   const deletePreset = useCallback((id: string) => {
-    const updated = presets.filter(p => p.id !== id);
-    setPresets(updated);
-    savePresetsToStorage(updated);
-  }, [presets]);
+    setPresets(prev => {
+      const updated = prev.filter(p => p.id !== id);
+      savePresetsToStorage(updated);
+      return updated;
+    });
+  }, []);
 
   const hasActiveFilters = Object.values(filters).some(v =>
     v !== undefined && (Array.isArray(v) ? v.length > 0 : v !== '')

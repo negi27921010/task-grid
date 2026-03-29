@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils/cn';
 import { StatusBadge } from '@/components/ui/badge';
 import * as DropdownMenu from '@/components/ui/dropdown-menu';
 import { getValidTransitions } from '@/lib/utils/status';
+import { STATUS_LABELS } from '@/lib/types/task';
 import type { TaskStatus } from '@/lib/types';
 
 interface StatusSelectProps {
@@ -25,7 +26,7 @@ export function StatusSelect({ currentStatus, onStatusChange, disabled }: Status
             disabled && 'pointer-events-none opacity-50'
           )}
           disabled={disabled}
-          aria-label={`Status: ${currentStatus}`}
+          aria-label={`Status: ${STATUS_LABELS[currentStatus]}`}
         >
           <StatusBadge status={currentStatus} />
         </button>

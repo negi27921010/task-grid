@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  X, Clock, Calendar, User, MessageSquare,
-  FileText, Send, AlertTriangle, ChevronRight,
+  X, Clock, Calendar, MessageSquare,
+  FileText, Send, AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { Avatar } from '@/components/ui/avatar';
@@ -46,7 +46,6 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
   const [commentText, setCommentText] = useState('');
   const [blockerOpen, setBlockerOpen] = useState(false);
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
 
   const canEditAll = can(currentUser, 'canModifyAllTaskFields');
   const canEditStatus = can(currentUser, 'canUpdateTaskStatus');
@@ -148,7 +147,6 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
 
       {/* Panel */}
       <div
-        ref={panelRef}
         className="fixed right-0 top-0 z-50 flex h-full w-full max-w-xl flex-col border-l border-slate-200 bg-white shadow-2xl sm:w-[520px]"
       >
         {/* Header */}
@@ -230,7 +228,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                       <span className={cn(
                         'h-2 w-2 rounded-full',
                         task.priority === 'P1' && 'bg-red-500',
-                        task.priority === 'P2' && 'bg-orange-500',
+                        task.priority === 'P2' && 'bg-pink-500',
                         task.priority === 'P3' && 'bg-blue-500',
                         task.priority === 'P4' && 'bg-slate-400',
                       )} />

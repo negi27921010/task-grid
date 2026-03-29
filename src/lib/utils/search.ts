@@ -25,13 +25,3 @@ export function filterTasks(tasks: Task[], filters: TaskFilters): Task[] {
     return true;
   });
 }
-
-export function searchTasks(tasks: Task[], query: string): Task[] {
-  if (!query.trim()) return [];
-  const q = query.toLowerCase();
-  return tasks.filter(task =>
-    task.title.toLowerCase().includes(q) ||
-    task.description.toLowerCase().includes(q) ||
-    task.tags.some(tag => tag.toLowerCase().includes(q))
-  );
-}

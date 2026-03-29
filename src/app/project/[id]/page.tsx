@@ -1,7 +1,7 @@
 'use client';
 
-import { use, useMemo, useState, useCallback, useRef, useEffect } from 'react';
-import { Pencil, Check, X } from 'lucide-react';
+import { use, useMemo, useState, useCallback, useRef, useEffect, Suspense } from 'react';
+import { Pencil, Check, X, FolderOpen } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
 import { AgingSummaryBar } from '@/components/task/aging-summary-bar';
 import { FilterBar } from '@/components/task/filter-bar';
@@ -15,12 +15,7 @@ import { useViewMode } from '@/lib/hooks/use-view-mode';
 import { filterTasks } from '@/lib/utils/search';
 import type { AgingStatus } from '@/lib/types';
 
-export default function ProjectPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = use(params);
+function ProjectContent({ id }: { id: string }) {
   const { data: project, isLoading: projectLoading } = useProject(id);
   const { data: tasks, isLoading: tasksLoading } = useTasks(id);
   const { viewMode, setViewMode } = useViewMode();
@@ -142,7 +137,11 @@ export default function ProjectPage({
               )}
             </>
           ) : (
-            <h1 className="text-xl font-bold tracking-tight text-slate-900">Project</h1>
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <FolderOpen className="h-12 w-12 text-slate-300" />
+              <h2 className="mt-4 text-lg font-semibold text-slate-900">Project not found</h2>
+              <p className="mt-1 text-sm text-slate-500">This project may have been deleted or you don&apos;t have access.</p>
+            </div>
           )}
 
           {!isLoading && (
@@ -190,5 +189,26 @@ export default function ProjectPage({
       {/* Task Detail Panel */}
       <TaskDetailPanel taskId={selectedTaskId} onClose={handleClosePanel} />
     </AppShell>
+  );
+}
+
+function ProjectSkeleton() {
+  return (
+    <div className="flex h-full items-center justify-center">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+    </div>
+  );
+}
+
+export default function ProjectPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
+  return (
+    <Suspense fallback={<ProjectSkeleton />}>
+      <ProjectContent id={id} />
+    </Suspense>
   );
 }

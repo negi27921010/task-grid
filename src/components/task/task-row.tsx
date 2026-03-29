@@ -127,26 +127,26 @@ export const TaskRow = memo(function TaskRow({
     onEditCell(null);
   }, [editEta, task.eta, task.id, updateTask, onEditCell]);
 
-  const handleStatusChange = (status: TaskStatus) => {
+  const handleStatusChange = useCallback((status: TaskStatus) => {
     if (status === 'blocked') { setBlockerOpen(true); return; }
     if (status === 'completed' && hasChildren && children) {
       const check = canCompleteTask(task, children);
       if (!check.allowed) { alert(check.reason); return; }
     }
     changeStatus.mutate({ id: task.id, status });
-  };
+  }, [task.id, hasChildren, children, changeStatus, task]);
 
-  const handleBlockerConfirm = (reason: string) => {
+  const handleBlockerConfirm = useCallback((reason: string) => {
     changeStatus.mutate({ id: task.id, status: 'blocked', metadata: { blocker_reason: reason } });
-  };
+  }, [task.id, changeStatus]);
 
-  const handlePriorityChange = (priority: Priority) => {
+  const handlePriorityChange = useCallback((priority: Priority) => {
     updateTask.mutate({ id: task.id, updates: { priority } });
-  };
+  }, [task.id, updateTask]);
 
-  const handleOwnerChange = (ownerId: string) => {
+  const handleOwnerChange = useCallback((ownerId: string) => {
     updateTask.mutate({ id: task.id, updates: { owner_id: ownerId } });
-  };
+  }, [task.id, updateTask]);
 
   const handleAssigneesChange = useCallback((ids: string[]) => {
     const primaryOwner = ids.includes(task.owner_id) ? task.owner_id : ids[0];
@@ -159,10 +159,10 @@ export const TaskRow = memo(function TaskRow({
     });
   }, [task.id, task.owner_id, updateTask]);
 
-  const handleDeleteConfirm = (mode: 'cascade' | 'promote') => {
+  const handleDeleteConfirm = useCallback((mode: 'cascade' | 'promote') => {
     deleteTask.mutate({ id: task.id, mode });
     setDeleteOpen(false);
-  };
+  }, [task.id, deleteTask]);
 
   const tooltipContent = (
     <div className="space-y-1">
@@ -194,6 +194,8 @@ export const TaskRow = memo(function TaskRow({
               <button
                 type="button"
                 onClick={() => onExpand(task.id)}
+                aria-label={isExpanded ? 'Collapse subtasks' : 'Expand subtasks'}
+                aria-expanded={isExpanded}
                 className="inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-200 hover:text-slate-600"
               >
                 <ChevronRight className={cn('h-3.5 w-3.5 transition-transform duration-150', isExpanded && 'rotate-90')} />

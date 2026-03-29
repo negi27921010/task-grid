@@ -23,7 +23,7 @@ export function TaskHybridList({ tasks, isLoading, onSelectTask }: TaskHybridLis
           >
             <Skeleton shape="rectangle" width={16} height={16} />
             <Skeleton shape="circle" width={8} height={8} />
-            <Skeleton width={180 + Math.random() * 120} height={14} />
+            <Skeleton width={[180, 220, 200, 240, 190, 210][i]} height={14} />
             <div className="flex-1" />
             <Skeleton width={72} height={20} shape="rectangle" />
             <Skeleton shape="circle" width={24} height={24} />
@@ -50,7 +50,7 @@ export function TaskHybridList({ tasks, isLoading, onSelectTask }: TaskHybridLis
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
       {tasks.map((task) => (
-        <HybridListItem key={task.id} task={task} depth={0} />
+        <HybridListItem key={task.id} task={task} depth={0} onSelectTask={onSelectTask} />
       ))}
     </div>
   );

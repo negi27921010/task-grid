@@ -111,7 +111,6 @@ export function TaskTable({ tasks, isLoading, projectId, sort, onSortToggle, onS
 
   const columns = useMemo(() => getColumns(showProject), [showProject]);
   const resolvedProjectId = projectId ?? tasks[0]?.project_id ?? '';
-  const colSpan = columns.length;
 
   if (isLoading) {
     return (
@@ -132,7 +131,7 @@ export function TaskTable({ tasks, isLoading, projectId, sort, onSortToggle, onS
                 <td className="px-3 py-3" />
                 <td className="px-3 py-3"><Skeleton width={24} height={14} /></td>
                 <td className="px-3 py-3"><Skeleton shape="circle" width={8} height={8} /></td>
-                <td className="py-3 pr-3"><Skeleton width={160 + Math.random() * 120} height={14} /></td>
+                <td className="py-3 pr-3"><Skeleton width={[180, 220, 200, 240, 190, 210][i]} height={14} /></td>
                 {showProject && <td className="px-3 py-3"><Skeleton width={80} height={14} /></td>}
                 <td className="px-3 py-3"><Skeleton width={72} height={22} shape="rectangle" /></td>
                 <td className="px-3 py-3"><Skeleton shape="circle" width={24} height={24} /></td>
@@ -221,7 +220,6 @@ export function TaskTable({ tasks, isLoading, projectId, sort, onSortToggle, onS
                 projectId={resolvedProjectId}
                 onCancel={() => setShowCreateRow(false)}
                 onCreated={() => setShowCreateRow(false)}
-                colSpan={colSpan}
               />
             )}
           </tbody>

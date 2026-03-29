@@ -22,7 +22,7 @@ import type { AgingStatus } from '@/lib/types';
 function DashboardContent() {
   const searchParams = useSearchParams();
   const isTeamView = searchParams.get('view') === 'team';
-  const { currentUser } = useCurrentUser();
+  const { currentUser, isLoading: userLoading } = useCurrentUser();
   const { data: allUsersData } = useUsers();
   const { data: projectsData } = useProjects();
 
@@ -94,7 +94,7 @@ function DashboardContent() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900">
-              {isTeamView ? 'Team View' : `Welcome, ${currentUser.full_name.split(' ')[0]}`}
+              {userLoading ? 'Loading...' : isTeamView ? 'Team View' : `Welcome, ${currentUser.full_name.split(' ')[0]}`}
             </h1>
             <p className="mt-0.5 text-sm text-slate-500">{pageSubtitle}</p>
             {!isLoading && (
@@ -202,7 +202,7 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<div className="flex h-full items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" /></div>}>
       <DashboardContent />
     </Suspense>
   );

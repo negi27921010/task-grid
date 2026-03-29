@@ -45,6 +45,7 @@ export function BlockerReasonDialog({ open, onOpenChange, onConfirm }: BlockerRe
           ref={inputRef}
           value={reason}
           onChange={(e) => setReason(e.target.value)}
+          aria-label="Blocker reason"
           placeholder="What's blocking this task?"
           rows={3}
           onKeyDown={(e) => {

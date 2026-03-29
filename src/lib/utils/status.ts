@@ -23,7 +23,3 @@ export function canCompleteTask(task: Task, children: Task[]): { allowed: boolea
 
   return { allowed: true };
 }
-
-export function requiresBlockerReason(targetStatus: TaskStatus): boolean {
-  return targetStatus === 'blocked';
-}

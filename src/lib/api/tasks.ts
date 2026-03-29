@@ -326,15 +326,15 @@ export async function deleteTask(id: string, mode: 'cascade' | 'promote'): Promi
   } else {
     const { data: children } = await sb()
       .from('tasks')
-      .select('*')
+      .select('id, path')
       .eq('parent_id', id);
 
     if (children && children.length > 0) {
-      for (const child of children) {
+      const updates = children.map(child => {
         const newPath = task.parent_id
           ? (task.path as string).replace(`/${id}`, '') + `/${child.id}`
           : `/${child.id}`;
-        await sb()
+        return sb()
           .from('tasks')
           .update({
             parent_id: task.parent_id,
@@ -342,7 +342,8 @@ export async function deleteTask(id: string, mode: 'cascade' | 'promote'): Promi
             path: newPath,
           })
           .eq('id', child.id);
-      }
+      });
+      await Promise.all(updates);
     }
 
     const { error } = await sb().from('tasks').delete().eq('id', id);
@@ -396,14 +397,15 @@ export async function moveTask(
     .like('path', `${oldPath}/%`);
 
   if (descendants && descendants.length > 0) {
-    for (const d of descendants) {
+    const updates = descendants.map(d => {
       const updatedPath = (d.path as string).replace(oldPath, newPath);
       const updatedDepth = updatedPath.split('/').length - 2;
-      await sb()
+      return sb()
         .from('tasks')
         .update({ path: updatedPath, depth: updatedDepth })
         .eq('id', d.id);
-    }
+    });
+    await Promise.all(updates);
   }
 
   const { data: updated } = await sb()
@@ -417,7 +419,8 @@ export async function moveTask(
 
 export async function searchAllTasks(query: string): Promise<Task[]> {
   if (!query.trim()) return [];
-  const q = `%${query}%`;
+  const sanitized = query.replace(/[%_\\().,]/g, c => `\\${c}`);
+  const q = `%${sanitized}%`;
   const { data, error } = await sb()
     .from('tasks')
     .select('*')

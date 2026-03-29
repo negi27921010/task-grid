@@ -16,7 +16,3 @@ export function formatDateTime(dateStr: string): string {
 export function formatRelative(dateStr: string): string {
   return formatDistanceToNow(parseISO(dateStr), { addSuffix: true });
 }
-
-export function toISOString(date: Date): string {
-  return date.toISOString();
-}

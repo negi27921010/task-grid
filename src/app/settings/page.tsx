@@ -105,7 +105,7 @@ function UserForm({
 }
 
 export default function SettingsPage() {
-  const { currentUser, refreshUsers } = useCurrentUser();
+  const { currentUser, isLoading: userLoading, refreshUsers } = useCurrentUser();
   const { viewMode, setViewMode } = useViewMode();
   const { data: users, isLoading } = useUsers();
   const createUser = useCreateUser();
@@ -122,6 +122,16 @@ export default function SettingsPage() {
   const [resetPwLoading, setResetPwLoading] = useState(false);
 
   const userIsAdmin = isAdmin(currentUser);
+
+  if (userLoading) {
+    return (
+      <AppShell viewMode={viewMode} onViewModeChange={setViewMode}>
+        <div className="flex h-full items-center justify-center">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+        </div>
+      </AppShell>
+    );
+  }
 
   if (!userIsAdmin) {
     return (

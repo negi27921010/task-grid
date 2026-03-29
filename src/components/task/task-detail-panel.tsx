@@ -248,7 +248,8 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                     onOwnerChange={handleOwnerChange}
                     onAssigneesChange={(ids) => {
                       if (!task) return;
-                      updateTask.mutate({ id: task.id, updates: { owner_id: ids[0] ?? task.owner_id, assignee_ids: ids } as Partial<Task> });
+                      const primaryOwner = ids.includes(task.owner_id) ? task.owner_id : ids[0];
+                      updateTask.mutate({ id: task.id, updates: { owner_id: primaryOwner ?? task.owner_id, assignee_ids: ids } as Partial<Task> });
                     }}
                     disabled={!canEditAll}
                     multi

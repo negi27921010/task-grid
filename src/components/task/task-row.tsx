@@ -146,15 +146,16 @@ export const TaskRow = memo(function TaskRow({
     updateTask.mutate({ id: task.id, updates: { owner_id: ownerId } });
   };
 
-  const handleAssigneesChange = (ids: string[]) => {
+  const handleAssigneesChange = useCallback((ids: string[]) => {
+    const primaryOwner = ids.includes(task.owner_id) ? task.owner_id : ids[0];
     updateTask.mutate({
       id: task.id,
       updates: {
-        owner_id: ids[0] ?? task.owner_id,
+        owner_id: primaryOwner ?? task.owner_id,
         assignee_ids: ids,
       } as Partial<Task>,
     });
-  };
+  }, [task.id, task.owner_id, updateTask]);
 
   const handleDeleteConfirm = (mode: 'cascade' | 'promote') => {
     deleteTask.mutate({ id: task.id, mode });

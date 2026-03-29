@@ -31,10 +31,17 @@ export function OwnerSelect({
   const searchRef = useRef<HTMLInputElement>(null);
   const { data: users } = useUsers();
 
-  const effectiveIds = multi
+  const serverIds = multi
     ? (assigneeIds.length > 0 ? assigneeIds : currentOwnerId ? [currentOwnerId] : [])
     : (currentOwnerId ? [currentOwnerId] : []);
 
+  const [localIds, setLocalIds] = useState<string[]>(serverIds);
+
+  useEffect(() => {
+    setLocalIds(serverIds);
+  }, [assigneeIds.join(','), currentOwnerId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const effectiveIds = multi ? localIds : serverIds;
   const selectedUsers = (users ?? []).filter(u => effectiveIds.includes(u.id));
 
   useEffect(() => {
@@ -72,30 +79,31 @@ export function OwnerSelect({
 
   const handleSelect = useCallback((userId: string) => {
     if (multi && onAssigneesChange) {
-      const current = [...effectiveIds];
+      const current = [...localIds];
+      let next: string[];
       if (current.includes(userId)) {
         if (current.length <= 1) return;
-        const next = current.filter(id => id !== userId);
-        onAssigneesChange(next);
-        if (userId === currentOwnerId && next.length > 0) {
-          onOwnerChange(next[0]);
-        }
+        next = current.filter(id => id !== userId);
       } else {
-        const next = [...current, userId];
-        onAssigneesChange(next);
+        next = [...current, userId];
       }
+      setLocalIds(next);
+      onAssigneesChange(next);
     } else {
       onOwnerChange(userId);
       setOpen(false);
     }
-  }, [multi, onAssigneesChange, onOwnerChange, effectiveIds, currentOwnerId]);
+  }, [multi, onAssigneesChange, onOwnerChange, localIds]);
 
   return (
     <div ref={containerRef} className="relative">
       <button
         type="button"
         disabled={disabled}
-        onClick={() => !disabled && setOpen(!open)}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (!disabled) setOpen(!open);
+        }}
         className={cn(
           'inline-flex items-center gap-1.5 rounded-md transition-all',
           compact
@@ -138,7 +146,21 @@ export function OwnerSelect({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-[100] mt-1 w-72 rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50">
+        <div
+          className="fixed z-[100] w-72 rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50"
+          style={{
+            top: containerRef.current
+              ? containerRef.current.getBoundingClientRect().bottom + 4
+              : 0,
+            left: containerRef.current
+              ? Math.min(
+                  containerRef.current.getBoundingClientRect().left,
+                  window.innerWidth - 288 - 8
+                )
+              : 0,
+          }}
+          onClick={e => e.stopPropagation()}
+        >
           <div className="border-b border-slate-100 p-2.5">
             <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2">
               <Search className="h-3.5 w-3.5 text-slate-400" />
@@ -167,7 +189,10 @@ export function OwnerSelect({
                       <button
                         key={user.id}
                         type="button"
-                        onClick={() => handleSelect(user.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelect(user.id);
+                        }}
                         className={cn(
                           'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors',
                           isSelected ? 'bg-blue-50' : 'hover:bg-slate-50'

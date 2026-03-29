@@ -163,6 +163,8 @@ function DashboardContent() {
           onSelectTask={handleSelectTask}
           showProject
           projectsMap={projectsMap}
+          emptyTitle={isTeamView ? 'No team tasks found' : 'No tasks assigned to you'}
+          emptyDescription={isTeamView ? 'Tasks assigned to team members in your department will appear here.' : 'Tasks assigned to you across projects will appear here. Ask an admin to assign you tasks.'}
         />
       </div>
 

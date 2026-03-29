@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, memo } from 'react';
-import { ChevronRight, Info } from 'lucide-react';
+import { ChevronRight, Info, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { Avatar } from '@/components/ui/avatar';
 import { AgingBadge } from '@/components/ui/badge';
@@ -325,6 +325,20 @@ export const TaskRow = memo(function TaskRow({
           {/* Aging */}
           <td className="px-3 py-2">
             <AgingBadge status={agingStatus} label={agingLabel} />
+          </td>
+
+          {/* Comments indicator */}
+          <td className="w-10 px-2 py-2 text-center">
+            {(task.comments_count ?? 0) > 0 ? (
+              <button
+                type="button"
+                onClick={() => onSelectTask?.(task.id)}
+                className="inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+              >
+                <MessageSquare className="h-3 w-3" />
+                {task.comments_count}
+              </button>
+            ) : null}
           </td>
 
           {/* Actions */}

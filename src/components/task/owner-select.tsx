@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronDown, Search, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { Avatar } from '@/components/ui/avatar';
+import { Tooltip } from '@/components/ui/tooltip';
 import { useUsers } from '@/lib/hooks/use-users';
 
 interface OwnerSelectProps {
@@ -115,7 +116,9 @@ export function OwnerSelect({
         {compact ? (
           <div className="flex -space-x-1.5">
             {selectedUsers.slice(0, 3).map(u => (
-              <Avatar key={u.id} src={u.avatar_url} fullName={u.full_name} size="sm" />
+              <Tooltip key={u.id} content={`${u.full_name} — ${u.department}`}>
+                <span><Avatar src={u.avatar_url} fullName={u.full_name} size="sm" /></span>
+              </Tooltip>
             ))}
             {selectedUsers.length > 3 && (
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-[9px] font-semibold text-slate-600 ring-2 ring-white">

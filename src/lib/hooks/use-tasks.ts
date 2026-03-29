@@ -32,6 +32,8 @@ export function useTasksByOwner(ownerId: string) {
   return useQuery({
     queryKey: ['tasks', 'owner', ownerId],
     queryFn: () => taskApi.getTasksByOwner(ownerId),
+    enabled: !!ownerId,
+    retry: 2,
   });
 }
 
@@ -40,6 +42,7 @@ export function useTasksByDepartment(deptId: string, userIds: string[]) {
     queryKey: ['tasks', 'department', deptId],
     queryFn: () => taskApi.getTasksByDepartment(deptId, userIds),
     enabled: userIds.length > 0,
+    retry: 2,
   });
 }
 

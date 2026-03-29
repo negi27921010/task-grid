@@ -7,7 +7,17 @@ function sb() {
   return createClient();
 }
 
-function mapRow(row: Record<string, unknown>, childrenCount = 0, comments: TaskComment[] = []): Task {
+let hasAssigneeColumn = true;
+
+function isSchemaError(error: unknown): boolean {
+  if (error && typeof error === 'object' && 'message' in error) {
+    const msg = (error as { message: string }).message;
+    return msg.includes('assignee_ids') && msg.includes('schema cache');
+  }
+  return false;
+}
+
+function mapRow(row: Record<string, unknown>, childrenCount = 0, comments: TaskComment[] = [], commentsCount?: number): Task {
   const ownerId = row.owner_id as string;
   const rawAssignees = (row.assignee_ids as string[]) ?? [];
   const assigneeIds = rawAssignees.length > 0 ? rawAssignees : ownerId ? [ownerId] : [];
@@ -38,6 +48,7 @@ function mapRow(row: Record<string, unknown>, childrenCount = 0, comments: TaskC
     created_at: row.created_at as string,
     updated_at: row.updated_at as string,
     children_count: childrenCount,
+    comments_count: commentsCount ?? comments.length,
   };
   task.aging_status = computeAgingStatus(task);
   return task;
@@ -58,10 +69,28 @@ async function countChildrenBulk(taskIds: string[]): Promise<Record<string, numb
   return counts;
 }
 
+async function countCommentsBulk(taskIds: string[]): Promise<Record<string, number>> {
+  if (taskIds.length === 0) return {};
+  const { data, error } = await sb()
+    .from('comments')
+    .select('task_id')
+    .in('task_id', taskIds);
+  if (error) return {};
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    const tid = row.task_id as string;
+    counts[tid] = (counts[tid] ?? 0) + 1;
+  }
+  return counts;
+}
+
 async function mapRows(rows: Record<string, unknown>[]): Promise<Task[]> {
   const ids = rows.map(r => r.id as string);
-  const childCounts = await countChildrenBulk(ids);
-  return rows.map(r => mapRow(r, childCounts[r.id as string] ?? 0));
+  const [childCounts, commentCounts] = await Promise.all([
+    countChildrenBulk(ids),
+    countCommentsBulk(ids),
+  ]);
+  return rows.map(r => mapRow(r, childCounts[r.id as string] ?? 0, [], commentCounts[r.id as string] ?? 0));
 }
 
 export async function getTasks(projectId?: string): Promise<Task[]> {
@@ -116,7 +145,7 @@ export async function getTaskById(id: string): Promise<Task | null> {
   }));
 
   const childCounts = await countChildrenBulk([id]);
-  return mapRow(data, childCounts[id] ?? 0, comments);
+  return mapRow(data, childCounts[id] ?? 0, comments, comments.length);
 }
 
 export async function createTask(input: CreateTaskInput): Promise<Task> {
@@ -150,7 +179,7 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
   }
 
   const now = new Date().toISOString();
-  const row = {
+  const row: Record<string, unknown> = {
     id,
     project_id: input.project_id,
     parent_id: input.parent_id ?? null,
@@ -171,28 +200,48 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
     actual_hours: null,
     remarks: input.remarks ?? null,
     labels: input.labels ?? [],
-    assignee_ids: input.assignee_ids ?? [input.owner_id],
     created_at: now,
     updated_at: now,
   };
+
+  if (hasAssigneeColumn) {
+    row.assignee_ids = input.assignee_ids ?? [input.owner_id];
+  }
 
   const { data, error } = await sb()
     .from('tasks')
     .insert(row)
     .select()
     .single();
-  if (error) throw error;
+
+  if (error) {
+    if (isSchemaError(error)) {
+      hasAssigneeColumn = false;
+      delete row.assignee_ids;
+      const { data: d2, error: e2 } = await sb()
+        .from('tasks')
+        .insert(row)
+        .select()
+        .single();
+      if (e2) throw e2;
+      return mapRow(d2, 0);
+    }
+    throw error;
+  }
   return mapRow(data, 0);
 }
 
 export async function updateTask(id: string, updates: Partial<Task>): Promise<Task> {
   const safeUpdates: Record<string, unknown> = {};
   const allowed = [
-    'title', 'description', 'status', 'priority', 'owner_id', 'assignee_ids',
+    'title', 'description', 'status', 'priority', 'owner_id',
     'eta', 'started_at', 'completed_at', 'blocker_reason', 'depth', 'position',
     'path', 'tags', 'estimated_hours', 'actual_hours', 'remarks', 'labels',
     'parent_id',
   ];
+  if (hasAssigneeColumn) {
+    allowed.push('assignee_ids');
+  }
   for (const key of allowed) {
     if (key in updates) {
       safeUpdates[key] = (updates as Record<string, unknown>)[key];
@@ -205,7 +254,23 @@ export async function updateTask(id: string, updates: Partial<Task>): Promise<Ta
     .eq('id', id)
     .select()
     .single();
-  if (error) throw error;
+
+  if (error) {
+    if (isSchemaError(error)) {
+      hasAssigneeColumn = false;
+      delete safeUpdates.assignee_ids;
+      const { data: d2, error: e2 } = await sb()
+        .from('tasks')
+        .update(safeUpdates)
+        .eq('id', id)
+        .select()
+        .single();
+      if (e2) throw e2;
+      const childCounts = await countChildrenBulk([id]);
+      return mapRow(d2, childCounts[id] ?? 0);
+    }
+    throw error;
+  }
   const childCounts = await countChildrenBulk([id]);
   return mapRow(data, childCounts[id] ?? 0);
 }
@@ -363,23 +428,58 @@ export async function searchAllTasks(query: string): Promise<Task[]> {
 }
 
 export async function getTasksByOwner(ownerId: string): Promise<Task[]> {
-  const { data, error } = await sb()
-    .from('tasks')
-    .select('*')
-    .or(`owner_id.eq.${ownerId},assignee_ids.cs.{${ownerId}}`)
-    .order('position', { ascending: true });
-  if (error) throw error;
+  let query = sb().from('tasks').select('*');
+
+  if (hasAssigneeColumn) {
+    query = query.or(`owner_id.eq.${ownerId},assignee_ids.cs.{${ownerId}}`);
+  } else {
+    query = query.eq('owner_id', ownerId);
+  }
+
+  const { data, error } = await query.order('position', { ascending: true });
+
+  if (error) {
+    if (isSchemaError(error)) {
+      hasAssigneeColumn = false;
+      const { data: d2, error: e2 } = await sb()
+        .from('tasks')
+        .select('*')
+        .eq('owner_id', ownerId)
+        .order('position', { ascending: true });
+      if (e2) throw e2;
+      return mapRows(d2 ?? []);
+    }
+    throw error;
+  }
   return mapRows(data ?? []);
 }
 
 export async function getTasksByDepartment(deptId: string, userIds: string[]): Promise<Task[]> {
   if (userIds.length === 0) return [];
-  const ownerFilter = userIds.map(id => `owner_id.eq.${id}`).join(',');
-  const assigneeFilter = userIds.map(id => `assignee_ids.cs.{${id}}`).join(',');
+
+  if (hasAssigneeColumn) {
+    const ownerFilter = userIds.map(id => `owner_id.eq.${id}`).join(',');
+    const assigneeFilter = userIds.map(id => `assignee_ids.cs.{${id}}`).join(',');
+    const { data, error } = await sb()
+      .from('tasks')
+      .select('*')
+      .or(`${ownerFilter},${assigneeFilter}`)
+      .order('position', { ascending: true });
+
+    if (error) {
+      if (isSchemaError(error)) {
+        hasAssigneeColumn = false;
+        return getTasksByDepartment(deptId, userIds);
+      }
+      throw error;
+    }
+    return mapRows(data ?? []);
+  }
+
   const { data, error } = await sb()
     .from('tasks')
     .select('*')
-    .or(`${ownerFilter},${assigneeFilter}`)
+    .in('owner_id', userIds)
     .order('position', { ascending: true });
   if (error) throw error;
   return mapRows(data ?? []);

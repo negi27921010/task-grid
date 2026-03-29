@@ -46,6 +46,7 @@ export function TaskChildren({
             <td className="px-3 py-2.5"><Skeleton shape="circle" width={24} height={24} /></td>
             <td className="px-3 py-2.5"><Skeleton width={56} height={14} /></td>
             <td className="px-3 py-2.5"><Skeleton width={56} height={20} shape="rectangle" /></td>
+            <td className="px-3 py-2.5"><Skeleton width={16} height={16} shape="circle" /></td>
             <td className="px-3 py-2.5" />
           </tr>
         ))}

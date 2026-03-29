@@ -99,6 +99,8 @@ export function InlineCreateRow({
       <td className="px-2 py-1.5" />
       {/* Aging placeholder */}
       <td className="px-2 py-1.5" />
+      {/* Comments placeholder */}
+      <td className="px-2 py-1.5" />
       {/* Actions placeholder */}
       <td className="w-8 px-1 py-1.5" />
     </tr>

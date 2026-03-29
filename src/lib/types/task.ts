@@ -50,6 +50,7 @@ export interface Task {
   created_at: string;
   updated_at: string;
   children_count?: number;
+  comments_count?: number;
   aging_status?: AgingStatus;
 }
 

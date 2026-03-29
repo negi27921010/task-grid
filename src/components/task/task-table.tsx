@@ -26,10 +26,12 @@ interface TaskTableProps {
   onSelectTask?: (taskId: string) => void;
   showProject?: boolean;
   projectsMap?: Record<string, string>;
+  emptyTitle?: string;
+  emptyDescription?: string;
 }
 
 interface ColumnDef {
-  key: SortField | 'expand' | 'actions' | 'owner' | 'project';
+  key: SortField | 'expand' | 'actions' | 'owner' | 'project' | 'comments';
   label: string;
   sortable: boolean;
   className?: string;
@@ -49,6 +51,7 @@ function getColumns(showProject: boolean): ColumnDef[] {
     { key: 'owner', label: 'Assignees', sortable: false, className: 'w-28' },
     { key: 'eta', label: 'Due Date', sortable: true, className: 'w-28' },
     { key: 'aging', label: 'Aging', sortable: true, className: 'w-24' },
+    { key: 'comments', label: '', sortable: false, className: 'w-10' },
     { key: 'actions', label: '', sortable: false, className: 'w-8' },
   );
   return cols;
@@ -84,7 +87,7 @@ function sortTasks(tasks: Task[], field: SortField, direction: SortDirection): T
   return sorted;
 }
 
-export function TaskTable({ tasks, isLoading, projectId, sort, onSortToggle, onSelectTask, showProject = false, projectsMap }: TaskTableProps) {
+export function TaskTable({ tasks, isLoading, projectId, sort, onSortToggle, onSelectTask, showProject = false, projectsMap, emptyTitle, emptyDescription }: TaskTableProps) {
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [editingCell, setEditingCell] = useState<{ taskId: string; field: string } | null>(null);
   const [showCreateRow, setShowCreateRow] = useState(false);
@@ -133,6 +136,7 @@ export function TaskTable({ tasks, isLoading, projectId, sort, onSortToggle, onS
                 <td className="px-3 py-3"><Skeleton shape="circle" width={24} height={24} /></td>
                 <td className="px-3 py-3"><Skeleton width={56} height={14} /></td>
                 <td className="px-3 py-3"><Skeleton width={56} height={22} shape="rectangle" /></td>
+                <td className="px-3 py-3"><Skeleton width={16} height={16} shape="circle" /></td>
                 <td className="px-3 py-3" />
               </tr>
             ))}
@@ -147,10 +151,10 @@ export function TaskTable({ tasks, isLoading, projectId, sort, onSortToggle, onS
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <EmptyState
           icon={ListTodo}
-          title="No tasks yet"
-          description="Create your first task to get started with this project."
-          actionLabel="Add Task"
-          onAction={() => setShowCreateRow(true)}
+          title={emptyTitle ?? 'No tasks yet'}
+          description={emptyDescription ?? 'Create your first task to get started with this project.'}
+          actionLabel={projectId ? 'Add Task' : undefined}
+          onAction={projectId ? () => setShowCreateRow(true) : undefined}
         />
       </div>
     );

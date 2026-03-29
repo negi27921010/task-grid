@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   estimated_hours numeric,
   actual_hours numeric,
   remarks text,
+  assignee_ids text[] DEFAULT '{}',
   labels text[] DEFAULT '{}',
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
@@ -80,6 +81,7 @@ CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_comments_task ON comments(task_id);
 CREATE INDEX IF NOT EXISTS idx_comments_author ON comments(author_id);
 CREATE INDEX IF NOT EXISTS idx_projects_owner ON projects(owner_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_assignees ON tasks USING GIN(assignee_ids);
 
 -- ============================================================
 -- AUTO-UPDATE updated_at TRIGGER

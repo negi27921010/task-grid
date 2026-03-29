@@ -14,6 +14,7 @@ interface TaskChildrenProps {
   onSelectTask?: (taskId: string) => void;
   showProject?: boolean;
   projectName?: string;
+  parentSerial?: string;
 }
 
 export function TaskChildren({
@@ -26,6 +27,7 @@ export function TaskChildren({
   onSelectTask,
   showProject,
   projectName,
+  parentSerial,
 }: TaskChildrenProps) {
   const { data: children, isLoading } = useChildTasks(parentId, true);
 
@@ -35,6 +37,7 @@ export function TaskChildren({
         {[1, 2].map(i => (
           <tr key={`skeleton-${parentId}-${i}`} className="border-b border-slate-50">
             <td className="px-3 py-2.5" />
+            <td className="px-3 py-2.5"><Skeleton width={28} height={14} /></td>
             <td className="px-3 py-2.5" />
             <td className="py-2.5 pr-3">
               <div className="flex items-center gap-2 pl-12">
@@ -72,6 +75,7 @@ export function TaskChildren({
           onSelectTask={onSelectTask}
           showProject={showProject}
           projectName={projectName}
+          serialNumber={parentSerial ? `${parentSerial}.${index + 1}` : String(index + 1)}
         />
       ))}
     </>

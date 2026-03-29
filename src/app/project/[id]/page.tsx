@@ -1,13 +1,14 @@
 'use client';
 
-import { use, useMemo, useState, useCallback } from 'react';
+import { use, useMemo, useState, useCallback, useRef, useEffect } from 'react';
+import { Pencil, Check, X } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
 import { AgingSummaryBar } from '@/components/task/aging-summary-bar';
 import { FilterBar } from '@/components/task/filter-bar';
 import { TaskViewContainer } from '@/components/task/task-view-container';
 import { TaskDetailPanel } from '@/components/task/task-detail-panel';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useProject } from '@/lib/hooks/use-projects';
+import { useProject, useUpdateProject } from '@/lib/hooks/use-projects';
 import { useTasks } from '@/lib/hooks/use-tasks';
 import { useFilters } from '@/lib/hooks/use-filters';
 import { useViewMode } from '@/lib/hooks/use-view-mode';
@@ -36,9 +37,36 @@ export default function ProjectPage({
     hasActiveFilters,
   } = useFilters();
 
+  const updateProject = useUpdateProject();
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState('');
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const handleSelectTask = useCallback((taskId: string) => setSelectedTaskId(taskId), []);
   const handleClosePanel = useCallback(() => setSelectedTaskId(null), []);
+
+  useEffect(() => {
+    if (editingName && nameInputRef.current) {
+      nameInputRef.current.focus();
+      nameInputRef.current.select();
+    }
+  }, [editingName]);
+
+  const handleNameSave = () => {
+    const trimmed = nameValue.trim();
+    if (trimmed && project && trimmed !== project.name) {
+      updateProject.mutate({ id: project.id, updates: { name: trimmed } });
+    }
+    setEditingName(false);
+  };
+
+  const startEditName = () => {
+    if (project) {
+      setNameValue(project.name);
+      setEditingName(true);
+    }
+  };
 
   const allTasks = tasks ?? [];
   const filteredTasks = useMemo(
@@ -72,9 +100,41 @@ export default function ProjectPage({
             </div>
           ) : project ? (
             <>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900">
-                {project.name}
-              </h1>
+              {editingName ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={nameInputRef}
+                    type="text"
+                    value={nameValue}
+                    onChange={e => setNameValue(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') { e.preventDefault(); handleNameSave(); }
+                      if (e.key === 'Escape') { e.preventDefault(); setEditingName(false); }
+                    }}
+                    className="rounded-md border border-blue-300 bg-white px-2 py-1 text-xl font-bold tracking-tight text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                  <button type="button" onClick={handleNameSave} className="rounded-md p-1 text-green-600 hover:bg-green-50">
+                    <Check className="h-4 w-4" />
+                  </button>
+                  <button type="button" onClick={() => setEditingName(false)} className="rounded-md p-1 text-slate-400 hover:bg-slate-100">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="group/title flex items-center gap-2">
+                  <h1 className="text-xl font-bold tracking-tight text-slate-900">
+                    {project.name}
+                  </h1>
+                  <button
+                    type="button"
+                    onClick={startEditName}
+                    className="rounded p-1 text-slate-400 opacity-0 transition-opacity hover:bg-slate-100 hover:text-slate-600 group-hover/title:opacity-100"
+                    title="Edit project name"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
               {project.description && (
                 <p className="mt-1 text-sm text-slate-500">
                   {project.description}

@@ -1,12 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { CheckSquare, Users, PanelLeftClose, PanelLeft, FolderKanban, Settings, LogOut } from 'lucide-react';
+import { CheckSquare, Users, PanelLeftClose, PanelLeft, FolderKanban, Settings, LogOut, Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useCurrentUser } from '@/lib/hooks/use-current-user';
-import { useProjects } from '@/lib/hooks/use-projects';
+import { useProjects, useCreateProject } from '@/lib/hooks/use-projects';
 import { isAdmin } from '@/lib/utils/permissions';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -77,9 +78,27 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const searchParams = useSearchParams();
   const { currentUser, signOut } = useCurrentUser();
   const { data: projects } = useProjects();
+  const createProject = useCreateProject();
+
+  const [showNewProject, setShowNewProject] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
 
   const activeProjects = (projects ?? []).filter((p) => p.status === 'active');
   const userIsAdmin = isAdmin(currentUser);
+
+  const handleCreateProject = () => {
+    const name = newProjectName.trim();
+    if (!name) return;
+    createProject.mutate(
+      { name, owner_id: currentUser.id },
+      {
+        onSuccess: () => {
+          setNewProjectName('');
+          setShowNewProject(false);
+        },
+      }
+    );
+  };
 
   const isMyTasks = pathname === '/dashboard' && searchParams.get('view') !== 'team';
   const isTeamView = pathname === '/dashboard' && searchParams.get('view') === 'team';
@@ -141,7 +160,15 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
               Projects
             </span>
-            <FolderKanban className="h-3.5 w-3.5 text-slate-300" />
+            <Tooltip content="New project" side="top">
+              <button
+                type="button"
+                onClick={() => setShowNewProject(v => !v)}
+                className="rounded p-0.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </Tooltip>
           </div>
         )}
 
@@ -151,6 +178,32 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               <FolderKanban className="h-4 w-4 text-slate-300" />
             </div>
           </Tooltip>
+        )}
+
+        {/* Inline new project form */}
+        {showNewProject && !collapsed && (
+          <div className="mx-3 mb-2 flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50/50 px-2 py-1.5">
+            <input
+              type="text"
+              autoFocus
+              value={newProjectName}
+              onChange={e => setNewProjectName(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') { e.preventDefault(); handleCreateProject(); }
+                if (e.key === 'Escape') { setShowNewProject(false); setNewProjectName(''); }
+              }}
+              placeholder="Project name..."
+              className="min-w-0 flex-1 bg-transparent text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
+              disabled={createProject.isPending}
+            />
+            <button
+              type="button"
+              onClick={() => { setShowNewProject(false); setNewProjectName(''); }}
+              className="rounded p-0.5 text-slate-400 hover:text-slate-600"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
         )}
 
         {/* Project list */}

@@ -67,7 +67,7 @@ export function StatusBadge({ status, className, ...props }: StatusBadgeProps) {
 
 const priorityColors: Record<Priority, string> = {
   P1: 'bg-red-500',
-  P2: 'bg-orange-500',
+  P2: 'bg-pink-500',
   P3: 'bg-blue-500',
   P4: 'bg-slate-400',
 };

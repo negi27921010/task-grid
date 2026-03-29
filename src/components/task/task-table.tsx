@@ -31,7 +31,7 @@ interface TaskTableProps {
 }
 
 interface ColumnDef {
-  key: SortField | 'expand' | 'actions' | 'owner' | 'project' | 'comments';
+  key: SortField | 'expand' | 'actions' | 'owner' | 'project' | 'comments' | 'serial';
   label: string;
   sortable: boolean;
   className?: string;
@@ -40,6 +40,7 @@ interface ColumnDef {
 function getColumns(showProject: boolean): ColumnDef[] {
   const cols: ColumnDef[] = [
     { key: 'expand', label: '', sortable: false, className: 'w-8' },
+    { key: 'serial', label: '#', sortable: false, className: 'w-14' },
     { key: 'priority', label: 'Priority', sortable: true, className: 'w-24' },
     { key: 'title', label: 'Task', sortable: true, className: 'min-w-[220px]' },
   ];
@@ -129,6 +130,7 @@ export function TaskTable({ tasks, isLoading, projectId, sort, onSortToggle, onS
             {Array.from({ length: 6 }).map((_, i) => (
               <tr key={i} className="border-b border-slate-100">
                 <td className="px-3 py-3" />
+                <td className="px-3 py-3"><Skeleton width={24} height={14} /></td>
                 <td className="px-3 py-3"><Skeleton shape="circle" width={8} height={8} /></td>
                 <td className="py-3 pr-3"><Skeleton width={160 + Math.random() * 120} height={14} /></td>
                 {showProject && <td className="px-3 py-3"><Skeleton width={80} height={14} /></td>}
@@ -198,7 +200,7 @@ export function TaskTable({ tasks, isLoading, projectId, sort, onSortToggle, onS
             </tr>
           </thead>
           <tbody>
-            {sortedTasks.map(task => (
+            {sortedTasks.map((task, idx) => (
               <TaskRow
                 key={task.id}
                 task={task}
@@ -211,6 +213,7 @@ export function TaskTable({ tasks, isLoading, projectId, sort, onSortToggle, onS
                 onSelectTask={onSelectTask}
                 showProject={showProject}
                 projectName={projectsMap?.[task.project_id]}
+                serialNumber={String(idx + 1)}
               />
             ))}
             {showCreateRow && (

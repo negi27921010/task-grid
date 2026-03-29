@@ -14,7 +14,7 @@ import { Calendar } from 'lucide-react';
 
 const PRIORITY_BORDER: Record<Priority, string> = {
   P1: 'border-l-red-500',
-  P2: 'border-l-orange-500',
+  P2: 'border-l-pink-500',
   P3: 'border-l-blue-500',
   P4: 'border-l-slate-400',
 };

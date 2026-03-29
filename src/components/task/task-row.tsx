@@ -44,6 +44,7 @@ interface TaskRowProps {
   onSelectTask?: (taskId: string) => void;
   showProject?: boolean;
   projectName?: string;
+  serialNumber?: string;
 }
 
 export const TaskRow = memo(function TaskRow({
@@ -58,6 +59,7 @@ export const TaskRow = memo(function TaskRow({
   onSelectTask,
   showProject,
   projectName,
+  serialNumber,
 }: TaskRowProps) {
   const [editTitle, setEditTitle] = useState(task.title);
   const [editEta, setEditEta] = useState(task.eta ?? '');
@@ -201,13 +203,25 @@ export const TaskRow = memo(function TaskRow({
             )}
           </td>
 
+          {/* Serial Number */}
+          <td className="w-14 px-2 py-2 text-center">
+            <span className={cn(
+              'inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[11px] font-semibold tabular-nums',
+              depth === 0 && 'bg-slate-100 text-slate-700',
+              depth === 1 && 'bg-blue-50 text-blue-600',
+              depth >= 2 && 'bg-violet-50 text-violet-600',
+            )}>
+              {serialNumber ?? '—'}
+            </span>
+          </td>
+
           {/* Priority */}
           <td className="px-2 py-2">
             {canEditAll ? (
               <PrioritySelect currentPriority={task.priority} onPriorityChange={handlePriorityChange} />
             ) : (
               <span className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium">
-                <span className={cn('h-2 w-2 shrink-0 rounded-full', task.priority === 'P1' && 'bg-red-500', task.priority === 'P2' && 'bg-orange-500', task.priority === 'P3' && 'bg-blue-500', task.priority === 'P4' && 'bg-slate-400')} />
+                <span className={cn('h-2 w-2 shrink-0 rounded-full', task.priority === 'P1' && 'bg-red-500', task.priority === 'P2' && 'bg-pink-500', task.priority === 'P3' && 'bg-blue-500', task.priority === 'P4' && 'bg-slate-400')} />
                 <span className="text-slate-600">{PRIORITY_LABELS[task.priority]}</span>
               </span>
             )}
@@ -358,6 +372,7 @@ export const TaskRow = memo(function TaskRow({
           onSelectTask={onSelectTask}
           showProject={showProject}
           projectName={projectName}
+          parentSerial={serialNumber}
         />
       )}
 

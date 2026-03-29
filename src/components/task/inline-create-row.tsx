@@ -70,6 +70,8 @@ export function InlineCreateRow({
     <tr className="border-b border-slate-100 bg-blue-50/30">
       {/* Expand placeholder */}
       <td className="w-8 px-1 py-1.5" />
+      {/* Serial placeholder */}
+      <td className="w-14 px-1 py-1.5" />
       {/* Priority placeholder */}
       <td className="w-8 px-1 py-1.5" />
       {/* Title input */}

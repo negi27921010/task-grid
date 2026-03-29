@@ -3,7 +3,7 @@
 import { Suspense, useMemo, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ListTodo, PlayCircle, ShieldAlert, Clock } from 'lucide-react';
+import { ListTodo, PlayCircle, ShieldAlert, Clock, CheckCircle2 } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
 import { AgingSummaryBar } from '@/components/task/aging-summary-bar';
 import { FilterBar } from '@/components/task/filter-bar';
@@ -67,27 +67,36 @@ function DashboardContent() {
     ? `All tasks in ${currentUser.department}`
     : `Tasks assigned to you across all projects`;
 
-  const stats = useMemo(() => ({
-    total: allTasks.length,
-    inProgress: allTasks.filter(t => t.status === 'in_progress').length,
-    blocked: allTasks.filter(t => t.status === 'blocked').length,
-    overdue: allTasks.filter(t => t.aging_status === 'overdue').length,
-  }), [allTasks]);
+  const stats = useMemo(() => {
+    const total = allTasks.length;
+    const completed = allTasks.filter(t => t.status === 'completed').length;
+    return {
+      total,
+      inProgress: allTasks.filter(t => t.status === 'in_progress').length,
+      blocked: allTasks.filter(t => t.status === 'blocked').length,
+      overdue: allTasks.filter(t => t.aging_status === 'overdue').length,
+      completed,
+      completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
+    };
+  }, [allTasks]);
 
   const statCards = [
-    { label: 'Total Tasks', value: stats.total, icon: ListTodo, bg: 'bg-slate-50', text: 'text-slate-600' },
-    { label: 'In Progress', value: stats.inProgress, icon: PlayCircle, bg: 'bg-blue-50', text: 'text-blue-600' },
-    { label: 'Blocked', value: stats.blocked, icon: ShieldAlert, bg: 'bg-red-50', text: 'text-red-600' },
-    { label: 'Overdue', value: stats.overdue, icon: Clock, bg: 'bg-amber-50', text: 'text-amber-600' },
+    { label: 'Total Tasks', value: stats.total, icon: ListTodo, bg: 'bg-slate-50', text: 'text-slate-600', accent: 'bg-slate-200' },
+    { label: 'In Progress', value: stats.inProgress, icon: PlayCircle, bg: 'bg-blue-50', text: 'text-blue-600', accent: 'bg-blue-200' },
+    { label: 'Blocked', value: stats.blocked, icon: ShieldAlert, bg: 'bg-red-50', text: 'text-red-600', accent: 'bg-red-200' },
+    { label: 'Overdue', value: stats.overdue, icon: Clock, bg: 'bg-amber-50', text: 'text-amber-600', accent: 'bg-amber-200' },
   ];
 
   return (
     <AppShell viewMode={viewMode} onViewModeChange={setViewMode}>
       <div className="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
-        {/* Header with tabs */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* Header with greeting + tabs */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-sm text-slate-500">{pageSubtitle}</p>
+            <h1 className="text-xl font-bold tracking-tight text-slate-900">
+              {isTeamView ? 'Team View' : `Welcome, ${currentUser.full_name.split(' ')[0]}`}
+            </h1>
+            <p className="mt-0.5 text-sm text-slate-500">{pageSubtitle}</p>
             {!isLoading && (
               <p className="mt-0.5 text-xs text-slate-400">
                 {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''}
@@ -117,11 +126,11 @@ function DashboardContent() {
           </div>
         </div>
 
-        {/* Stat cards */}
+        {/* Stat cards + completion progress */}
         {!isLoading && allTasks.length > 0 && (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             {statCards.map(({ label, value, icon: Icon, bg, text }) => (
-              <div key={label} className="rounded-xl border border-slate-200 bg-white p-4">
+              <div key={label} className="rounded-xl border border-slate-200 bg-white p-4 transition-shadow hover:shadow-md">
                 <div className="flex items-center gap-3">
                   <div className={cn('rounded-lg p-2', bg)}>
                     <Icon className={cn('h-5 w-5', text)} />
@@ -133,6 +142,24 @@ function DashboardContent() {
                 </div>
               </div>
             ))}
+            {/* Completion rate card */}
+            <div className="rounded-xl border border-slate-200 bg-white p-4 transition-shadow hover:shadow-md">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-emerald-50 p-2">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-2xl font-bold text-slate-900">{stats.completionRate}%</p>
+                  <p className="text-xs text-slate-500">Completed</p>
+                </div>
+              </div>
+              <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                  style={{ width: `${stats.completionRate}%` }}
+                />
+              </div>
+            </div>
           </div>
         )}
 

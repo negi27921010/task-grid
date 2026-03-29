@@ -9,14 +9,14 @@ const ALL_PRIORITIES: Priority[] = ['P1', 'P2', 'P3', 'P4'];
 
 const PRIORITY_COLORS: Record<Priority, string> = {
   P1: 'bg-red-500',
-  P2: 'bg-orange-500',
+  P2: 'bg-pink-500',
   P3: 'bg-blue-500',
   P4: 'bg-slate-400',
 };
 
 const PRIORITY_TEXT_COLORS: Record<Priority, string> = {
   P1: 'text-red-700',
-  P2: 'text-orange-700',
+  P2: 'text-pink-700',
   P3: 'text-blue-700',
   P4: 'text-slate-600',
 };

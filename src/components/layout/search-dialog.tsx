@@ -133,11 +133,11 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
         onKeyDown={handleKeyDown}
       >
         {/* Search input */}
-        <div className="flex items-center gap-3 border-b border-gray-200 px-4">
+        <div className="flex items-center gap-3 border-b border-slate-200 px-4">
           {isSearching ? (
             <Loader2 className="h-5 w-5 shrink-0 animate-spin text-blue-500" />
           ) : (
-            <Search className="h-5 w-5 shrink-0 text-gray-400" />
+            <Search className="h-5 w-5 shrink-0 text-slate-400" />
           )}
           <input
             ref={inputRef}
@@ -148,10 +148,10 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
               setSelectedIndex(0);
             }}
             placeholder="Search tasks..."
-            className="h-12 flex-1 bg-transparent text-sm text-gray-900 placeholder:text-gray-400 outline-none"
+            className="h-12 flex-1 bg-transparent text-sm text-slate-900 placeholder:text-slate-400 outline-none"
             autoComplete="off"
           />
-          <kbd className="rounded border border-gray-200 bg-gray-50 px-1.5 py-0.5 text-[10px] font-medium text-gray-400">
+          <kbd className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-400">
             ESC
           </kbd>
         </div>
@@ -159,20 +159,20 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
         {/* Results */}
         <div ref={listRef} className="max-h-80 overflow-y-auto px-2 py-2">
           {query.trim() && !isSearching && flatResults.length === 0 && (
-            <div className="py-8 text-center text-sm text-gray-500">
+            <div className="py-8 text-center text-sm text-slate-500">
               No tasks found for &ldquo;{query}&rdquo;
             </div>
           )}
 
           {!query.trim() && (
-            <div className="py-8 text-center text-sm text-gray-400">
+            <div className="py-8 text-center text-sm text-slate-400">
               Start typing to search tasks...
             </div>
           )}
 
           {grouped.map(([projectId, group]) => (
             <div key={projectId} className="mb-2">
-              <div className="px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">
+              <div className="px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
                 {group.name}
               </div>
               {group.tasks.map((task) => {
@@ -188,7 +188,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                     onMouseEnter={() => setSelectedIndex(currentFlatIndex)}
                     className={cn(
                       'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors',
-                      isSelected ? 'bg-blue-50 text-blue-900' : 'text-gray-700 hover:bg-gray-50'
+                      isSelected ? 'bg-blue-50 text-blue-900' : 'text-slate-700 hover:bg-slate-50'
                     )}
                   >
                     <PriorityDot priority={task.priority} />
@@ -205,7 +205,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
 
         {/* Footer hints */}
         {flatResults.length > 0 && (
-          <div className="flex items-center gap-4 border-t border-gray-200 px-4 py-2 text-xs text-gray-400">
+          <div className="flex items-center gap-4 border-t border-slate-200 px-4 py-2 text-xs text-slate-400">
             <span className="inline-flex items-center gap-1">
               <ArrowUp className="h-3 w-3" />
               <ArrowDown className="h-3 w-3" />

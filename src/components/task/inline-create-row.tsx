@@ -67,7 +67,7 @@ export function InlineCreateRow({
   };
 
   return (
-    <tr className="border-b border-gray-100 bg-blue-50/30">
+    <tr className="border-b border-slate-100 bg-blue-50/30">
       {/* Expand placeholder */}
       <td className="w-8 px-1 py-1.5" />
       {/* Priority placeholder */}
@@ -84,8 +84,8 @@ export function InlineCreateRow({
             onBlur={handleSubmit}
             placeholder="Task title... (Enter to save, Esc to cancel)"
             className={cn(
-              'w-full rounded border border-blue-300 bg-white px-2 py-1 text-sm text-gray-900',
-              'placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20'
+              'w-full rounded border border-blue-300 bg-white px-2 py-1 text-sm text-slate-900',
+              'placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20'
             )}
             disabled={createTask.isPending}
           />

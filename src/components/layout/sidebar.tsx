@@ -50,11 +50,11 @@ function NavItem({ href, icon, label, active, collapsed }: NavItemProps) {
         'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150',
         active
           ? 'bg-blue-50 text-blue-700'
-          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
+          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
         collapsed && 'justify-center px-0'
       )}
     >
-      <span className={cn('shrink-0', active ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600')}>
+      <span className={cn('shrink-0', active ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600')}>
         {icon}
       </span>
       {!collapsed && <span className="truncate">{label}</span>}
@@ -88,14 +88,14 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'flex h-full flex-col border-r border-gray-200 bg-white transition-all duration-200 ease-in-out',
+        'flex h-full flex-col border-r border-slate-200 bg-white transition-all duration-200 ease-in-out',
         collapsed ? 'w-16' : 'w-64'
       )}
     >
       {/* Logo */}
       <div
         className={cn(
-          'flex h-14 shrink-0 items-center border-b border-gray-100 px-4',
+          'flex h-14 shrink-0 items-center border-b border-slate-100 px-4',
           collapsed && 'justify-center px-0'
         )}
       >
@@ -108,7 +108,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             className="h-8 w-8 shrink-0 rounded-lg object-contain"
           />
           {!collapsed && (
-            <span className="text-lg font-bold tracking-tight text-gray-900">
+            <span className="text-lg font-bold tracking-tight text-slate-900">
               Task Grid
             </span>
           )}
@@ -133,22 +133,22 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         />
 
         {/* Separator */}
-        <div className="my-3 h-px bg-gray-100" />
+        <div className="my-3 h-px bg-slate-100" />
 
         {/* Projects header */}
         {!collapsed && (
           <div className="flex items-center justify-between px-3 pb-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
               Projects
             </span>
-            <FolderKanban className="h-3.5 w-3.5 text-gray-300" />
+            <FolderKanban className="h-3.5 w-3.5 text-slate-300" />
           </div>
         )}
 
         {collapsed && (
           <Tooltip content="Projects" side="right">
             <div className="flex justify-center py-1">
-              <FolderKanban className="h-4 w-4 text-gray-300" />
+              <FolderKanban className="h-4 w-4 text-slate-300" />
             </div>
           </Tooltip>
         )}
@@ -167,7 +167,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-150',
                   isActive
                     ? 'bg-blue-50 text-blue-700 font-medium'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
                   collapsed && 'justify-center px-0'
                 )}
               >
@@ -197,7 +197,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         {/* Settings (admin only) */}
         {userIsAdmin && (
           <>
-            <div className="my-3 h-px bg-gray-100" />
+            <div className="my-3 h-px bg-slate-100" />
             <NavItem
               href="/settings"
               icon={<Settings className="h-[18px] w-[18px]" />}
@@ -210,7 +210,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </nav>
 
       {/* Bottom: User info + Collapse toggle */}
-      <div className="shrink-0 border-t border-gray-100">
+      <div className="shrink-0 border-t border-slate-100">
         <div
           className={cn(
             'flex items-center gap-3 px-4 py-3',
@@ -224,7 +224,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           />
           {!collapsed && (
             <div className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate text-sm font-medium text-gray-900">
+              <span className="truncate text-sm font-medium text-slate-900">
                 {currentUser.full_name}
               </span>
               <Badge variant={roleBadgeVariant[currentUser.role]} className="w-fit text-[10px] py-0">
@@ -234,12 +234,12 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           )}
         </div>
 
-        <div className="flex border-t border-gray-100">
+        <div className="flex border-t border-slate-100">
           <button
             onClick={() => signOut()}
             className={cn(
-              'flex flex-1 items-center justify-center py-2.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500',
-              collapsed ? 'border-r-0' : 'border-r border-gray-100'
+              'flex flex-1 items-center justify-center py-2.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500',
+              collapsed ? 'border-r-0' : 'border-r border-slate-100'
             )}
             aria-label="Sign out"
           >
@@ -248,7 +248,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           {!collapsed && (
             <button
               onClick={onToggle}
-              className="flex flex-1 items-center justify-center py-2.5 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600"
+              className="flex flex-1 items-center justify-center py-2.5 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-600"
               aria-label="Collapse sidebar"
             >
               <PanelLeftClose className="h-4 w-4" />
@@ -257,7 +257,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           {collapsed && (
             <button
               onClick={onToggle}
-              className="flex flex-1 items-center justify-center py-2.5 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600"
+              className="flex flex-1 items-center justify-center py-2.5 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-600"
               aria-label="Expand sidebar"
             >
               <PanelLeft className="h-4 w-4" />

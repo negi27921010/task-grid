@@ -21,7 +21,7 @@ export function StatusSelect({ currentStatus, onStatusChange, disabled }: Status
         <button
           type="button"
           className={cn(
-            'inline-flex items-center rounded transition-colors hover:ring-2 hover:ring-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1',
+            'inline-flex items-center rounded transition-colors hover:ring-2 hover:ring-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1',
             disabled && 'pointer-events-none opacity-50'
           )}
           disabled={disabled}

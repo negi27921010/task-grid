@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Search, Bell, LayoutList, LayoutGrid, List, Settings } from 'lucide-react';
+import { Search, LayoutList, LayoutGrid, List, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -16,7 +16,6 @@ interface HeaderProps {
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
   onSearchOpen?: () => void;
-  notificationCount?: number;
 }
 
 const viewModes: { mode: ViewMode; icon: typeof LayoutList; label: string }[] = [
@@ -31,7 +30,7 @@ function useProjectBreadcrumb(pathname: string): string | null {
   return project?.name ?? null;
 }
 
-export function Header({ viewMode, onViewModeChange, onSearchOpen, notificationCount = 0 }: HeaderProps) {
+export function Header({ viewMode, onViewModeChange, onSearchOpen }: HeaderProps) {
   const pathname = usePathname();
   const projectName = useProjectBreadcrumb(pathname);
   const { currentUser } = useCurrentUser();
@@ -51,23 +50,23 @@ export function Header({ viewMode, onViewModeChange, onSearchOpen, notificationC
   }
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-4 border-b border-gray-200 bg-white px-4 lg:px-6">
+    <header className="flex h-14 shrink-0 items-center gap-4 border-b border-slate-200 bg-white px-4 lg:px-6">
       {/* Left: Breadcrumbs */}
       <nav className="flex items-center gap-1 text-sm" aria-label="Breadcrumb">
         {breadcrumbs.map((crumb, i) => (
           <span key={i} className="flex items-center gap-1">
             {i > 0 && (
-              <span className="text-gray-300 select-none" aria-hidden="true">/</span>
+              <span className="text-slate-300 select-none" aria-hidden="true">/</span>
             )}
             {crumb.href ? (
               <Link
                 href={crumb.href}
-                className="text-gray-500 transition-colors hover:text-gray-700"
+                className="text-slate-500 transition-colors hover:text-slate-700"
               >
                 {crumb.label}
               </Link>
             ) : (
-              <span className="font-medium text-gray-900">{crumb.label}</span>
+              <span className="font-medium text-slate-900">{crumb.label}</span>
             )}
           </span>
         ))}
@@ -77,11 +76,11 @@ export function Header({ viewMode, onViewModeChange, onSearchOpen, notificationC
       <div className="mx-auto hidden max-w-md flex-1 sm:block">
         <button
           onClick={onSearchOpen}
-          className="flex h-9 w-full items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-400 transition-colors hover:border-gray-300 hover:bg-gray-100"
+          className="flex h-9 w-full items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-400 transition-colors hover:border-slate-300 hover:bg-slate-100"
         >
           <Search className="h-4 w-4" />
           <span className="flex-1 text-left">Search tasks...</span>
-          <kbd className="hidden items-center gap-0.5 rounded border border-gray-200 bg-white px-1.5 py-0.5 text-[10px] font-medium text-gray-400 sm:inline-flex">
+          <kbd className="hidden items-center gap-0.5 rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-400 sm:inline-flex">
             <span className="text-xs">&#8984;</span>K
           </kbd>
         </button>
@@ -90,7 +89,7 @@ export function Header({ viewMode, onViewModeChange, onSearchOpen, notificationC
       {/* Right: Controls */}
       <div className="flex items-center gap-1">
         {/* View mode toggles */}
-        <div className="mr-2 flex items-center rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+        <div className="mr-2 flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5">
           {viewModes.map(({ mode, icon: Icon, label }) => (
             <Tooltip key={mode} content={label} side="bottom">
               <button
@@ -98,8 +97,8 @@ export function Header({ viewMode, onViewModeChange, onSearchOpen, notificationC
                 className={cn(
                   'flex h-7 w-7 items-center justify-center rounded-md transition-all duration-150',
                   viewMode === mode
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-400 hover:text-gray-600'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-600'
                 )}
                 aria-label={label}
                 aria-pressed={viewMode === mode}
@@ -117,8 +116,8 @@ export function Header({ viewMode, onViewModeChange, onSearchOpen, notificationC
               href="/settings"
               aria-label="Settings"
               className={cn(
-                'inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900',
-                pathname === '/settings' && 'bg-gray-100 text-gray-900'
+                'inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900',
+                pathname === '/settings' && 'bg-slate-100 text-slate-900'
               )}
             >
               <Settings className="h-4 w-4" />
@@ -127,7 +126,7 @@ export function Header({ viewMode, onViewModeChange, onSearchOpen, notificationC
         )}
 
         {/* Divider */}
-        <div className="mx-1.5 h-6 w-px bg-gray-200" />
+        <div className="mx-1.5 h-6 w-px bg-slate-200" />
 
         {/* User switcher */}
         <UserSwitcher />

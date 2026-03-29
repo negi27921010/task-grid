@@ -53,45 +53,45 @@ function UserForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Full Name *</label>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           required
           autoFocus
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Email (optional)</label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Email (optional)</label>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="user@pw.live"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
         <select
           value={role}
           onChange={(e) => setRole(e.target.value as UserRole)}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
         >
           <option value="admin">Admin</option>
           <option value="member">Member</option>
         </select>
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Department</label>
         <input
           type="text"
           value={department}
           onChange={(e) => setDepartment(e.target.value)}
           placeholder="e.g. Product & Analytics"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
         />
       </div>
       <div className="flex justify-end gap-2 pt-2">
@@ -128,9 +128,9 @@ export default function SettingsPage() {
       <AppShell viewMode={viewMode} onViewModeChange={setViewMode}>
         <div className="flex h-full items-center justify-center">
           <div className="text-center">
-            <ShieldAlert className="mx-auto h-12 w-12 text-gray-300" />
-            <h2 className="mt-4 text-lg font-semibold text-gray-900">Access Denied</h2>
-            <p className="mt-1 text-sm text-gray-500">Only admins can access the Settings panel.</p>
+            <ShieldAlert className="mx-auto h-12 w-12 text-slate-300" />
+            <h2 className="mt-4 text-lg font-semibold text-slate-900">Access Denied</h2>
+            <p className="mt-1 text-sm text-slate-500">Only admins can access the Settings panel.</p>
           </div>
         </div>
       </AppShell>
@@ -234,21 +234,21 @@ export default function SettingsPage() {
     <AppShell viewMode={viewMode} onViewModeChange={setViewMode}>
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6">
-          <h1 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <Settings className="h-5 w-5 text-gray-400" />
+          <h1 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+            <Settings className="h-5 w-5 text-slate-400" />
             Settings
           </h1>
-          <p className="mt-1 text-sm text-gray-500">Manage users, roles, and permissions.</p>
+          <p className="mt-1 text-sm text-slate-500">Manage users, roles, and permissions.</p>
         </div>
 
         {/* Tabs */}
-        <div className="mb-6 flex gap-1 border-b border-gray-200">
+        <div className="mb-6 flex gap-1 border-b border-slate-200">
           <button
             onClick={() => setTab('users')}
             className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
               tab === 'users'
                 ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
             <Users className="h-4 w-4" />
@@ -259,7 +259,7 @@ export default function SettingsPage() {
             className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
               tab === 'permissions'
                 ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
             <Shield className="h-4 w-4" />
@@ -272,7 +272,7 @@ export default function SettingsPage() {
           <div className="space-y-4">
             {/* Stats + Add */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4 text-sm text-gray-500">
+              <div className="flex items-center gap-4 text-sm text-slate-500">
                 <span>{allUsers.length} users total</span>
                 <Badge variant="info">{adminCount} Admin{adminCount !== 1 ? 's' : ''}</Badge>
                 <Badge variant="default">{memberCount} Member{memberCount !== 1 ? 's' : ''}</Badge>
@@ -284,49 +284,49 @@ export default function SettingsPage() {
             </div>
 
             {/* User list */}
-            <div className="rounded-lg border border-gray-200 bg-white">
+            <div className="rounded-lg border border-slate-200 bg-white">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50/80">
-                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">User</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Department</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Role</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Email</th>
-                    <th className="w-24 px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                  <tr className="border-b border-slate-200 bg-slate-50/80">
+                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-slate-500">User</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Department</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Role</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Email</th>
+                    <th className="w-24 px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-slate-500">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {isLoading ? (
-                    <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-400">Loading...</td></tr>
+                    <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-slate-400">Loading...</td></tr>
                   ) : allUsers.length === 0 ? (
-                    <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-400">No users found</td></tr>
+                    <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-slate-400">No users found</td></tr>
                   ) : (
                     allUsers.map((user) => (
-                      <tr key={user.id} className="border-b border-gray-100 transition-colors hover:bg-gray-50/50">
+                      <tr key={user.id} className="border-b border-slate-100 transition-colors hover:bg-slate-50/50">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <Avatar fullName={user.full_name} src={user.avatar_url} size="sm" />
                             <div>
-                              <p className="text-sm font-medium text-gray-900">{user.full_name}</p>
+                              <p className="text-sm font-medium text-slate-900">{user.full_name}</p>
                               {user.id === currentUser.id && (
                                 <span className="text-[10px] text-blue-600 font-medium">(You)</span>
                               )}
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{user.department || '—'}</td>
+                        <td className="px-4 py-3 text-sm text-slate-600">{user.department || '—'}</td>
                         <td className="px-4 py-3">
                           <Badge variant={user.role === 'admin' ? 'info' : 'default'}>
                             {user.role === 'admin' ? 'Admin' : 'Member'}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-500">{user.email || '—'}</td>
+                        <td className="px-4 py-3 text-sm text-slate-500">{user.email || '—'}</td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
                             {user.email && (
                               <button
                                 onClick={() => { setResetPwUser(user); setNewPassword(''); }}
-                                className="rounded p-1.5 text-gray-400 transition-colors hover:bg-amber-50 hover:text-amber-600"
+                                className="rounded p-1.5 text-slate-400 transition-colors hover:bg-amber-50 hover:text-amber-600"
                                 aria-label={`Reset password for ${user.full_name}`}
                                 title="Reset Password"
                               >
@@ -335,7 +335,7 @@ export default function SettingsPage() {
                             )}
                             <button
                               onClick={() => setEditingUser(user)}
-                              className="rounded p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                              className="rounded p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
                               aria-label={`Edit ${user.full_name}`}
                             >
                               <Pencil className="h-3.5 w-3.5" />
@@ -343,7 +343,7 @@ export default function SettingsPage() {
                             <button
                               onClick={() => setDeleteConfirmUser(user)}
                               disabled={user.id === currentUser.id}
-                              className="rounded p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-30 disabled:pointer-events-none"
+                              className="rounded p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-30 disabled:pointer-events-none"
                               aria-label={`Delete ${user.full_name}`}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -358,7 +358,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Future-ready note */}
-            <p className="text-xs text-gray-400 italic">
+            <p className="text-xs text-slate-400 italic">
               Future: email-based login, invitation links, and SSO will be supported once backend is connected.
             </p>
           </div>
@@ -373,12 +373,12 @@ export default function SettingsPage() {
               const entries = Object.entries(CAPABILITY_LABELS) as [keyof typeof caps, string][];
 
               return (
-                <div key={role} className="rounded-lg border border-gray-200 bg-white">
-                  <div className="flex items-center gap-3 border-b border-gray-100 px-6 py-4">
-                    <ShieldCheck className={`h-5 w-5 ${role === 'admin' ? 'text-blue-500' : 'text-gray-400'}`} />
+                <div key={role} className="rounded-lg border border-slate-200 bg-white">
+                  <div className="flex items-center gap-3 border-b border-slate-100 px-6 py-4">
+                    <ShieldCheck className={`h-5 w-5 ${role === 'admin' ? 'text-blue-500' : 'text-slate-400'}`} />
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-900">{desc.label}</h3>
-                      <p className="text-xs text-gray-500">{desc.description}</p>
+                      <h3 className="text-sm font-semibold text-slate-900">{desc.label}</h3>
+                      <p className="text-xs text-slate-500">{desc.description}</p>
                     </div>
                   </div>
                   <div className="px-6 py-4">
@@ -392,7 +392,7 @@ export default function SettingsPage() {
                             ) : (
                               <X className="h-4 w-4 text-red-400" />
                             )}
-                            <span className={allowed ? 'text-gray-700' : 'text-gray-400'}>{label}</span>
+                            <span className={allowed ? 'text-slate-700' : 'text-slate-400'}>{label}</span>
                           </div>
                         );
                       })}
@@ -462,13 +462,13 @@ export default function SettingsPage() {
             </Dialog.Description>
             <div className="mt-4 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">New Password</label>
                 <input
                   type="password"
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
                   placeholder="Minimum 8 characters"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   autoFocus
                 />
               </div>

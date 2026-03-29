@@ -16,7 +16,7 @@ const PRIORITY_BORDER: Record<Priority, string> = {
   P1: 'border-l-red-500',
   P2: 'border-l-orange-500',
   P3: 'border-l-blue-500',
-  P4: 'border-l-gray-400',
+  P4: 'border-l-slate-400',
 };
 
 /* ─── Props ─── */
@@ -60,7 +60,7 @@ export function TaskCard({ task, onSelectTask }: TaskCardProps) {
       {...listeners}
       {...attributes}
       className={cn(
-        'group cursor-grab rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md',
+        'group cursor-grab rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md',
         'border-l-[3px]',
         PRIORITY_BORDER[task.priority],
         isDragging && 'z-50 rotate-2 opacity-50 shadow-lg',
@@ -78,8 +78,8 @@ export function TaskCard({ task, onSelectTask }: TaskCardProps) {
       {/* Title */}
       <p
         className={cn(
-          'mb-2 line-clamp-2 text-sm font-medium text-gray-900 cursor-pointer hover:text-blue-600',
-          isCompleted && 'line-through text-gray-500'
+          'mb-2 line-clamp-2 text-sm font-medium text-slate-900 cursor-pointer hover:text-blue-600',
+          isCompleted && 'line-through text-slate-500'
         )}
         title="Click to open details"
         onClick={(e) => { e.stopPropagation(); onSelectTask?.(task.id); }}
@@ -93,13 +93,13 @@ export function TaskCard({ task, onSelectTask }: TaskCardProps) {
           {task.tags.slice(0, 2).map((tag) => (
             <span
               key={tag}
-              className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600"
+              className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600"
             >
               {tag}
             </span>
           ))}
           {task.tags.length > 2 && (
-            <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-400">
+            <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-400">
               +{task.tags.length - 2}
             </span>
           )}
@@ -128,7 +128,7 @@ export function TaskCard({ task, onSelectTask }: TaskCardProps) {
         </div>
 
         {task.eta && (
-          <span className="flex items-center gap-1 text-xs text-gray-400">
+          <span className="flex items-center gap-1 text-xs text-slate-400">
             <Calendar className="h-3 w-3" />
             {formatDate(task.eta)}
           </span>
@@ -153,7 +153,7 @@ export function TaskCardOverlay({ task, ownerName }: TaskCardOverlayProps) {
   return (
     <div
       className={cn(
-        'w-[272px] rotate-2 cursor-grabbing rounded-lg border border-gray-200 bg-white p-3 shadow-xl',
+        'w-[272px] rotate-2 cursor-grabbing rounded-lg border border-slate-200 bg-white p-3 shadow-xl',
         'border-l-[3px]',
         PRIORITY_BORDER[task.priority],
         isCompleted && 'opacity-60'
@@ -170,8 +170,8 @@ export function TaskCardOverlay({ task, ownerName }: TaskCardOverlayProps) {
       {/* Title */}
       <p
         className={cn(
-          'mb-2 line-clamp-2 text-sm font-medium text-gray-900',
-          isCompleted && 'line-through text-gray-500'
+          'mb-2 line-clamp-2 text-sm font-medium text-slate-900',
+          isCompleted && 'line-through text-slate-500'
         )}
       >
         {task.title}
@@ -183,13 +183,13 @@ export function TaskCardOverlay({ task, ownerName }: TaskCardOverlayProps) {
           {task.tags.slice(0, 2).map((tag) => (
             <span
               key={tag}
-              className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600"
+              className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600"
             >
               {tag}
             </span>
           ))}
           {task.tags.length > 2 && (
-            <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-400">
+            <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-400">
               +{task.tags.length - 2}
             </span>
           )}
@@ -200,18 +200,18 @@ export function TaskCardOverlay({ task, ownerName }: TaskCardOverlayProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           {ownerName ? (
-            <span className="max-w-[80px] truncate text-xs text-gray-500">
+            <span className="max-w-[80px] truncate text-xs text-slate-500">
               {ownerName.split(' ')[0]}
             </span>
           ) : (
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-[10px] text-gray-400">
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-[10px] text-slate-400">
               ?
             </span>
           )}
         </div>
 
         {task.eta && (
-          <span className="flex items-center gap-1 text-xs text-gray-400">
+          <span className="flex items-center gap-1 text-xs text-slate-400">
             <Calendar className="h-3 w-3" />
             {formatDate(task.eta)}
           </span>

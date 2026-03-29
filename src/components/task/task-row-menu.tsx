@@ -19,7 +19,7 @@ export function TaskRowMenu({ task, onAddSubtask, onDelete }: TaskRowMenuProps) 
       <DropdownMenu.Trigger asChild>
         <button
           type="button"
-          className="inline-flex h-7 w-7 items-center justify-center rounded text-gray-400 opacity-0 transition-all hover:bg-gray-100 hover:text-gray-600 group-hover/row:opacity-100 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="inline-flex h-7 w-7 items-center justify-center rounded text-slate-400 opacity-0 transition-all hover:bg-slate-100 hover:text-slate-600 group-hover/row:opacity-100 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           aria-label={`Actions for ${task.title}`}
         >
           <MoreHorizontal className="h-4 w-4" />

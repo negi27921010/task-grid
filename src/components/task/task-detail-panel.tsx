@@ -149,12 +149,12 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
       {/* Panel */}
       <div
         ref={panelRef}
-        className="fixed right-0 top-0 z-50 flex h-full w-full max-w-xl flex-col border-l border-gray-200 bg-white shadow-2xl sm:w-[520px]"
+        className="fixed right-0 top-0 z-50 flex h-full w-full max-w-xl flex-col border-l border-slate-200 bg-white shadow-2xl sm:w-[520px]"
       >
         {/* Header */}
-        <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-6 py-4">
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-6 py-4">
           <div className="flex items-center gap-2">
-            <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-gray-500">
+            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-slate-500">
               {depthLabel}
             </span>
             {task && (
@@ -164,7 +164,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            className="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
           >
             <X className="h-5 w-5" />
           </button>
@@ -190,12 +190,12 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                       if (e.key === 'Escape') { setTitleDraft(task.title); setEditingTitle(false); }
                     }}
                     autoFocus
-                    className="w-full rounded-md border border-blue-300 px-3 py-2 text-lg font-semibold text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full rounded-md border border-blue-300 px-3 py-2 text-lg font-semibold text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   />
                 ) : (
                   <h2
                     className={cn(
-                      'text-lg font-semibold text-gray-900',
+                      'text-lg font-semibold text-slate-900',
                       canEditAll && 'cursor-pointer hover:text-blue-600'
                     )}
                     onClick={() => { if (canEditAll) { setTitleDraft(task.title); setEditingTitle(true); } }}
@@ -209,7 +209,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
               <div className="grid grid-cols-2 gap-4">
                 {/* Status */}
                 <div className="space-y-1">
-                  <p className="text-xs font-medium text-gray-500">Status</p>
+                  <p className="text-xs font-medium text-slate-500">Status</p>
                   <StatusSelect
                     currentStatus={task.status}
                     onStatusChange={handleStatusChange}
@@ -219,20 +219,20 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
 
                 {/* Priority */}
                 <div className="space-y-1">
-                  <p className="text-xs font-medium text-gray-500">Priority</p>
+                  <p className="text-xs font-medium text-slate-500">Priority</p>
                   {canEditAll ? (
                     <PrioritySelect
                       currentPriority={task.priority}
                       onPriorityChange={handlePriorityChange}
                     />
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 text-sm text-gray-700">
+                    <span className="inline-flex items-center gap-1.5 text-sm text-slate-700">
                       <span className={cn(
                         'h-2 w-2 rounded-full',
                         task.priority === 'P1' && 'bg-red-500',
                         task.priority === 'P2' && 'bg-orange-500',
                         task.priority === 'P3' && 'bg-blue-500',
-                        task.priority === 'P4' && 'bg-gray-400',
+                        task.priority === 'P4' && 'bg-slate-400',
                       )} />
                       {PRIORITY_LABELS[task.priority]}
                     </span>
@@ -241,7 +241,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
 
                 {/* Assignees */}
                 <div className="space-y-1">
-                  <p className="text-xs font-medium text-gray-500">Assignees</p>
+                  <p className="text-xs font-medium text-slate-500">Assignees</p>
                   <OwnerSelect
                     currentOwnerId={task.owner_id}
                     assigneeIds={task.assignee_ids}
@@ -258,17 +258,17 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
 
                 {/* ETA */}
                 <div className="space-y-1">
-                  <p className="text-xs font-medium text-gray-500">ETA</p>
+                  <p className="text-xs font-medium text-slate-500">ETA</p>
                   {canEditAll ? (
                     <input
                       type="date"
                       value={task.eta ? task.eta.split('T')[0] : ''}
                       onChange={e => handleEtaChange(e.target.value ? new Date(e.target.value).toISOString() : '')}
-                      className="w-full rounded-md border border-gray-200 px-2 py-1.5 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full rounded-md border border-slate-200 px-2 py-1.5 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
                   ) : (
-                    <span className="flex items-center gap-1.5 text-sm text-gray-700">
-                      <Calendar className="h-3.5 w-3.5 text-gray-400" />
+                    <span className="flex items-center gap-1.5 text-sm text-slate-700">
+                      <Calendar className="h-3.5 w-3.5 text-slate-400" />
                       {task.eta ? formatDate(task.eta) : 'Not set'}
                     </span>
                   )}
@@ -288,7 +288,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
 
               {/* Labels */}
               <div className="space-y-2">
-                <p className="text-xs font-medium text-gray-500">Labels</p>
+                <p className="text-xs font-medium text-slate-500">Labels</p>
                 <LabelPicker
                   taskId={task.id}
                   taskLabels={task.labels ?? []}
@@ -298,14 +298,14 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
 
               {/* Description */}
               <div className="space-y-2">
-                <p className="text-xs font-medium text-gray-500">Description</p>
+                <p className="text-xs font-medium text-slate-500">Description</p>
                 {editingDesc && canEditAll ? (
                   <div>
                     <textarea
                       value={descDraft}
                       onChange={e => setDescDraft(e.target.value)}
                       rows={4}
-                      className="w-full rounded-md border border-blue-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      className="w-full rounded-md border border-blue-300 px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                       autoFocus
                     />
                     <div className="mt-2 flex gap-2">
@@ -316,9 +316,9 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                 ) : (
                   <div
                     className={cn(
-                      'min-h-[60px] rounded-md border border-gray-200 px-3 py-2 text-sm',
-                      task.description ? 'text-gray-700' : 'text-gray-400 italic',
-                      canEditAll && 'cursor-pointer hover:border-gray-300 hover:bg-gray-50'
+                      'min-h-[60px] rounded-md border border-slate-200 px-3 py-2 text-sm',
+                      task.description ? 'text-slate-700' : 'text-slate-400 italic',
+                      canEditAll && 'cursor-pointer hover:border-slate-300 hover:bg-slate-50'
                     )}
                     onClick={() => { if (canEditAll) { setDescDraft(task.description); setEditingDesc(true); } }}
                   >
@@ -330,8 +330,8 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
               {/* Remarks */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <FileText className="h-3.5 w-3.5 text-gray-400" />
-                  <p className="text-xs font-medium text-gray-500">Remarks</p>
+                  <FileText className="h-3.5 w-3.5 text-slate-400" />
+                  <p className="text-xs font-medium text-slate-500">Remarks</p>
                 </div>
                 {editingRemarks ? (
                   <div>
@@ -340,7 +340,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                       onChange={e => setRemarksDraft(e.target.value)}
                       rows={3}
                       placeholder="Add internal remarks or notes..."
-                      className="w-full rounded-md border border-blue-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      className="w-full rounded-md border border-blue-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                       autoFocus
                     />
                     <div className="mt-2 flex gap-2">
@@ -351,9 +351,9 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                 ) : (
                   <div
                     className={cn(
-                      'min-h-[48px] rounded-md border border-gray-200 px-3 py-2 text-sm',
-                      task.remarks ? 'text-gray-700' : 'text-gray-400 italic',
-                      'cursor-pointer hover:border-gray-300 hover:bg-gray-50'
+                      'min-h-[48px] rounded-md border border-slate-200 px-3 py-2 text-sm',
+                      task.remarks ? 'text-slate-700' : 'text-slate-400 italic',
+                      'cursor-pointer hover:border-slate-300 hover:bg-slate-50'
                     )}
                     onClick={() => { setRemarksDraft(task.remarks ?? ''); setEditingRemarks(true); }}
                   >
@@ -365,8 +365,8 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
               {/* Comments */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <MessageSquare className="h-3.5 w-3.5 text-gray-400" />
-                  <p className="text-xs font-medium text-gray-500">
+                  <MessageSquare className="h-3.5 w-3.5 text-slate-400" />
+                  <p className="text-xs font-medium text-slate-500">
                     Comments ({comments.length})
                   </p>
                 </div>
@@ -385,14 +385,14 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                           />
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-gray-900">
+                              <span className="text-sm font-medium text-slate-900">
                                 {author?.full_name ?? 'Unknown'}
                               </span>
-                              <span className="text-xs text-gray-400">
+                              <span className="text-xs text-slate-400">
                                 {formatRelative(comment.created_at)}
                               </span>
                             </div>
-                            <p className="mt-0.5 text-sm text-gray-700 whitespace-pre-wrap">
+                            <p className="mt-0.5 text-sm text-slate-700 whitespace-pre-wrap">
                               {comment.content}
                             </p>
                           </div>
@@ -416,7 +416,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                       onChange={e => setCommentText(e.target.value)}
                       placeholder="Write a comment..."
                       rows={2}
-                      className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       onKeyDown={e => {
                         if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                           e.preventDefault();
@@ -425,7 +425,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                       }}
                     />
                     <div className="mt-1.5 flex items-center justify-between">
-                      <span className="text-[10px] text-gray-400">
+                      <span className="text-[10px] text-slate-400">
                         {navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}+Enter to post
                       </span>
                       <Button
@@ -444,8 +444,8 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
               </div>
 
               {/* Meta info */}
-              <div className="border-t border-gray-100 pt-4">
-                <div className="grid grid-cols-2 gap-2 text-xs text-gray-400">
+              <div className="border-t border-slate-100 pt-4">
+                <div className="grid grid-cols-2 gap-2 text-xs text-slate-400">
                   <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
                     Created {formatRelative(task.created_at)}

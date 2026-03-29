@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, memo } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Info } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { Avatar } from '@/components/ui/avatar';
 import { AgingBadge } from '@/components/ui/badge';
@@ -177,7 +177,6 @@ export const TaskRow = memo(function TaskRow({
 
   return (
     <>
-      <Tooltip content={tooltipContent} side="bottom" delayDuration={500}>
         <tr
           className={cn(
             'group/row border-b border-slate-100 transition-colors hover:bg-slate-50/80',
@@ -233,13 +232,24 @@ export const TaskRow = memo(function TaskRow({
                   className="w-full rounded-md border border-blue-300 bg-white px-2 py-1 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
               ) : (
-                <span
-                  className={cn('cursor-pointer truncate text-sm font-medium text-slate-800 hover:text-blue-600', isCompleted && 'line-through text-slate-400')}
-                  onClick={() => onSelectTask?.(task.id)}
-                  onDoubleClick={e => { e.stopPropagation(); if (canEditAll) onEditCell({ taskId: task.id, field: 'title' }); }}
-                >
-                  {task.title}
-                </span>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                  <span
+                    className={cn('cursor-pointer truncate text-sm font-medium text-slate-800 hover:text-blue-600', isCompleted && 'line-through text-slate-400')}
+                    onClick={() => onSelectTask?.(task.id)}
+                    onDoubleClick={e => { e.stopPropagation(); if (canEditAll) onEditCell({ taskId: task.id, field: 'title' }); }}
+                  >
+                    {task.title}
+                  </span>
+                  <Tooltip content={tooltipContent} side="right" delayDuration={200}>
+                    <button
+                      type="button"
+                      className="shrink-0 rounded p-0.5 text-slate-400 opacity-0 transition-opacity hover:bg-slate-100 hover:text-slate-600 group-hover/row:opacity-100"
+                      onClick={e => { e.stopPropagation(); onSelectTask?.(task.id); }}
+                    >
+                      <Info className="h-3.5 w-3.5" />
+                    </button>
+                  </Tooltip>
+                </div>
               )}
             </div>
           </td>
@@ -322,7 +332,6 @@ export const TaskRow = memo(function TaskRow({
             <TaskRowMenu task={task} onAddSubtask={() => setAddingSubtask(true)} onDelete={canDelete ? () => setDeleteOpen(true) : undefined} />
           </td>
         </tr>
-      </Tooltip>
 
       {isExpanded && hasChildren && (
         <TaskChildren

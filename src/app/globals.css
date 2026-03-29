@@ -2,24 +2,25 @@
 
 @theme inline {
   --color-background: #ffffff;
-  --color-foreground: #111827;
-  --color-muted: #f3f4f6;
-  --color-muted-foreground: #6b7280;
-  --color-border: #e5e7eb;
+  --color-foreground: #0f172a;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+  --color-border: #e2e8f0;
   --color-ring: #3b82f6;
+  --color-surface: #f8fafc;
 
   /* Priority colors */
   --color-priority-p1: #ef4444;
   --color-priority-p2: #f97316;
   --color-priority-p3: #3b82f6;
-  --color-priority-p4: #9ca3af;
+  --color-priority-p4: #94a3b8;
 
   /* Aging colors */
   --color-aging-overdue: #ef4444;
   --color-aging-at-risk: #f59e0b;
   --color-aging-on-track: #22c55e;
-  --color-aging-no-eta: #9ca3af;
-  --color-aging-stale: #d1d5db;
+  --color-aging-no-eta: #94a3b8;
+  --color-aging-stale: #cbd5e1;
 
   /* Department colors */
   --color-dept-sales: #3b82f6;
@@ -35,9 +36,10 @@ body {
   background: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -46,9 +48,9 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: #cbd5e1;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: #94a3b8;
 }

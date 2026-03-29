@@ -10,19 +10,19 @@ import { STATUS_LABELS } from '@/lib/types';
 /* ─── Column accent colors ─── */
 
 const COLUMN_ACCENT: Record<TaskStatus, string> = {
-  not_started: 'bg-gray-400',
+  not_started: 'bg-slate-400',
   in_progress: 'bg-blue-500',
   blocked: 'bg-red-500',
   completed: 'bg-green-500',
-  cancelled: 'bg-gray-400',
+  cancelled: 'bg-slate-400',
 };
 
 const COLUMN_COUNT_BG: Record<TaskStatus, string> = {
-  not_started: 'bg-gray-100 text-gray-600',
+  not_started: 'bg-slate-100 text-slate-600',
   in_progress: 'bg-blue-50 text-blue-700',
   blocked: 'bg-red-50 text-red-700',
   completed: 'bg-green-50 text-green-700',
-  cancelled: 'bg-gray-100 text-gray-500',
+  cancelled: 'bg-slate-100 text-slate-500',
 };
 
 /* ─── Props ─── */
@@ -48,13 +48,13 @@ export function KanbanColumn({ status, tasks, isLoading, onSelectTask }: KanbanC
       <div
         ref={setNodeRef}
         className={cn(
-          'flex flex-1 flex-col rounded-b-lg border border-t-0 border-gray-200 bg-gray-50/50 transition-colors',
+          'flex flex-1 flex-col rounded-b-lg border border-t-0 border-slate-200 bg-slate-50/50 transition-colors',
           isOver && 'border-blue-300 bg-blue-50/40'
         )}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-3 py-2.5">
-          <h3 className="text-sm font-semibold text-gray-700">
+          <h3 className="text-sm font-semibold text-slate-700">
             {STATUS_LABELS[status]}
           </h3>
           <span
@@ -76,7 +76,7 @@ export function KanbanColumn({ status, tasks, isLoading, onSelectTask }: KanbanC
             </>
           ) : tasks.length === 0 ? (
             <div className="flex flex-1 items-center justify-center py-8">
-              <p className="text-xs text-gray-400">No tasks</p>
+              <p className="text-xs text-slate-400">No tasks</p>
             </div>
           ) : (
             tasks.map((task) => <TaskCard key={task.id} task={task} onSelectTask={onSelectTask} />)
@@ -91,7 +91,7 @@ export function KanbanColumn({ status, tasks, isLoading, onSelectTask }: KanbanC
 
 function SkeletonCard() {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-3">
+    <div className="rounded-lg border border-slate-200 bg-white p-3">
       <div className="mb-2 flex items-center justify-between">
         <Skeleton shape="circle" width={8} height={8} />
         <Skeleton width={60} height={18} className="rounded-full" />

@@ -15,11 +15,11 @@ interface TaskHybridListProps {
 export function TaskHybridList({ tasks, isLoading, onSelectTask }: TaskHybridListProps) {
   if (isLoading) {
     return (
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
-            className="flex items-center gap-3 border-b border-gray-100 px-3 py-3"
+            className="flex items-center gap-3 border-b border-slate-100 px-3 py-3"
           >
             <Skeleton shape="rectangle" width={16} height={16} />
             <Skeleton shape="circle" width={8} height={8} />
@@ -37,7 +37,7 @@ export function TaskHybridList({ tasks, isLoading, onSelectTask }: TaskHybridLis
 
   if (tasks.length === 0) {
     return (
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
         <EmptyState
           icon={ListTodo}
           title="No tasks found"
@@ -48,7 +48,7 @@ export function TaskHybridList({ tasks, isLoading, onSelectTask }: TaskHybridLis
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
       {tasks.map((task) => (
         <HybridListItem key={task.id} task={task} depth={0} />
       ))}

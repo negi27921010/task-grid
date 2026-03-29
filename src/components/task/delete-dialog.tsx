@@ -39,38 +39,38 @@ export function DeleteDialog({
 
             {hasChildren && (
               <div className="mt-4 space-y-3">
-                <p className="text-sm font-medium text-gray-700">
+                <p className="text-sm font-medium text-slate-700">
                   This task has {childrenCount} subtask{childrenCount !== 1 ? 's' : ''}. What should happen to them?
                 </p>
                 <div className="space-y-2">
-                  <label className="flex items-start gap-3 rounded-md border border-gray-200 p-3 cursor-pointer hover:bg-gray-50 transition-colors">
+                  <label className="flex items-start gap-3 rounded-md border border-slate-200 p-3 cursor-pointer hover:bg-slate-50 transition-colors">
                     <input
                       type="radio"
                       name="deleteMode"
                       value="promote"
                       checked={mode === 'promote'}
                       onChange={() => setMode('promote')}
-                      className="mt-0.5 h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="mt-0.5 h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500"
                     />
                     <div>
-                      <span className="text-sm font-medium text-gray-900">Promote subtasks</span>
-                      <p className="text-xs text-gray-500">
+                      <span className="text-sm font-medium text-slate-900">Promote subtasks</span>
+                      <p className="text-xs text-slate-500">
                         Move subtasks up to the parent level
                       </p>
                     </div>
                   </label>
-                  <label className="flex items-start gap-3 rounded-md border border-gray-200 p-3 cursor-pointer hover:bg-gray-50 transition-colors">
+                  <label className="flex items-start gap-3 rounded-md border border-slate-200 p-3 cursor-pointer hover:bg-slate-50 transition-colors">
                     <input
                       type="radio"
                       name="deleteMode"
                       value="cascade"
                       checked={mode === 'cascade'}
                       onChange={() => setMode('cascade')}
-                      className="mt-0.5 h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="mt-0.5 h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500"
                     />
                     <div>
-                      <span className="text-sm font-medium text-gray-900">Delete all subtasks</span>
-                      <p className="text-xs text-gray-500">
+                      <span className="text-sm font-medium text-slate-900">Delete all subtasks</span>
+                      <p className="text-xs text-slate-500">
                         Permanently remove this task and all its subtasks
                       </p>
                     </div>

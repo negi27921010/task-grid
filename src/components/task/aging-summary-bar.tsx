@@ -62,27 +62,27 @@ export function AgingSummaryBar({ tasks, onFilterByAging }: AgingSummaryBarProps
       status: 'no_eta',
       label: 'no ETA',
       count: counts.no_eta,
-      color: 'text-gray-500',
-      hoverColor: 'hover:bg-gray-100',
+      color: 'text-slate-500',
+      hoverColor: 'hover:bg-slate-100',
     },
     {
       status: 'stale',
       label: 'stale',
       count: counts.stale,
-      color: 'text-gray-500',
-      hoverColor: 'hover:bg-gray-100',
+      color: 'text-slate-500',
+      hoverColor: 'hover:bg-slate-100',
     },
   ];
 
   return (
     <div className="flex flex-wrap items-center gap-1 text-sm">
-      <span className="font-medium text-gray-900">
+      <span className="font-medium text-slate-900">
         {tasks.length} total
       </span>
 
       {items.map((item) => (
         <span key={item.status} className="flex items-center">
-          <span className="mx-1 text-gray-300" aria-hidden="true">|</span>
+          <span className="mx-1 text-slate-300" aria-hidden="true">|</span>
           <button
             type="button"
             onClick={() => onFilterByAging(item.status)}
@@ -94,7 +94,7 @@ export function AgingSummaryBar({ tasks, onFilterByAging }: AgingSummaryBarProps
             <span className={cn('font-semibold', item.color)}>
               {item.count}
             </span>{' '}
-            <span className="text-gray-600">{item.label}</span>
+            <span className="text-slate-600">{item.label}</span>
           </button>
         </span>
       ))}

@@ -18,7 +18,7 @@ const AGING_BORDER_COLORS: Record<AgingStatus, string> = {
   at_risk: 'border-l-amber-500',
   on_track: 'border-l-green-500',
   no_eta: 'border-l-transparent',
-  stale: 'border-l-gray-400',
+  stale: 'border-l-slate-400',
 };
 
 interface HybridListItemProps {
@@ -61,7 +61,7 @@ export function HybridListItem({ task, depth = 0 }: HybridListItemProps) {
       {/* Header row - always visible */}
       <div
         className={cn(
-          'group flex items-center gap-3 border-b border-gray-100 px-3 py-2.5 transition-colors hover:bg-gray-50/80',
+          'group flex items-center gap-3 border-b border-slate-100 px-3 py-2.5 transition-colors hover:bg-slate-50/80',
           'border-l-4',
           borderColor,
           isCompleted && 'opacity-60'
@@ -75,7 +75,7 @@ export function HybridListItem({ task, depth = 0 }: HybridListItemProps) {
           className={cn(
             'flex h-6 w-6 shrink-0 items-center justify-center rounded transition-colors',
             hasChildren
-              ? 'text-gray-400 hover:bg-gray-200 hover:text-gray-600'
+              ? 'text-slate-400 hover:bg-slate-200 hover:text-slate-600'
               : 'pointer-events-none'
           )}
           aria-label={isExpanded ? 'Collapse' : 'Expand'}
@@ -97,8 +97,8 @@ export function HybridListItem({ task, depth = 0 }: HybridListItemProps) {
         {/* Title - takes remaining space */}
         <span
           className={cn(
-            'min-w-0 flex-1 truncate text-sm font-medium text-gray-900',
-            isCompleted && 'line-through text-gray-500'
+            'min-w-0 flex-1 truncate text-sm font-medium text-slate-900',
+            isCompleted && 'line-through text-slate-500'
           )}
           title={task.title}
         >
@@ -126,7 +126,7 @@ export function HybridListItem({ task, depth = 0 }: HybridListItemProps) {
               </span>
             </Tooltip>
           ) : (
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-[10px] text-gray-400">
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-[10px] text-slate-400">
               ?
             </span>
           )}
@@ -136,7 +136,7 @@ export function HybridListItem({ task, depth = 0 }: HybridListItemProps) {
         <span
           className={cn(
             'shrink-0 text-xs',
-            task.eta ? 'text-gray-600' : 'text-gray-400'
+            task.eta ? 'text-slate-600' : 'text-slate-400'
           )}
         >
           {task.eta ? formatDate(task.eta) : 'No ETA'}
@@ -158,7 +158,7 @@ export function HybridListItem({ task, depth = 0 }: HybridListItemProps) {
         <div className="overflow-hidden">
           {isExpanded && hasChildren && (
             <div
-              className="border-l-2 border-gray-200"
+              className="border-l-2 border-slate-200"
               style={{ marginLeft: `${20 + depth * 20}px` }}
             >
               {childrenLoading ? (
@@ -168,10 +168,10 @@ export function HybridListItem({ task, depth = 0 }: HybridListItemProps) {
                       key={i}
                       className="flex items-center gap-3 px-3 py-2"
                     >
-                      <div className="h-4 w-4 animate-pulse rounded bg-gray-200" />
-                      <div className="h-2 w-2 animate-pulse rounded-full bg-gray-200" />
+                      <div className="h-4 w-4 animate-pulse rounded bg-slate-200" />
+                      <div className="h-2 w-2 animate-pulse rounded-full bg-slate-200" />
                       <div
-                        className="h-4 animate-pulse rounded bg-gray-200"
+                        className="h-4 animate-pulse rounded bg-slate-200"
                         style={{ width: `${120 + Math.random() * 80}px` }}
                       />
                     </div>

@@ -62,7 +62,7 @@ export default function ProjectPage({
 
   return (
     <AppShell viewMode={viewMode} onViewModeChange={setViewMode}>
-      <div className="mx-auto max-w-7xl space-y-4 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
         {/* Project header */}
         <div>
           {projectLoading ? (
@@ -72,21 +72,21 @@ export default function ProjectPage({
             </div>
           ) : project ? (
             <>
-              <h1 className="text-lg font-semibold text-gray-900">
+              <h1 className="text-xl font-bold tracking-tight text-slate-900">
                 {project.name}
               </h1>
               {project.description && (
-                <p className="mt-0.5 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-slate-500">
                   {project.description}
                 </p>
               )}
             </>
           ) : (
-            <h1 className="text-lg font-semibold text-gray-900">Project</h1>
+            <h1 className="text-xl font-bold tracking-tight text-slate-900">Project</h1>
           )}
 
           {!isLoading && (
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-0.5 text-xs text-slate-400">
               {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''}
               {hasActiveFilters ? ' (filtered)' : ''}
             </p>

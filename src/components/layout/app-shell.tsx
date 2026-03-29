@@ -58,7 +58,7 @@ export function AppShell({ children, viewMode, onViewModeChange }: AppShellProps
   }
 
   return (
-    <div className="flex h-full bg-gray-50">
+    <div className="flex h-full bg-slate-50">
       {/* Desktop sidebar */}
       <div className="hidden lg:flex">
         <Suspense>
@@ -88,13 +88,12 @@ export function AppShell({ children, viewMode, onViewModeChange }: AppShellProps
           viewMode={viewMode}
           onViewModeChange={onViewModeChange}
           onSearchOpen={() => setSearchOpen(true)}
-          notificationCount={3}
         />
 
         {/* Mobile menu button */}
         <button
           onClick={handleMobileToggle}
-          className="absolute left-3 top-3.5 z-30 rounded-md p-1.5 text-gray-600 hover:bg-gray-100 lg:hidden"
+          className="absolute left-3 top-3.5 z-30 rounded-md p-1.5 text-slate-600 hover:bg-slate-100 lg:hidden"
           aria-label="Open sidebar"
         >
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

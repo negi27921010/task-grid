@@ -90,7 +90,7 @@ export function LabelPicker({ taskId, taskLabels, editable = true }: LabelPicker
           <button
             type="button"
             onClick={() => setShowPicker(!showPicker)}
-            className="inline-flex items-center gap-1 rounded-full border border-dashed border-gray-300 px-2 py-0.5 text-xs text-gray-500 transition-colors hover:border-gray-400 hover:text-gray-700"
+            className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 px-2 py-0.5 text-xs text-slate-500 transition-colors hover:border-slate-400 hover:text-slate-700"
           >
             <Tag className="h-3 w-3" />
             Label
@@ -99,10 +99,10 @@ export function LabelPicker({ taskId, taskLabels, editable = true }: LabelPicker
       </div>
 
       {showPicker && editable && (
-        <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
           {unassignedLabels.length > 0 && (
             <div className="mb-2 space-y-1">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Available</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Available</p>
               <div className="flex flex-wrap gap-1">
                 {unassignedLabels.map(label => (
                   <button
@@ -130,13 +130,13 @@ export function LabelPicker({ taskId, taskLabels, editable = true }: LabelPicker
               Create new label
             </button>
           ) : (
-            <div className="space-y-2 border-t border-gray-100 pt-2">
+            <div className="space-y-2 border-t border-slate-100 pt-2">
               <input
                 type="text"
                 value={newName}
                 onChange={e => setNewName(e.target.value)}
                 placeholder="Label name"
-                className="w-full rounded-md border border-gray-200 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-md border border-slate-200 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 onKeyDown={e => { if (e.key === 'Enter') handleCreate(); }}
                 autoFocus
               />
@@ -148,7 +148,7 @@ export function LabelPicker({ taskId, taskLabels, editable = true }: LabelPicker
                     onClick={() => setNewColor(color)}
                     className={cn(
                       'h-5 w-5 rounded-full transition-transform',
-                      newColor === color && 'ring-2 ring-offset-1 ring-gray-400 scale-110'
+                      newColor === color && 'ring-2 ring-offset-1 ring-slate-400 scale-110'
                     )}
                     style={{ backgroundColor: color }}
                   />
@@ -166,7 +166,7 @@ export function LabelPicker({ taskId, taskLabels, editable = true }: LabelPicker
                 <button
                   type="button"
                   onClick={() => { setCreating(false); setNewName(''); }}
-                  className="rounded-md px-3 py-1 text-xs text-gray-500 transition-colors hover:bg-gray-100"
+                  className="rounded-md px-3 py-1 text-xs text-slate-500 transition-colors hover:bg-slate-100"
                 >
                   Cancel
                 </button>

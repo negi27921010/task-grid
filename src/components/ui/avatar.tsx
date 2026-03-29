@@ -34,7 +34,7 @@ export function Avatar({ src, fullName, size = 'md', className }: AvatarProps) {
   return (
     <AvatarPrimitive.Root
       className={cn(
-        'relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200',
+        'relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200',
         sizeClasses[size],
         className
       )}

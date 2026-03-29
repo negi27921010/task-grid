@@ -13,8 +13,8 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variants: Record<ButtonVariant, string> = {
   primary: 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm',
-  secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200 border border-gray-200',
-  ghost: 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
+  secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-200 border border-slate-200',
+  ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
   destructive: 'bg-red-600 text-white hover:bg-red-700 shadow-sm',
 };
 

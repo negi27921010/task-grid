@@ -5,12 +5,9 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  Plus,
-  X,
   ListTodo,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import type { Task } from '@/lib/types';
@@ -29,6 +26,8 @@ interface TaskTableProps {
   projectsMap?: Record<string, string>;
   emptyTitle?: string;
   emptyDescription?: string;
+  showCreateRow?: boolean;
+  onCloseCreateRow?: () => void;
 }
 
 interface ColumnDef {
@@ -89,10 +88,9 @@ function sortTasks(tasks: Task[], field: SortField, direction: SortDirection): T
   return sorted;
 }
 
-export function TaskTable({ tasks, isLoading, projectId, sort, onSortToggle, onSelectTask, showProject = false, projectsMap, emptyTitle, emptyDescription }: TaskTableProps) {
+export function TaskTable({ tasks, isLoading, projectId, sort, onSortToggle, onSelectTask, showProject = false, projectsMap, emptyTitle, emptyDescription, showCreateRow = false, onCloseCreateRow }: TaskTableProps) {
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [editingCell, setEditingCell] = useState<{ taskId: string; field: string } | null>(null);
-  const [showCreateRow, setShowCreateRow] = useState(false);
 
   const handleExpand = useCallback((taskId: string) => {
     setExpandedTasks(prev => {
@@ -150,125 +148,82 @@ export function TaskTable({ tasks, isLoading, projectId, sort, onSortToggle, onS
 
   if (tasks.length === 0 && !showCreateRow) {
     return (
-      <div className="space-y-3">
-        {resolvedProjectId && (
-          <div className="flex justify-end">
-            <Button
-              variant="primary"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => setShowCreateRow(true)}
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Add Task
-            </Button>
-          </div>
-        )}
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <EmptyState
-            icon={ListTodo}
-            title={emptyTitle ?? 'No tasks yet'}
-            description={emptyDescription ?? 'Create your first task to get started with this project.'}
-            actionLabel={resolvedProjectId ? 'Add Task' : undefined}
-            onAction={resolvedProjectId ? () => setShowCreateRow(true) : undefined}
-          />
-        </div>
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <EmptyState
+          icon={ListTodo}
+          title={emptyTitle ?? 'No tasks yet'}
+          description={emptyDescription ?? 'Create your first task to get started with this project.'}
+        />
       </div>
     );
   }
 
-  return (
-    <div className="space-y-3">
-      {/* Sticky Add Task toolbar */}
-      {resolvedProjectId && (
-        <div className="sticky top-0 z-10 flex justify-end">
-          {showCreateRow ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1.5 text-slate-500"
-              onClick={() => setShowCreateRow(false)}
-            >
-              <X className="h-3.5 w-3.5" />
-              Cancel
-            </Button>
-          ) : (
-            <Button
-              variant="primary"
-              size="sm"
-              className="gap-1.5 shadow-sm"
-              onClick={() => setShowCreateRow(true)}
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Add Task
-            </Button>
-          )}
-        </div>
-      )}
+  const handleCloseCreate = () => onCloseCreateRow?.();
+  const handleCreated = () => onCloseCreateRow?.();
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/80">
-                {columns.map((col, i) => {
-                  const isSorted = col.sortable && sortField === col.key;
-                  return (
-                    <th
-                      key={i}
-                      className={cn(
-                        'px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500',
-                        col.sortable && 'cursor-pointer select-none transition-colors hover:text-slate-700',
-                        col.className
-                      )}
-                      onClick={col.sortable ? () => onSortToggle?.(col.key as SortField) : undefined}
-                    >
-                      {col.label && (
-                        <span className="inline-flex items-center gap-1">
-                          {col.label}
-                          {col.sortable && (
-                            <span className="inline-flex text-slate-400">
-                              {isSorted ? (
-                                sortDirection === 'asc' ? <ArrowUp className="h-3 w-3 text-blue-600" /> : <ArrowDown className="h-3 w-3 text-blue-600" />
-                              ) : (
-                                <ArrowUpDown className="h-3 w-3 opacity-30" />
-                              )}
-                            </span>
-                          )}
-                        </span>
-                      )}
-                    </th>
-                  );
-                })}
-              </tr>
-            </thead>
-            <tbody>
-              {showCreateRow && (
-                <InlineCreateRow
-                  projectId={resolvedProjectId}
-                  onCancel={() => setShowCreateRow(false)}
-                  onCreated={() => setShowCreateRow(false)}
-                />
-              )}
-              {sortedTasks.map((task, idx) => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  onExpand={handleExpand}
-                  isExpanded={expandedTasks.has(task.id)}
-                  editingCell={editingCell}
-                  onEditCell={setEditingCell}
-                  expandedTasks={expandedTasks}
-                  projectId={resolvedProjectId}
-                  onSelectTask={onSelectTask}
-                  showProject={showProject}
-                  projectName={projectsMap?.[task.project_id]}
-                  serialNumber={String(idx + 1)}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
+  return (
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-50/80">
+              {columns.map((col, i) => {
+                const isSorted = col.sortable && sortField === col.key;
+                return (
+                  <th
+                    key={i}
+                    className={cn(
+                      'px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500',
+                      col.sortable && 'cursor-pointer select-none transition-colors hover:text-slate-700',
+                      col.className
+                    )}
+                    onClick={col.sortable ? () => onSortToggle?.(col.key as SortField) : undefined}
+                  >
+                    {col.label && (
+                      <span className="inline-flex items-center gap-1">
+                        {col.label}
+                        {col.sortable && (
+                          <span className="inline-flex text-slate-400">
+                            {isSorted ? (
+                              sortDirection === 'asc' ? <ArrowUp className="h-3 w-3 text-blue-600" /> : <ArrowDown className="h-3 w-3 text-blue-600" />
+                            ) : (
+                              <ArrowUpDown className="h-3 w-3 opacity-30" />
+                            )}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {showCreateRow && resolvedProjectId && (
+              <InlineCreateRow
+                projectId={resolvedProjectId}
+                onCancel={handleCloseCreate}
+                onCreated={handleCreated}
+              />
+            )}
+            {sortedTasks.map((task, idx) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                onExpand={handleExpand}
+                isExpanded={expandedTasks.has(task.id)}
+                editingCell={editingCell}
+                onEditCell={setEditingCell}
+                expandedTasks={expandedTasks}
+                projectId={resolvedProjectId}
+                onSelectTask={onSelectTask}
+                showProject={showProject}
+                projectName={projectsMap?.[task.project_id]}
+                serialNumber={String(idx + 1)}
+              />
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );

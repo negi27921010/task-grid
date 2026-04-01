@@ -41,6 +41,10 @@ function ProjectContent({ id }: { id: string }) {
   const handleSelectTask = useCallback((taskId: string) => setSelectedTaskId(taskId), []);
   const handleClosePanel = useCallback(() => setSelectedTaskId(null), []);
 
+  const [showCreateRow, setShowCreateRow] = useState(false);
+  const handleAddTask = useCallback(() => setShowCreateRow(true), []);
+  const handleCloseCreateRow = useCallback(() => setShowCreateRow(false), []);
+
   useEffect(() => {
     if (editingName && nameInputRef.current) {
       nameInputRef.current.focus();
@@ -172,6 +176,7 @@ function ProjectContent({ id }: { id: string }) {
           onSavePreset={savePreset}
           onLoadPreset={loadPreset}
           onDeletePreset={deletePreset}
+          onAddTask={handleAddTask}
         />
 
         {/* View container */}
@@ -183,6 +188,8 @@ function ProjectContent({ id }: { id: string }) {
           sort={sort}
           onSortToggle={toggleSort}
           onSelectTask={handleSelectTask}
+          showCreateRow={showCreateRow}
+          onCloseCreateRow={handleCloseCreateRow}
         />
       </div>
 

@@ -62,6 +62,37 @@ function DashboardContent() {
   const handleSelectTask = useCallback((taskId: string) => setSelectedTaskId(taskId), []);
   const handleClosePanel = useCallback(() => setSelectedTaskId(null), []);
 
+  // Add Task state — on dashboard, user must pick a project first
+  const [showProjectPicker, setShowProjectPicker] = useState(false);
+  const [addTaskProjectId, setAddTaskProjectId] = useState<string | null>(null);
+  const [showCreateRow, setShowCreateRow] = useState(false);
+
+  const activeProjects = useMemo(
+    () => (projectsData ?? []).filter(p => p.status === 'active'),
+    [projectsData]
+  );
+
+  const handleAddTask = useCallback(() => {
+    if (activeProjects.length === 1) {
+      // Single project — go straight to inline create
+      setAddTaskProjectId(activeProjects[0].id);
+      setShowCreateRow(true);
+    } else if (activeProjects.length > 1) {
+      setShowProjectPicker(true);
+    }
+  }, [activeProjects]);
+
+  const handlePickProject = useCallback((projectId: string) => {
+    setAddTaskProjectId(projectId);
+    setShowProjectPicker(false);
+    setShowCreateRow(true);
+  }, []);
+
+  const handleCloseCreateRow = useCallback(() => {
+    setShowCreateRow(false);
+    setAddTaskProjectId(null);
+  }, []);
+
   const allTasks = tasks ?? [];
   const filteredTasks = useMemo(() => filterTasks(allTasks, filters), [allTasks, filters]);
 
@@ -198,12 +229,38 @@ function DashboardContent() {
           onSavePreset={savePreset}
           onLoadPreset={loadPreset}
           onDeletePreset={deletePreset}
+          onAddTask={activeProjects.length > 0 ? handleAddTask : undefined}
         />
+
+        {/* Project picker popover for Add Task on dashboard */}
+        {showProjectPicker && (
+          <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-md">
+            <p className="mb-2 text-xs font-medium text-slate-500">Select a project for the new task</p>
+            <div className="flex flex-wrap gap-2">
+              {activeProjects.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => handlePickProject(p.id)}
+                  className="rounded-md border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+                >
+                  {p.name}
+                </button>
+              ))}
+              <button
+                onClick={() => setShowProjectPicker(false)}
+                className="rounded-md px-3 py-1.5 text-sm text-slate-400 transition-colors hover:text-slate-600"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
         <TaskViewContainer
           tasks={filteredTasks}
           isLoading={isLoading}
           viewMode={viewMode}
+          projectId={addTaskProjectId ?? undefined}
           sort={sort}
           onSortToggle={toggleSort}
           onSelectTask={handleSelectTask}
@@ -211,6 +268,8 @@ function DashboardContent() {
           projectsMap={projectsMap}
           emptyTitle={userIsAdmin ? 'No tasks in the system' : isTeamView ? 'No team tasks found' : 'No tasks assigned to you'}
           emptyDescription={userIsAdmin ? 'Create a project and add tasks to get started.' : isTeamView ? 'Tasks assigned to team members in your department will appear here.' : 'Tasks assigned to you across projects will appear here. Ask an admin to assign you tasks.'}
+          showCreateRow={showCreateRow}
+          onCloseCreateRow={handleCloseCreateRow}
         />
       </div>
 

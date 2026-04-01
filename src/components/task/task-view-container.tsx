@@ -18,6 +18,8 @@ interface TaskViewContainerProps {
   projectsMap?: Record<string, string>;
   emptyTitle?: string;
   emptyDescription?: string;
+  showCreateRow?: boolean;
+  onCloseCreateRow?: () => void;
 }
 
 export function TaskViewContainer({
@@ -32,15 +34,17 @@ export function TaskViewContainer({
   projectsMap,
   emptyTitle,
   emptyDescription,
+  showCreateRow,
+  onCloseCreateRow,
 }: TaskViewContainerProps) {
   switch (viewMode) {
     case 'table':
-      return <TaskTable tasks={tasks} isLoading={isLoading} projectId={projectId} sort={sort} onSortToggle={onSortToggle} onSelectTask={onSelectTask} showProject={showProject} projectsMap={projectsMap} emptyTitle={emptyTitle} emptyDescription={emptyDescription} />;
+      return <TaskTable tasks={tasks} isLoading={isLoading} projectId={projectId} sort={sort} onSortToggle={onSortToggle} onSelectTask={onSelectTask} showProject={showProject} projectsMap={projectsMap} emptyTitle={emptyTitle} emptyDescription={emptyDescription} showCreateRow={showCreateRow} onCloseCreateRow={onCloseCreateRow} />;
     case 'kanban':
       return <TaskKanban tasks={tasks} isLoading={isLoading} onSelectTask={onSelectTask} />;
     case 'hybrid':
       return <TaskHybridList tasks={tasks} isLoading={isLoading} onSelectTask={onSelectTask} />;
     default:
-      return <TaskTable tasks={tasks} isLoading={isLoading} projectId={projectId} sort={sort} onSortToggle={onSortToggle} onSelectTask={onSelectTask} showProject={showProject} projectsMap={projectsMap} emptyTitle={emptyTitle} emptyDescription={emptyDescription} />;
+      return <TaskTable tasks={tasks} isLoading={isLoading} projectId={projectId} sort={sort} onSortToggle={onSortToggle} onSelectTask={onSelectTask} showProject={showProject} projectsMap={projectsMap} emptyTitle={emptyTitle} emptyDescription={emptyDescription} showCreateRow={showCreateRow} onCloseCreateRow={onCloseCreateRow} />;
   }
 }

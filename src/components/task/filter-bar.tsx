@@ -8,6 +8,7 @@ import {
   ArrowUp,
   ArrowDown,
   Check,
+  Plus,
 } from 'lucide-react';
 import * as CheckboxPrimitive from '@radix-ui/react-checkbox';
 import { cn } from '@/lib/utils/cn';
@@ -30,6 +31,7 @@ interface FilterBarProps {
   onSavePreset?: (name: string) => void;
   onLoadPreset?: (preset: SavedFilterPreset) => void;
   onDeletePreset?: (id: string) => void;
+  onAddTask?: () => void;
 }
 
 /* ---- Checkbox helper ---- */
@@ -311,6 +313,7 @@ export function FilterBar({
   onSavePreset,
   onLoadPreset,
   onDeletePreset,
+  onAddTask,
 }: FilterBarProps) {
   const { data: users } = useUsers();
 
@@ -378,6 +381,20 @@ export function FilterBar({
     <div className="space-y-2">
       {/* Filter dropdowns row */}
       <div className="flex flex-wrap items-center gap-2">
+        {/* Add Task CTA */}
+        {onAddTask && (
+          <Button
+            variant="primary"
+            size="sm"
+            className="gap-1.5 shadow-sm"
+            onClick={onAddTask}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add Task
+          </Button>
+        )}
+
+        <div className="mx-1 h-5 w-px bg-slate-200" />
         <Filter className="h-4 w-4 text-slate-400" />
 
         <FilterDropdown<TaskStatus>

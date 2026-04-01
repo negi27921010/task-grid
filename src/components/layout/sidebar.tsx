@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { CheckSquare, Users, PanelLeftClose, PanelLeft, FolderKanban, Settings, LogOut, Plus, X } from 'lucide-react';
+import { CheckSquare, Users, ClipboardCheck, PanelLeftClose, PanelLeft, FolderKanban, Settings, LogOut, Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useCurrentUser } from '@/lib/hooks/use-current-user';
 import { useProjects, useCreateProject } from '@/lib/hooks/use-projects';
@@ -103,6 +103,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
   const isMyTasks = pathname === '/dashboard' && searchParams.get('view') !== 'team';
   const isTeamView = pathname === '/dashboard' && searchParams.get('view') === 'team';
+  const isStandups = pathname === '/standups';
   const isSettings = pathname === '/settings';
 
   return (
@@ -149,6 +150,13 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           icon={<Users className="h-[18px] w-[18px]" />}
           label="Team View"
           active={isTeamView}
+          collapsed={collapsed}
+        />
+        <NavItem
+          href="/standups"
+          icon={<ClipboardCheck className="h-[18px] w-[18px]" />}
+          label="Daily Standup"
+          active={isStandups}
           collapsed={collapsed}
         />
 

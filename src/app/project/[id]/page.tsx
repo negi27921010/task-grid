@@ -12,12 +12,15 @@ import { useProject, useUpdateProject } from '@/lib/hooks/use-projects';
 import { useTasks } from '@/lib/hooks/use-tasks';
 import { useFilters } from '@/lib/hooks/use-filters';
 import { useViewMode } from '@/lib/hooks/use-view-mode';
+import { useCurrentUser } from '@/lib/hooks/use-current-user';
+import { can } from '@/lib/utils/permissions';
 import { filterTasks } from '@/lib/utils/search';
 import type { AgingStatus } from '@/lib/types';
 
 function ProjectContent({ id }: { id: string }) {
   const { data: project, isLoading: projectLoading } = useProject(id);
   const { data: tasks, isLoading: tasksLoading } = useTasks(id);
+  const { currentUser } = useCurrentUser();
   const { viewMode, setViewMode } = useViewMode();
   const {
     filters,
@@ -246,7 +249,7 @@ function ProjectContent({ id }: { id: string }) {
           onSavePreset={savePreset}
           onLoadPreset={loadPreset}
           onDeletePreset={deletePreset}
-          onAddTask={handleAddTask}
+          onAddTask={can(currentUser, 'canCreateTasks') ? handleAddTask : undefined}
         />
 
         {/* View container */}

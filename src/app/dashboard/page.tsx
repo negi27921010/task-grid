@@ -15,7 +15,7 @@ import { useUsers } from '@/lib/hooks/use-users';
 import { useCurrentUser } from '@/lib/hooks/use-current-user';
 import { useFilters } from '@/lib/hooks/use-filters';
 import { useViewMode } from '@/lib/hooks/use-view-mode';
-import { isAdmin } from '@/lib/utils/permissions';
+import { isAdmin, can } from '@/lib/utils/permissions';
 import { filterTasks } from '@/lib/utils/search';
 import { cn } from '@/lib/utils/cn';
 import type { AgingStatus } from '@/lib/types';
@@ -229,7 +229,7 @@ function DashboardContent() {
           onSavePreset={savePreset}
           onLoadPreset={loadPreset}
           onDeletePreset={deletePreset}
-          onAddTask={activeProjects.length > 0 ? handleAddTask : undefined}
+          onAddTask={activeProjects.length > 0 && can(currentUser, 'canCreateTasks') ? handleAddTask : undefined}
         />
 
         {/* Project picker popover for Add Task on dashboard */}

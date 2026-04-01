@@ -6,6 +6,7 @@ export interface RoleCapabilities {
   canCreateProjects: boolean;
   canEditProjects: boolean;
   canDeleteProjects: boolean;
+  canCreateTasks: boolean;
   canAssignTaskToAnyone: boolean;
   canModifyAllTaskFields: boolean;
   canDeleteTasks: boolean;
@@ -23,6 +24,7 @@ const ADMIN_CAPABILITIES: RoleCapabilities = {
   canCreateProjects: true,
   canEditProjects: true,
   canDeleteProjects: true,
+  canCreateTasks: true,
   canAssignTaskToAnyone: true,
   canModifyAllTaskFields: true,
   canDeleteTasks: true,
@@ -40,6 +42,7 @@ export const DEFAULT_MEMBER_CAPABILITIES: RoleCapabilities = {
   canCreateProjects: false,
   canEditProjects: false,
   canDeleteProjects: false,
+  canCreateTasks: true,
   canAssignTaskToAnyone: false,
   canModifyAllTaskFields: false,
   canDeleteTasks: false,
@@ -108,6 +111,7 @@ export const CAPABILITY_LABELS: Record<keyof RoleCapabilities, string> = {
   canCreateProjects: 'Create Projects',
   canEditProjects: 'Edit Projects',
   canDeleteProjects: 'Delete Projects',
+  canCreateTasks: 'Add Tasks',
   canAssignTaskToAnyone: 'Assign Tasks to Anyone',
   canModifyAllTaskFields: 'Modify All Task Fields',
   canDeleteTasks: 'Delete Tasks',

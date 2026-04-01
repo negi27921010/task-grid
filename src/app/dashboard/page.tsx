@@ -9,12 +9,13 @@ import { AgingSummaryBar } from '@/components/task/aging-summary-bar';
 import { FilterBar } from '@/components/task/filter-bar';
 import { TaskViewContainer } from '@/components/task/task-view-container';
 import { TaskDetailPanel } from '@/components/task/task-detail-panel';
-import { useTasksByOwner, useTasksByDepartment } from '@/lib/hooks/use-tasks';
+import { useTasks, useTasksByOwner, useTasksByDepartment } from '@/lib/hooks/use-tasks';
 import { useProjects } from '@/lib/hooks/use-projects';
 import { useUsers } from '@/lib/hooks/use-users';
 import { useCurrentUser } from '@/lib/hooks/use-current-user';
 import { useFilters } from '@/lib/hooks/use-filters';
 import { useViewMode } from '@/lib/hooks/use-view-mode';
+import { isAdmin } from '@/lib/utils/permissions';
 import { filterTasks } from '@/lib/utils/search';
 import { cn } from '@/lib/utils/cn';
 import type { AgingStatus } from '@/lib/types';
@@ -25,6 +26,10 @@ function DashboardContent() {
   const { currentUser, isLoading: userLoading } = useCurrentUser();
   const { data: allUsersData } = useUsers();
   const { data: projectsData } = useProjects();
+  const { viewMode, setViewMode } = useViewMode();
+
+  const userIsAdmin = !userLoading && isAdmin(currentUser);
+  const userReady = !userLoading && !!currentUser.id;
 
   const deptUserIds = useMemo(
     () => (allUsersData ?? []).filter(u => u.department === currentUser.department).map(u => u.id),
@@ -37,11 +42,16 @@ function DashboardContent() {
     return map;
   }, [projectsData]);
 
+  // Admin sees ALL tasks; member sees only their own / their department's
+  const allTasksQuery = useTasks();
   const myTasks = useTasksByOwner(currentUser.id);
   const teamTasks = useTasksByDepartment(currentUser.department, deptUserIds);
 
-  const { data: tasks, isLoading } = isTeamView ? teamTasks : myTasks;
-  const { viewMode, setViewMode } = useViewMode();
+  const activeQuery = userIsAdmin
+    ? allTasksQuery
+    : isTeamView ? teamTasks : myTasks;
+  const { data: tasks, isLoading: tasksLoading } = activeQuery;
+  const isLoading = !userReady || tasksLoading;
   const {
     filters, sort, presets,
     setFilter, clearFilters, toggleSort,
@@ -63,9 +73,11 @@ function DashboardContent() {
     );
   };
 
-  const pageSubtitle = isTeamView
-    ? `All tasks in ${currentUser.department}`
-    : `Tasks assigned to you across all projects`;
+  const pageSubtitle = userIsAdmin
+    ? 'All tasks across every project'
+    : isTeamView
+      ? `All tasks in ${currentUser.department}`
+      : `Tasks assigned to you across all projects`;
 
   const stats = useMemo(() => {
     const total = allTasks.length;
@@ -94,7 +106,7 @@ function DashboardContent() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900">
-              {userLoading ? 'Loading...' : isTeamView ? 'Team View' : `Welcome, ${currentUser.full_name.split(' ')[0]}`}
+              {userLoading ? 'Loading...' : userIsAdmin ? `Welcome, ${currentUser.full_name.split(' ')[0]}` : isTeamView ? 'Team View' : `Welcome, ${currentUser.full_name.split(' ')[0]}`}
             </h1>
             <p className="mt-0.5 text-sm text-slate-500">{pageSubtitle}</p>
             {!isLoading && (
@@ -104,26 +116,33 @@ function DashboardContent() {
               </p>
             )}
           </div>
-          <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-1">
-            <Link
-              href="/dashboard"
-              className={cn(
-                'rounded-md px-4 py-1.5 text-sm font-medium transition-all',
-                !isTeamView ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-              )}
-            >
-              My Tasks
-            </Link>
-            <Link
-              href="/dashboard?view=team"
-              className={cn(
-                'rounded-md px-4 py-1.5 text-sm font-medium transition-all',
-                isTeamView ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-              )}
-            >
-              Team View
-            </Link>
-          </div>
+          {!userIsAdmin && (
+            <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-1">
+              <Link
+                href="/dashboard"
+                className={cn(
+                  'rounded-md px-4 py-1.5 text-sm font-medium transition-all',
+                  !isTeamView ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                )}
+              >
+                My Tasks
+              </Link>
+              <Link
+                href="/dashboard?view=team"
+                className={cn(
+                  'rounded-md px-4 py-1.5 text-sm font-medium transition-all',
+                  isTeamView ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                )}
+              >
+                Team View
+              </Link>
+            </div>
+          )}
+          {userIsAdmin && (
+            <span className="rounded-md bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">
+              Admin — Full View
+            </span>
+          )}
         </div>
 
         {/* Stat cards + completion progress */}
@@ -190,8 +209,8 @@ function DashboardContent() {
           onSelectTask={handleSelectTask}
           showProject
           projectsMap={projectsMap}
-          emptyTitle={isTeamView ? 'No team tasks found' : 'No tasks assigned to you'}
-          emptyDescription={isTeamView ? 'Tasks assigned to team members in your department will appear here.' : 'Tasks assigned to you across projects will appear here. Ask an admin to assign you tasks.'}
+          emptyTitle={userIsAdmin ? 'No tasks in the system' : isTeamView ? 'No team tasks found' : 'No tasks assigned to you'}
+          emptyDescription={userIsAdmin ? 'Create a project and add tasks to get started.' : isTeamView ? 'Tasks assigned to team members in your department will appear here.' : 'Tasks assigned to you across projects will appear here. Ask an admin to assign you tasks.'}
         />
       </div>
 

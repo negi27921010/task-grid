@@ -4,13 +4,14 @@ import { useState } from 'react';
 import { AppShell } from '@/components/layout/app-shell';
 import { useCurrentUser } from '@/lib/hooks/use-current-user';
 import { useViewMode } from '@/lib/hooks/use-view-mode';
-import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/lib/hooks/use-users';
+import { useUsers } from '@/lib/hooks/use-users';
 import { isAdmin, getCapabilities, ROLE_DESCRIPTIONS, CAPABILITY_LABELS } from '@/lib/utils/permissions';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import * as Dialog from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/toast';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Settings,
   Users,
@@ -23,31 +24,79 @@ import {
   ShieldCheck,
   ShieldAlert,
   KeyRound,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import type { User, UserRole } from '@/lib/types';
 
 type SettingsTab = 'users' | 'permissions';
+
+function PasswordInput({
+  value,
+  onChange,
+  placeholder,
+  autoFocus,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  autoFocus?: boolean;
+}) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <input
+        type={show ? 'text' : 'password'}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-lg border border-slate-300 px-3 py-2 pr-10 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+        autoFocus={autoFocus}
+      />
+      <button
+        type="button"
+        onClick={() => setShow(v => !v)}
+        className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-slate-400 hover:text-slate-600"
+        tabIndex={-1}
+      >
+        {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      </button>
+    </div>
+  );
+}
 
 function UserForm({
   user,
   onSave,
   onCancel,
   isPending,
+  isNew,
 }: {
   user?: User;
-  onSave: (data: { full_name: string; email: string; role: UserRole; department: string }) => void;
+  onSave: (data: { full_name: string; email: string; role: UserRole; department: string; password?: string }) => void;
   onCancel: () => void;
   isPending: boolean;
+  isNew?: boolean;
 }) {
   const [name, setName] = useState(user?.full_name ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
   const [role, setRole] = useState<UserRole>(user?.role ?? 'member');
   const [department, setDepartment] = useState(user?.department ?? '');
+  const [password, setPassword] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    onSave({ full_name: name.trim(), email: email.trim(), role, department: department.trim() });
+    const data: { full_name: string; email: string; role: UserRole; department: string; password?: string } = {
+      full_name: name.trim(),
+      email: email.trim(),
+      role,
+      department: department.trim(),
+    };
+    if (isNew && password) {
+      data.password = password;
+    }
+    onSave(data);
   };
 
   return (
@@ -64,7 +113,9 @@ function UserForm({
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Email (optional)</label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">
+          Email {isNew ? '(required for login)' : '(optional)'}
+        </label>
         <input
           type="email"
           value={email}
@@ -73,6 +124,19 @@ function UserForm({
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
         />
       </div>
+      {isNew && (
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Password (min 8 chars, for login)</label>
+          <PasswordInput
+            value={password}
+            onChange={setPassword}
+            placeholder="Set a password for the user"
+          />
+          {password.length > 0 && password.length < 8 && (
+            <p className="mt-1 text-xs text-red-500">Password must be at least 8 characters</p>
+          )}
+        </div>
+      )}
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
         <select
@@ -96,7 +160,12 @@ function UserForm({
       </div>
       <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
-        <Button type="submit" variant="primary" size="sm" disabled={isPending || !name.trim()}>
+        <Button
+          type="submit"
+          variant="primary"
+          size="sm"
+          disabled={isPending || !name.trim() || (isNew && !!password && password.length < 8)}
+        >
           {user ? 'Save Changes' : 'Add User'}
         </Button>
       </div>
@@ -108,9 +177,7 @@ export default function SettingsPage() {
   const { currentUser, isLoading: userLoading, refreshUsers } = useCurrentUser();
   const { viewMode, setViewMode } = useViewMode();
   const { data: users, isLoading } = useUsers();
-  const createUser = useCreateUser();
-  const updateUser = useUpdateUser();
-  const deleteUserMutation = useDeleteUser();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const [tab, setTab] = useState<SettingsTab>('users');
@@ -120,7 +187,11 @@ export default function SettingsPage() {
   const [resetPwUser, setResetPwUser] = useState<User | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [resetPwLoading, setResetPwLoading] = useState(false);
+  const [addLoading, setAddLoading] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
+  const allUsers = users ?? [];
   const userIsAdmin = isAdmin(currentUser);
 
   if (userLoading) {
@@ -147,23 +218,38 @@ export default function SettingsPage() {
     );
   }
 
-  const handleAddUser = (data: { full_name: string; email: string; role: UserRole; department: string }) => {
-    createUser.mutate(
-      { full_name: data.full_name, email: data.email || undefined, role: data.role, department: data.department },
-      {
-        onSuccess: () => {
-          setAddDialogOpen(false);
-          refreshUsers();
-          toast('User added successfully', 'success');
-        },
-        onError: (err: Error) => {
-          toast(`Failed to add user: ${err.message}`, 'error');
-        },
-      }
-    );
+  const refreshAll = () => {
+    queryClient.invalidateQueries({ queryKey: ['users'] });
+    refreshUsers();
   };
 
-  const handleEditUser = (data: { full_name: string; email: string; role: UserRole; department: string }) => {
+  const handleAddUser = async (data: { full_name: string; email: string; role: UserRole; department: string; password?: string }) => {
+    setAddLoading(true);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: data.full_name,
+          email: data.email || undefined,
+          role: data.role,
+          department: data.department,
+          password: data.password || undefined,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error ?? 'Failed to add user');
+      setAddDialogOpen(false);
+      refreshAll();
+      toast('User added successfully' + (data.password ? ' with login credentials' : ''), 'success');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Failed to add user', 'error');
+    } finally {
+      setAddLoading(false);
+    }
+  };
+
+  const handleEditUser = async (data: { full_name: string; email: string; role: UserRole; department: string }) => {
     if (!editingUser) return;
     if (editingUser.role === 'admin' && data.role !== 'admin') {
       const otherAdmins = allUsers.filter(u => u.role === 'admin' && u.id !== editingUser.id);
@@ -172,22 +258,32 @@ export default function SettingsPage() {
         return;
       }
     }
-    updateUser.mutate(
-      { id: editingUser.id, updates: data },
-      {
-        onSuccess: () => {
-          setEditingUser(null);
-          refreshUsers();
-          toast('User updated', 'success');
-        },
-        onError: (err: Error) => {
-          toast(`Failed to update user: ${err.message}`, 'error');
-        },
-      }
-    );
+    setEditLoading(true);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingUser.id,
+          full_name: data.full_name,
+          email: data.email,
+          role: data.role,
+          department: data.department,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error ?? 'Failed to update user');
+      setEditingUser(null);
+      refreshAll();
+      toast('User updated', 'success');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Failed to update user', 'error');
+    } finally {
+      setEditLoading(false);
+    }
   };
 
-  const handleDeleteUser = () => {
+  const handleDeleteUser = async () => {
     if (!deleteConfirmUser) return;
     if (deleteConfirmUser.id === currentUser.id) {
       toast('Cannot delete yourself', 'error');
@@ -202,13 +298,23 @@ export default function SettingsPage() {
         return;
       }
     }
-    deleteUserMutation.mutate(deleteConfirmUser.id, {
-      onSuccess: () => {
-        setDeleteConfirmUser(null);
-        refreshUsers();
-        toast('User removed', 'success');
-      },
-    });
+    setDeleteLoading(true);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: deleteConfirmUser.id }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error ?? 'Failed to delete user');
+      setDeleteConfirmUser(null);
+      refreshAll();
+      toast('User removed', 'success');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Failed to delete user', 'error');
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   const handleResetPassword = async () => {
@@ -236,7 +342,6 @@ export default function SettingsPage() {
     }
   };
 
-  const allUsers = users ?? [];
   const adminCount = allUsers.filter(u => u.role === 'admin').length;
   const memberCount = allUsers.filter(u => u.role === 'member').length;
 
@@ -366,11 +471,6 @@ export default function SettingsPage() {
                 </tbody>
               </table>
             </div>
-
-            {/* Future-ready note */}
-            <p className="text-xs text-slate-400 italic">
-              Future: email-based login, invitation links, and SSO will be supported once backend is connected.
-            </p>
           </div>
         )}
 
@@ -418,12 +518,13 @@ export default function SettingsPage() {
         <Dialog.Root open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <Dialog.Content className="max-w-md">
             <Dialog.Title>Add New User</Dialog.Title>
-            <Dialog.Description>Add a team member to Task Grid.</Dialog.Description>
+            <Dialog.Description>Add a team member to Task Grid. Provide email and password so they can log in.</Dialog.Description>
             <div className="mt-4">
               <UserForm
+                isNew
                 onSave={handleAddUser}
                 onCancel={() => setAddDialogOpen(false)}
-                isPending={createUser.isPending}
+                isPending={addLoading}
               />
             </div>
           </Dialog.Content>
@@ -440,7 +541,7 @@ export default function SettingsPage() {
                   user={editingUser}
                   onSave={handleEditUser}
                   onCancel={() => setEditingUser(null)}
-                  isPending={updateUser.isPending}
+                  isPending={editLoading}
                 />
               )}
             </div>
@@ -452,12 +553,12 @@ export default function SettingsPage() {
           <Dialog.Content className="max-w-sm">
             <Dialog.Title>Remove User</Dialog.Title>
             <Dialog.Description>
-              Are you sure you want to remove <strong>{deleteConfirmUser?.full_name}</strong>? Their existing task assignments will remain but the user will no longer appear in the system.
+              Are you sure you want to remove <strong>{deleteConfirmUser?.full_name}</strong>? This will also remove their login account. Their existing task assignments will remain.
             </Dialog.Description>
             <div className="mt-4 flex justify-end gap-2">
               <Button variant="ghost" size="sm" onClick={() => setDeleteConfirmUser(null)}>Cancel</Button>
-              <Button variant="destructive" size="sm" onClick={handleDeleteUser} disabled={deleteUserMutation.isPending}>
-                Remove User
+              <Button variant="destructive" size="sm" onClick={handleDeleteUser} disabled={deleteLoading}>
+                {deleteLoading ? 'Removing...' : 'Remove User'}
               </Button>
             </div>
           </Dialog.Content>
@@ -473,14 +574,15 @@ export default function SettingsPage() {
             <div className="mt-4 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">New Password</label>
-                <input
-                  type="password"
+                <PasswordInput
                   value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)}
+                  onChange={setNewPassword}
                   placeholder="Minimum 8 characters"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   autoFocus
                 />
+                {newPassword.length > 0 && newPassword.length < 8 && (
+                  <p className="mt-1 text-xs text-red-500">Password must be at least 8 characters</p>
+                )}
               </div>
               <div className="flex justify-end gap-2">
                 <Button variant="ghost" size="sm" onClick={() => { setResetPwUser(null); setNewPassword(''); }}>Cancel</Button>

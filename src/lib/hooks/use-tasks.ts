@@ -39,7 +39,7 @@ export function useTasksByOwner(ownerId: string) {
 
 export function useTasksByDepartment(deptId: string, userIds: string[]) {
   return useQuery({
-    queryKey: ['tasks', 'department', deptId],
+    queryKey: ['tasks', 'department', deptId, userIds],
     queryFn: () => taskApi.getTasksByDepartment(deptId, userIds),
     enabled: userIds.length > 0,
     retry: 2,

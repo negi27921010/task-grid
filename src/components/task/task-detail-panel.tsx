@@ -49,6 +49,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
 
   const canEditAll = can(currentUser, 'canModifyAllTaskFields');
   const canEditStatus = can(currentUser, 'canUpdateTaskStatus');
+  const canSetPriority = can(currentUser, 'canSetPriority');
 
   useEffect(() => {
     if (task) {
@@ -218,7 +219,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                 {/* Priority */}
                 <div className="space-y-1">
                   <p className="text-xs font-medium text-slate-500">Priority</p>
-                  {canEditAll ? (
+                  {(canEditAll || canSetPriority) ? (
                     <PrioritySelect
                       currentPriority={task.priority}
                       onPriorityChange={handlePriorityChange}

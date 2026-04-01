@@ -95,6 +95,7 @@ export const TaskRow = memo(function TaskRow({
   const canEditAll = can(currentUser, 'canModifyAllTaskFields');
   const canEditStatus = can(currentUser, 'canUpdateTaskStatus');
   const canEditEta = can(currentUser, 'canUpdateTaskEta');
+  const canSetPriority = can(currentUser, 'canSetPriority');
   const canDelete = can(currentUser, 'canDeleteTasks');
 
   useEffect(() => {
@@ -219,7 +220,7 @@ export const TaskRow = memo(function TaskRow({
 
           {/* Priority */}
           <td className="px-2 py-2">
-            {canEditAll ? (
+            {(canEditAll || canSetPriority) ? (
               <PrioritySelect currentPriority={task.priority} onPriorityChange={handlePriorityChange} />
             ) : (
               <span className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium">

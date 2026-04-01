@@ -11,6 +11,7 @@ export interface RoleCapabilities {
   canDeleteTasks: boolean;
   canUpdateTaskStatus: boolean;
   canUpdateTaskEta: boolean;
+  canSetPriority: boolean;
   canAddComments: boolean;
   canViewAllProjects: boolean;
   canAccessSettings: boolean;
@@ -28,6 +29,7 @@ const ROLE_CAPABILITIES: Record<UserRole, RoleCapabilities> = {
     canDeleteTasks: true,
     canUpdateTaskStatus: true,
     canUpdateTaskEta: true,
+    canSetPriority: true,
     canAddComments: true,
     canViewAllProjects: true,
     canAccessSettings: true,
@@ -43,6 +45,7 @@ const ROLE_CAPABILITIES: Record<UserRole, RoleCapabilities> = {
     canDeleteTasks: false,
     canUpdateTaskStatus: true,
     canUpdateTaskEta: true,
+    canSetPriority: true,
     canAddComments: true,
     canViewAllProjects: true,
     canAccessSettings: false,
@@ -83,6 +86,7 @@ export const CAPABILITY_LABELS: Record<keyof RoleCapabilities, string> = {
   canDeleteTasks: 'Delete Tasks',
   canUpdateTaskStatus: 'Update Task Status',
   canUpdateTaskEta: 'Update Task ETA',
+  canSetPriority: 'Set Task Priority',
   canAddComments: 'Add Comments',
   canViewAllProjects: 'View All Projects',
   canAccessSettings: 'Access Settings Panel',

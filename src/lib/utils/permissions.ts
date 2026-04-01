@@ -17,61 +17,88 @@ export interface RoleCapabilities {
   canAccessSettings: boolean;
 }
 
-const ROLE_CAPABILITIES: Record<UserRole, RoleCapabilities> = {
-  admin: {
-    canManageUsers: true,
-    canAssignRoles: true,
-    canCreateProjects: true,
-    canEditProjects: true,
-    canDeleteProjects: true,
-    canAssignTaskToAnyone: true,
-    canModifyAllTaskFields: true,
-    canDeleteTasks: true,
-    canUpdateTaskStatus: true,
-    canUpdateTaskEta: true,
-    canSetPriority: true,
-    canAddComments: true,
-    canViewAllProjects: true,
-    canAccessSettings: true,
-  },
-  member: {
-    canManageUsers: false,
-    canAssignRoles: false,
-    canCreateProjects: false,
-    canEditProjects: false,
-    canDeleteProjects: false,
-    canAssignTaskToAnyone: false,
-    canModifyAllTaskFields: false,
-    canDeleteTasks: false,
-    canUpdateTaskStatus: true,
-    canUpdateTaskEta: true,
-    canSetPriority: true,
-    canAddComments: true,
-    canViewAllProjects: true,
-    canAccessSettings: false,
-  },
+const ADMIN_CAPABILITIES: RoleCapabilities = {
+  canManageUsers: true,
+  canAssignRoles: true,
+  canCreateProjects: true,
+  canEditProjects: true,
+  canDeleteProjects: true,
+  canAssignTaskToAnyone: true,
+  canModifyAllTaskFields: true,
+  canDeleteTasks: true,
+  canUpdateTaskStatus: true,
+  canUpdateTaskEta: true,
+  canSetPriority: true,
+  canAddComments: true,
+  canViewAllProjects: true,
+  canAccessSettings: true,
 };
 
+export const DEFAULT_MEMBER_CAPABILITIES: RoleCapabilities = {
+  canManageUsers: false,
+  canAssignRoles: false,
+  canCreateProjects: false,
+  canEditProjects: false,
+  canDeleteProjects: false,
+  canAssignTaskToAnyone: false,
+  canModifyAllTaskFields: false,
+  canDeleteTasks: false,
+  canUpdateTaskStatus: true,
+  canUpdateTaskEta: true,
+  canSetPriority: true,
+  canAddComments: true,
+  canViewAllProjects: true,
+  canAccessSettings: false,
+};
+
+// Runtime-overridable member capabilities (set via setMemberCapabilities)
+let _memberCapabilities: RoleCapabilities = { ...DEFAULT_MEMBER_CAPABILITIES };
+
+export function setMemberCapabilities(caps: Partial<RoleCapabilities>) {
+  _memberCapabilities = { ...DEFAULT_MEMBER_CAPABILITIES, ...caps };
+}
+
+export function getMemberCapabilities(): RoleCapabilities {
+  return _memberCapabilities;
+}
+
 export function getCapabilities(role: UserRole): RoleCapabilities {
-  return ROLE_CAPABILITIES[role];
+  return role === 'admin' ? ADMIN_CAPABILITIES : _memberCapabilities;
 }
 
 export function can(user: User, capability: keyof RoleCapabilities): boolean {
-  return ROLE_CAPABILITIES[user.role][capability];
+  return getCapabilities(user.role)[capability];
 }
 
 export function isAdmin(user: User): boolean {
   return user.role === 'admin';
 }
 
+// Capabilities that admin can never lose (always true for admin, but can be toggled for member)
+export const ADMIN_LOCKED_CAPABILITIES: (keyof RoleCapabilities)[] = [
+  'canManageUsers',
+  'canAssignRoles',
+  'canAccessSettings',
+];
+
+// Capabilities that should always remain true for members (non-toggleable)
+export const MEMBER_LOCKED_TRUE: (keyof RoleCapabilities)[] = [];
+
+// Capabilities that should always remain false for members
+export const MEMBER_LOCKED_FALSE: (keyof RoleCapabilities)[] = [
+  'canManageUsers',
+  'canAssignRoles',
+  'canAccessSettings',
+];
+
 export const ROLE_DESCRIPTIONS: Record<UserRole, { label: string; description: string }> = {
   admin: {
     label: 'Admin',
-    description: 'Full access: manage users, create/edit/delete projects, assign tasks to anyone, modify all task fields.',
+    description: 'Full access to all capabilities. Cannot be modified.',
   },
   member: {
     label: 'Member',
-    description: 'View assigned & shared projects. Update task status, comments, and ETA. Cannot delete projects or manage users.',
+    description: 'Configurable access. Toggle capabilities below.',
   },
 };
 

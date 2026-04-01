@@ -5,7 +5,14 @@ import { AppShell } from '@/components/layout/app-shell';
 import { useCurrentUser } from '@/lib/hooks/use-current-user';
 import { useViewMode } from '@/lib/hooks/use-view-mode';
 import { useUsers } from '@/lib/hooks/use-users';
-import { isAdmin, getCapabilities, ROLE_DESCRIPTIONS, CAPABILITY_LABELS } from '@/lib/utils/permissions';
+import {
+  isAdmin,
+  ROLE_DESCRIPTIONS,
+  CAPABILITY_LABELS,
+  MEMBER_LOCKED_FALSE,
+  type RoleCapabilities,
+} from '@/lib/utils/permissions';
+import { usePermissions } from '@/lib/hooks/use-permissions';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -170,6 +177,108 @@ function UserForm({
         </Button>
       </div>
     </form>
+  );
+}
+
+function PermissionsTab() {
+  const { memberCapabilities, saveMemberCapabilities, isSaving } = usePermissions();
+  const { toast } = useToast();
+
+  const adminEntries = Object.entries(CAPABILITY_LABELS) as [keyof RoleCapabilities, string][];
+  const memberEntries = Object.entries(CAPABILITY_LABELS) as [keyof RoleCapabilities, string][];
+
+  const handleToggle = async (key: keyof RoleCapabilities) => {
+    if (MEMBER_LOCKED_FALSE.includes(key)) return;
+    const updated = { ...memberCapabilities, [key]: !memberCapabilities[key] };
+    try {
+      await saveMemberCapabilities(updated);
+      toast(`Member permission "${CAPABILITY_LABELS[key]}" ${updated[key] ? 'enabled' : 'disabled'}`, 'success');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Failed to save', 'error');
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Admin — read-only */}
+      <div className="rounded-lg border border-slate-200 bg-white">
+        <div className="flex items-center gap-3 border-b border-slate-100 px-6 py-4">
+          <ShieldCheck className="h-5 w-5 text-blue-500" />
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">{ROLE_DESCRIPTIONS.admin.label}</h3>
+            <p className="text-xs text-slate-500">{ROLE_DESCRIPTIONS.admin.description}</p>
+          </div>
+        </div>
+        <div className="px-6 py-4">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {adminEntries.map(([key, label]) => (
+              <div key={key} className="flex items-center gap-2 text-sm">
+                <Check className="h-4 w-4 text-green-500" />
+                <span className="text-slate-700">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Member — interactive toggles */}
+      <div className="rounded-lg border border-slate-200 bg-white">
+        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <ShieldCheck className="h-5 w-5 text-slate-400" />
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">{ROLE_DESCRIPTIONS.member.label}</h3>
+              <p className="text-xs text-slate-500">{ROLE_DESCRIPTIONS.member.description}</p>
+            </div>
+          </div>
+          {isSaving && (
+            <span className="text-xs text-blue-500 animate-pulse">Saving...</span>
+          )}
+        </div>
+        <div className="px-6 py-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {memberEntries.map(([key, label]) => {
+              const allowed = memberCapabilities[key];
+              const locked = MEMBER_LOCKED_FALSE.includes(key);
+
+              return (
+                <label
+                  key={key}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                    locked
+                      ? 'opacity-40 cursor-not-allowed'
+                      : 'cursor-pointer hover:bg-slate-50'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={allowed}
+                    disabled={locked || isSaving}
+                    onClick={() => handleToggle(key)}
+                    className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-1 ${
+                      allowed ? 'bg-blue-600' : 'bg-slate-200'
+                    } ${locked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                  >
+                    <span
+                      className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${
+                        allowed ? 'translate-x-[18px]' : 'translate-x-[3px]'
+                      }`}
+                    />
+                  </button>
+                  <span className={allowed ? 'text-slate-700' : 'text-slate-400'}>
+                    {label}
+                  </span>
+                  {locked && (
+                    <span className="text-[10px] text-slate-400">(locked)</span>
+                  )}
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -476,42 +585,7 @@ export default function SettingsPage() {
 
         {/* Permissions Overview Tab */}
         {tab === 'permissions' && (
-          <div className="space-y-6">
-            {(['admin', 'member'] as UserRole[]).map((role) => {
-              const caps = getCapabilities(role);
-              const desc = ROLE_DESCRIPTIONS[role];
-              const entries = Object.entries(CAPABILITY_LABELS) as [keyof typeof caps, string][];
-
-              return (
-                <div key={role} className="rounded-lg border border-slate-200 bg-white">
-                  <div className="flex items-center gap-3 border-b border-slate-100 px-6 py-4">
-                    <ShieldCheck className={`h-5 w-5 ${role === 'admin' ? 'text-blue-500' : 'text-slate-400'}`} />
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-900">{desc.label}</h3>
-                      <p className="text-xs text-slate-500">{desc.description}</p>
-                    </div>
-                  </div>
-                  <div className="px-6 py-4">
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                      {entries.map(([key, label]) => {
-                        const allowed = caps[key];
-                        return (
-                          <div key={key} className="flex items-center gap-2 text-sm">
-                            {allowed ? (
-                              <Check className="h-4 w-4 text-green-500" />
-                            ) : (
-                              <X className="h-4 w-4 text-red-400" />
-                            )}
-                            <span className={allowed ? 'text-slate-700' : 'text-slate-400'}>{label}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <PermissionsTab />
         )}
 
         {/* Add User Dialog */}

@@ -7,8 +7,9 @@ import type { Task, TaskStatus, CreateTaskInput } from '../types';
 
 export function useTasks(projectId?: string) {
   return useQuery({
-    queryKey: ['tasks', projectId],
+    queryKey: ['tasks', projectId ?? 'all'],
     queryFn: () => projectId ? taskApi.getRootTasks(projectId) : taskApi.getAllTasks(),
+    staleTime: 60 * 1000,
   });
 }
 

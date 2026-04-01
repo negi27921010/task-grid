@@ -8,7 +8,7 @@ import { CheckSquare, Users, PanelLeftClose, PanelLeft, FolderKanban, Settings, 
 import { cn } from '@/lib/utils/cn';
 import { useCurrentUser } from '@/lib/hooks/use-current-user';
 import { useProjects, useCreateProject } from '@/lib/hooks/use-projects';
-import { isAdmin } from '@/lib/utils/permissions';
+import { isAdmin, can } from '@/lib/utils/permissions';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -85,6 +85,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
   const activeProjects = (projects ?? []).filter((p) => p.status === 'active');
   const userIsAdmin = isAdmin(currentUser);
+  const canCreateProjects = can(currentUser, 'canCreateProjects');
 
   const handleCreateProject = () => {
     const name = newProjectName.trim();
@@ -160,15 +161,17 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
               Projects
             </span>
-            <Tooltip content="New project" side="top">
-              <button
-                type="button"
-                onClick={() => setShowNewProject(v => !v)}
-                className="rounded p-0.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            </Tooltip>
+            {canCreateProjects && (
+              <Tooltip content="New project" side="top">
+                <button
+                  type="button"
+                  onClick={() => setShowNewProject(v => !v)}
+                  className="rounded p-0.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+              </Tooltip>
+            )}
           </div>
         )}
 
@@ -181,7 +184,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         )}
 
         {/* Inline new project form */}
-        {showNewProject && !collapsed && (
+        {showNewProject && !collapsed && canCreateProjects && (
           <div className="mx-3 mb-2 flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50/50 px-2 py-1.5">
             <input
               type="text"

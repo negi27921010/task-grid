@@ -37,6 +37,10 @@ function ProjectContent({ id }: { id: string }) {
   const [nameValue, setNameValue] = useState('');
   const nameInputRef = useRef<HTMLInputElement>(null);
 
+  const [editingDesc, setEditingDesc] = useState(false);
+  const [descValue, setDescValue] = useState('');
+  const descInputRef = useRef<HTMLTextAreaElement>(null);
+
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const handleSelectTask = useCallback((taskId: string) => setSelectedTaskId(taskId), []);
   const handleClosePanel = useCallback(() => setSelectedTaskId(null), []);
@@ -52,6 +56,14 @@ function ProjectContent({ id }: { id: string }) {
     }
   }, [editingName]);
 
+  useEffect(() => {
+    if (editingDesc && descInputRef.current) {
+      descInputRef.current.focus();
+      const len = descInputRef.current.value.length;
+      descInputRef.current.setSelectionRange(len, len);
+    }
+  }, [editingDesc]);
+
   const handleNameSave = () => {
     const trimmed = nameValue.trim();
     if (trimmed && project && trimmed !== project.name) {
@@ -60,10 +72,25 @@ function ProjectContent({ id }: { id: string }) {
     setEditingName(false);
   };
 
+  const handleDescSave = () => {
+    const trimmed = descValue.trim();
+    if (project && trimmed !== (project.description || '')) {
+      updateProject.mutate({ id: project.id, updates: { description: trimmed } });
+    }
+    setEditingDesc(false);
+  };
+
   const startEditName = () => {
     if (project) {
       setNameValue(project.name);
       setEditingName(true);
+    }
+  };
+
+  const startEditDesc = () => {
+    if (project) {
+      setDescValue(project.description || '');
+      setEditingDesc(true);
     }
   };
 
@@ -134,10 +161,53 @@ function ProjectContent({ id }: { id: string }) {
                   </button>
                 </div>
               )}
-              {project.description && (
-                <p className="mt-1 text-sm text-slate-500">
-                  {project.description}
-                </p>
+              {editingDesc ? (
+                <div className="mt-1.5 flex items-start gap-2">
+                  <textarea
+                    ref={descInputRef}
+                    value={descValue}
+                    onChange={e => setDescValue(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleDescSave(); }
+                      if (e.key === 'Escape') { e.preventDefault(); setEditingDesc(false); }
+                    }}
+                    rows={2}
+                    placeholder="Project description..."
+                    className="flex-1 rounded-md border border-blue-300 bg-white px-2 py-1 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none"
+                  />
+                  <button type="button" onClick={handleDescSave} className="rounded-md p-1 text-green-600 hover:bg-green-50" title="Save (Ctrl+Enter)">
+                    <Check className="h-4 w-4" />
+                  </button>
+                  <button type="button" onClick={() => setEditingDesc(false)} className="rounded-md p-1 text-slate-400 hover:bg-slate-100">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="group/desc mt-1 flex items-center gap-2">
+                  {project.description ? (
+                    <p
+                      className="text-sm text-slate-500 cursor-pointer hover:text-slate-700 transition-colors"
+                      onClick={startEditDesc}
+                    >
+                      {project.description}
+                    </p>
+                  ) : (
+                    <p
+                      className="text-sm text-slate-400 italic cursor-pointer hover:text-slate-500 transition-colors"
+                      onClick={startEditDesc}
+                    >
+                      Add a description...
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={startEditDesc}
+                    className="rounded p-1 text-slate-400 opacity-0 transition-opacity hover:bg-slate-100 hover:text-slate-600 group-hover/desc:opacity-100"
+                    title="Edit description"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                </div>
               )}
             </>
           ) : (

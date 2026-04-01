@@ -204,6 +204,8 @@ export function TaskTable({ tasks, isLoading, projectId, sort, onSortToggle, onS
                 projectId={resolvedProjectId}
                 onCancel={handleCloseCreate}
                 onCreated={handleCreated}
+                showProject={showProject}
+                projectName={projectsMap?.[resolvedProjectId]}
               />
             )}
             {sortedTasks.map((task, idx) => (

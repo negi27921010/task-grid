@@ -182,7 +182,10 @@ export const TaskRow = memo(function TaskRow({
     <>
         <tr
           className={cn(
-            'group/row border-b border-slate-100 transition-colors hover:bg-slate-50/80',
+            'group/row border-b border-slate-100 transition-colors',
+            depth === 0 && 'bg-white hover:bg-slate-50/80',
+            depth === 1 && 'bg-blue-50/30 hover:bg-blue-50/50',
+            depth >= 2 && 'bg-violet-50/30 hover:bg-violet-50/50',
             borderColor && `border-l-4 ${borderColor}`,
             !borderColor && 'border-l-4 border-l-transparent',
             isCompleted && 'opacity-50',

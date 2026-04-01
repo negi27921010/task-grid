@@ -11,6 +11,8 @@ interface InlineCreateRowProps {
   depth?: number;
   onCancel: () => void;
   onCreated: () => void;
+  showProject?: boolean;
+  projectName?: string;
 }
 
 export function InlineCreateRow({
@@ -19,6 +21,8 @@ export function InlineCreateRow({
   depth = 0,
   onCancel,
   onCreated,
+  showProject = false,
+  projectName,
 }: InlineCreateRowProps) {
   const [title, setTitle] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -31,7 +35,7 @@ export function InlineCreateRow({
 
   const handleSubmit = () => {
     const trimmedTitle = title.trim();
-    if (!trimmedTitle) {
+    if (!trimmedTitle || !projectId) {
       onCancel();
       return;
     }
@@ -65,7 +69,7 @@ export function InlineCreateRow({
   };
 
   return (
-    <tr className="border-b border-slate-100 bg-blue-50/30">
+    <tr className="border-b border-blue-100 bg-blue-50/40">
       {/* Expand placeholder */}
       <td className="w-8 px-1 py-1.5" />
       {/* Serial placeholder */}
@@ -92,6 +96,12 @@ export function InlineCreateRow({
           />
         </div>
       </td>
+      {/* Project column (only when showProject=true) */}
+      {showProject && (
+        <td className="px-2 py-1.5 text-xs text-slate-400 truncate max-w-[160px]">
+          {projectName || ''}
+        </td>
+      )}
       {/* Status placeholder */}
       <td className="px-2 py-1.5" />
       {/* Owner placeholder */}

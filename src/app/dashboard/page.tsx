@@ -110,18 +110,20 @@ function DashboardContent() {
       ? `All tasks in ${currentUser.department}`
       : `Tasks assigned to you across all projects`;
 
+  // Stats computed from the active view (filtered when filters applied, all otherwise)
+  const statsSource = hasActiveFilters ? filteredTasks : allTasks;
   const stats = useMemo(() => {
-    const total = allTasks.length;
-    const completed = allTasks.filter(t => t.status === 'completed').length;
+    const total = statsSource.length;
+    const completed = statsSource.filter(t => t.status === 'completed').length;
     return {
       total,
-      inProgress: allTasks.filter(t => t.status === 'in_progress').length,
-      blocked: allTasks.filter(t => t.status === 'blocked').length,
-      overdue: allTasks.filter(t => t.aging_status === 'overdue').length,
+      inProgress: statsSource.filter(t => t.status === 'in_progress').length,
+      blocked: statsSource.filter(t => t.status === 'blocked').length,
+      overdue: statsSource.filter(t => t.aging_status === 'overdue').length,
       completed,
       completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
     };
-  }, [allTasks]);
+  }, [statsSource]);
 
   const statCards = [
     { label: 'Total Tasks', value: stats.total, icon: ListTodo, bg: 'bg-slate-50', text: 'text-slate-600', accent: 'bg-slate-200' },
@@ -213,9 +215,9 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* Aging summary */}
-        {!isLoading && allTasks.length > 0 && (
-          <AgingSummaryBar tasks={allTasks} onFilterByAging={handleFilterByAging} />
+        {/* Aging summary — reflects active filters */}
+        {!isLoading && statsSource.length > 0 && (
+          <AgingSummaryBar tasks={statsSource} onFilterByAging={handleFilterByAging} />
         )}
 
         <FilterBar

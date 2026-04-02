@@ -105,6 +105,20 @@ function ProjectContent({ id }: { id: string }) {
 
   const isLoading = projectLoading || tasksLoading;
 
+  const projectStats = useMemo(() => {
+    const total = allTasks.length;
+    if (total === 0) return null;
+    const completed = allTasks.filter(t => t.status === 'completed').length;
+    const inProgress = allTasks.filter(t => t.status === 'in_progress').length;
+    const blocked = allTasks.filter(t => t.status === 'blocked').length;
+    const notStarted = allTasks.filter(t => t.status === 'not_started').length;
+    const overdue = allTasks.filter(t => t.aging_status === 'overdue').length;
+    return {
+      total, completed, inProgress, blocked, notStarted, overdue,
+      completionPct: Math.round((completed / total) * 100),
+    };
+  }, [allTasks]);
+
   const handleFilterByAging = (agingStatus: AgingStatus) => {
     const current = filters.aging_status ?? [];
     if (current.includes(agingStatus)) {
@@ -221,11 +235,29 @@ function ProjectContent({ id }: { id: string }) {
             </div>
           )}
 
-          {!isLoading && (
-            <p className="mt-0.5 text-xs text-slate-400">
-              {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''}
-              {hasActiveFilters ? ' (filtered)' : ''}
-            </p>
+          {/* Project stats */}
+          {!isLoading && projectStats && (
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              {/* Completion bar */}
+              <div className="flex items-center gap-2 min-w-[140px]">
+                <div className="h-2 w-24 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                    style={{ width: `${projectStats.completionPct}%` }}
+                  />
+                </div>
+                <span className="text-xs font-semibold text-emerald-600">{projectStats.completionPct}%</span>
+              </div>
+              <span className="text-xs text-slate-400">|</span>
+              <span className="text-xs text-slate-500">{projectStats.total} tasks</span>
+              {projectStats.completed > 0 && <span className="text-xs text-emerald-600">{projectStats.completed} done</span>}
+              {projectStats.inProgress > 0 && <span className="text-xs text-blue-600">{projectStats.inProgress} in progress</span>}
+              {projectStats.blocked > 0 && <span className="text-xs text-red-600">{projectStats.blocked} blocked</span>}
+              {projectStats.overdue > 0 && <span className="text-xs text-amber-600">{projectStats.overdue} overdue</span>}
+              {hasActiveFilters && (
+                <span className="text-xs text-slate-400">(showing {filteredTasks.length} filtered)</span>
+              )}
+            </div>
           )}
         </div>
 

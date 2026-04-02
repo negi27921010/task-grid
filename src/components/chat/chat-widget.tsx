@@ -17,13 +17,10 @@ export function ChatWidget() {
   const inputRef = useRef<HTMLInputElement>(null);
   const idCounter = useRef(0);
 
-  // Don't render until user is loaded
-  if (userLoading || !currentUser.id) return null;
-
-  const nextId = () => {
+  const nextId = useCallback(() => {
     idCounter.current++;
     return `msg-${idCounter.current}`;
-  };
+  }, []);
 
   const handleSend = async (text?: string) => {
     const msg = (text ?? input).trim();
@@ -105,9 +102,9 @@ export function ChatWidget() {
     }
   };
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     setMessages([]);
-  };
+  }, []);
 
   // Focus input when panel opens
   useEffect(() => {
@@ -115,6 +112,9 @@ export function ChatWidget() {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen]);
+
+  // Don't render until user is loaded
+  if (userLoading || !currentUser.id) return null;
 
   return (
     <>

@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Flame,
   Users,
+  Plus,
 } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
 import { Button } from '@/components/ui/button';
@@ -75,9 +76,9 @@ function MorningSection({
   onStartEdit: () => void;
   onCancelEdit: () => void;
 }) {
-  const [outcomes, setOutcomes] = useState<string[]>(['', '', '']);
+  const [outcomes, setOutcomes] = useState<string[]>(['']);
   const [deps, setDeps] = useState('');
-  const [errors, setErrors] = useState<(string | null)[]>([null, null, null]);
+  const [errors, setErrors] = useState<(string | null)[]>([null]);
   const createStandup = useCreateMorningStandup();
   const updateStandup = useUpdateMorningStandup();
 
@@ -91,10 +92,10 @@ function MorningSection({
       const newOutcomes = standup.outcomes
         .filter(o => !o.is_carried)
         .map(o => o.outcome_text);
-      while (newOutcomes.length < 3) newOutcomes.push('');
-      setOutcomes(newOutcomes.slice(0, 3));
+      if (newOutcomes.length === 0) newOutcomes.push('');
+      setOutcomes(newOutcomes);
       setDeps(standup.dependencies_risks ?? '');
-      setErrors([null, null, null]);
+      setErrors(newOutcomes.map(() => null));
     }
     onStartEdit();
   }, [standup, onStartEdit]);
@@ -103,10 +104,20 @@ function MorningSection({
     const next = [...outcomes];
     next[idx] = value;
     setOutcomes(next);
-    // Validate on change
     const nextErrors = [...errors];
     nextErrors[idx] = value.trim() ? validateOutcome(value) : null;
     setErrors(nextErrors);
+  };
+
+  const handleAddOutcome = () => {
+    setOutcomes(prev => [...prev, '']);
+    setErrors(prev => [...prev, null]);
+  };
+
+  const handleRemoveOutcome = (idx: number) => {
+    if (outcomes.length <= 1) return;
+    setOutcomes(prev => prev.filter((_, i) => i !== idx));
+    setErrors(prev => prev.filter((_, i) => i !== idx));
   };
 
   const handleSubmit = () => {
@@ -215,9 +226,19 @@ function MorningSection({
         {/* Outcomes form or read-only */}
         {showForm ? (
           <div className="space-y-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Today&apos;s Outcomes (1-3 required)
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Today&apos;s Outcomes (at least 1 required)
+              </p>
+              <button
+                type="button"
+                onClick={handleAddOutcome}
+                disabled={isPending}
+                className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-200 disabled:opacity-50"
+              >
+                <Plus className="h-3 w-3" /> Add Outcome
+              </button>
+            </div>
             {outcomes.map((text, idx) => (
               <div key={idx}>
                 <div className="flex items-center gap-2">
@@ -226,13 +247,23 @@ function MorningSection({
                     type="text"
                     value={text}
                     onChange={e => handleOutcomeChange(idx, e.target.value)}
-                    placeholder={idx === 0 ? 'e.g. Complete 10 school registrations for Gujarat' : idx === 1 ? 'e.g. Send dispatch emails to 15 distributors' : 'Optional 3rd outcome...'}
+                    placeholder={idx === 0 ? 'e.g. Complete 10 school registrations for Gujarat' : 'Next measurable outcome...'}
                     className={cn(
                       'flex-1 rounded-lg border px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20',
                       errors[idx] ? 'border-red-300 bg-red-50/50 focus:border-red-400' : 'border-slate-300 focus:border-blue-500'
                     )}
                     disabled={isPending}
                   />
+                  {outcomes.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveOutcome(idx)}
+                      className="shrink-0 rounded p-1 text-slate-300 transition-colors hover:bg-red-50 hover:text-red-500"
+                      disabled={isPending}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
                 {errors[idx] && (
                   <p className="mt-1 ml-6 text-xs text-red-500 flex items-center gap-1">

@@ -26,7 +26,9 @@ function classifyIntent(message: string): string[] {
     'stale', 'blocker', 'done', 'pending', 'cancelled', 'progress'];
   const projKw = ['project', 'projects'];
   const standupKw = ['standup', 'stand-up', 'morning', 'evening', 'outcome',
-    'closure', 'carried', 'daily standup'];
+    'closure', 'carried', 'daily standup', 'daily', 'yesterday', 'today',
+    'history', 'last week', 'past', 'summary', 'submitted', 'stuck',
+    'completion rate', 'not done', 'outcomes'];
   const teamKw = ['team', 'member', 'members', 'department', 'who',
     'everyone', 'colleague', 'people', 'user', 'users'];
 
@@ -216,7 +218,7 @@ export async function POST(request: Request) {
         const submittedUserIds = new Set(standupList.map(s => s.user_id as string));
         const notSubmitted = (allUsers ?? []).filter(u => !submittedUserIds.has(u.id as string));
 
-        contextData.standups = {
+        contextData.standups_today = {
           date: today,
           submitted: standupList.map(s => ({
             ...s,
@@ -225,8 +227,34 @@ export async function POST(request: Request) {
           })),
           not_submitted: notSubmitted.map(u => ({ id: u.id, full_name: u.full_name, department: u.department })),
         };
+
+        // Past 7 days history (summary per day)
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        const weekAgoStr = weekAgo.toISOString().slice(0, 10);
+
+        const { data: pastStandups } = await adminClient
+          .from('daily_standups')
+          .select('id, user_id, standup_date, morning_submitted_at, morning_is_late, evening_submitted_at, evening_is_late')
+          .gte('standup_date', weekAgoStr)
+          .lt('standup_date', today)
+          .order('standup_date', { ascending: false });
+
+        if (pastStandups && pastStandups.length > 0) {
+          const pastIds = pastStandups.map(s => s.id as string);
+          const { data: pastOutcomes } = await adminClient
+            .from('standup_outcomes')
+            .select('standup_id, outcome_text, evening_status, is_carried, carry_streak, reason_not_done')
+            .in('standup_id', pastIds);
+
+          contextData.standups_history = pastStandups.map(s => ({
+            ...s,
+            user_name: userMap[s.user_id as string] ?? 'Unknown',
+            outcomes: (pastOutcomes ?? []).filter(o => (o.standup_id as string) === (s.id as string)),
+          }));
+        }
       } else {
-        // Member: own standup only
+        // Member: own standup today + past 7 days
         const { data: myStandup } = await adminClient
           .from('daily_standups')
           .select('*')
@@ -239,9 +267,35 @@ export async function POST(request: Request) {
             .from('standup_outcomes')
             .select('*')
             .eq('standup_id', myStandup.id as string);
-          contextData.my_standup = { ...myStandup, outcomes: myOutcomes ?? [] };
+          contextData.my_standup_today = { ...myStandup, outcomes: myOutcomes ?? [] };
         } else {
-          contextData.my_standup = null;
+          contextData.my_standup_today = null;
+        }
+
+        // Past 7 days for member
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        const weekAgoStr = weekAgo.toISOString().slice(0, 10);
+
+        const { data: myPastStandups } = await adminClient
+          .from('daily_standups')
+          .select('id, standup_date, morning_submitted_at, evening_submitted_at')
+          .eq('user_id', profile.id as string)
+          .gte('standup_date', weekAgoStr)
+          .lt('standup_date', today)
+          .order('standup_date', { ascending: false });
+
+        if (myPastStandups && myPastStandups.length > 0) {
+          const pastIds = myPastStandups.map(s => s.id as string);
+          const { data: pastOutcomes } = await adminClient
+            .from('standup_outcomes')
+            .select('standup_id, outcome_text, evening_status, is_carried, carry_streak, reason_not_done')
+            .in('standup_id', pastIds);
+
+          contextData.my_standup_history = myPastStandups.map(s => ({
+            ...s,
+            outcomes: (pastOutcomes ?? []).filter(o => (o.standup_id as string) === (s.id as string)),
+          }));
         }
       }
     }

@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
   ListTodo,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -88,9 +90,15 @@ function sortTasks(tasks: Task[], field: SortField, direction: SortDirection): T
   return sorted;
 }
 
+const PAGE_SIZE = 25;
+
 export function TaskTable({ tasks, isLoading, projectId, sort, onSortToggle, onSelectTask, showProject = false, projectsMap, emptyTitle, emptyDescription, showCreateRow = false, onCloseCreateRow }: TaskTableProps) {
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [editingCell, setEditingCell] = useState<{ taskId: string; field: string } | null>(null);
+  const [page, setPage] = useState(0);
+
+  // Reset page when tasks change (filter/sort)
+  useEffect(() => { setPage(0); }, [tasks.length]);
 
   const handleExpand = useCallback((taskId: string) => {
     setExpandedTasks(prev => {
@@ -107,6 +115,10 @@ export function TaskTable({ tasks, isLoading, projectId, sort, onSortToggle, onS
     () => sortField ? sortTasks(tasks, sortField, sortDirection) : tasks,
     [tasks, sortField, sortDirection]
   );
+
+  const totalPages = Math.max(1, Math.ceil(sortedTasks.length / PAGE_SIZE));
+  const pagedTasks = sortedTasks.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const showPagination = sortedTasks.length > PAGE_SIZE;
 
   const columns = useMemo(() => getColumns(showProject), [showProject]);
   const resolvedProjectId = projectId ?? tasks[0]?.project_id ?? '';
@@ -208,7 +220,7 @@ export function TaskTable({ tasks, isLoading, projectId, sort, onSortToggle, onS
                 projectName={projectsMap?.[resolvedProjectId]}
               />
             )}
-            {sortedTasks.map((task, idx) => (
+            {pagedTasks.map((task, idx) => (
               <TaskRow
                 key={task.id}
                 task={task}
@@ -221,12 +233,42 @@ export function TaskTable({ tasks, isLoading, projectId, sort, onSortToggle, onS
                 onSelectTask={onSelectTask}
                 showProject={showProject}
                 projectName={projectsMap?.[task.project_id]}
-                serialNumber={String(idx + 1)}
+                serialNumber={String(page * PAGE_SIZE + idx + 1)}
               />
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {showPagination && (
+        <div className="flex items-center justify-between border-t border-slate-100 px-4 py-2.5">
+          <span className="text-xs text-slate-500">
+            Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, sortedTasks.length)} of {sortedTasks.length}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <span className="min-w-[60px] text-center text-xs font-medium text-slate-600">
+              {page + 1} / {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={page >= totalPages - 1}
+              className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

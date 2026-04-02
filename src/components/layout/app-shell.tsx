@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from 'react';
 import { Sidebar } from './sidebar';
 import { Header } from './header';
 import { SearchDialog } from './search-dialog';
+import { ChatWidget } from '@/components/chat/chat-widget';
 import type { ViewMode } from '@/lib/types/filters';
 
 const SIDEBAR_STORAGE_KEY = 'taskflow-sidebar-collapsed';
@@ -109,6 +110,7 @@ export function AppShell({ children, viewMode, onViewModeChange }: AppShellProps
 
       {/* Search dialog */}
       <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
+      <ChatWidget />
     </div>
   );
 }

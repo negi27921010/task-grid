@@ -1,6 +1,7 @@
 'use client';
 
 import { use, useMemo, useState, useCallback, useRef, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Pencil, Check, X, FolderOpen } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
 import { AgingSummaryBar } from '@/components/task/aging-summary-bar';
@@ -18,6 +19,7 @@ import { filterTasks } from '@/lib/utils/search';
 import type { AgingStatus } from '@/lib/types';
 
 function ProjectContent({ id }: { id: string }) {
+  const searchParams = useSearchParams();
   const { data: project, isLoading: projectLoading } = useProject(id);
   const { data: tasks, isLoading: tasksLoading } = useTasks(id);
   const { currentUser } = useCurrentUser();
@@ -44,9 +46,17 @@ function ProjectContent({ id }: { id: string }) {
   const [descValue, setDescValue] = useState('');
   const descInputRef = useRef<HTMLTextAreaElement>(null);
 
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const taskFromUrl = searchParams.get('task');
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(taskFromUrl);
   const handleSelectTask = useCallback((taskId: string) => setSelectedTaskId(taskId), []);
   const handleClosePanel = useCallback(() => setSelectedTaskId(null), []);
+
+  // Auto-open task from URL param (notification deep link)
+  useEffect(() => {
+    if (taskFromUrl && taskFromUrl !== selectedTaskId) {
+      setSelectedTaskId(taskFromUrl);
+    }
+  }, [taskFromUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [showCreateRow, setShowCreateRow] = useState(false);
   const handleAddTask = useCallback(() => setShowCreateRow(true), []);

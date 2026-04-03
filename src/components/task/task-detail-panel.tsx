@@ -129,7 +129,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
               mentionedIds.map(uid => ({
                 user_id: uid,
                 type: 'mention' as const,
-                title: `${currentUser.full_name} mentioned you`,
+                title: `${currentUser.full_name} mentioned you in "${task.title}"`,
                 body: content.length > 80 ? content.slice(0, 80) + '...' : content,
                 task_id: task.id,
                 project_id: task.project_id,

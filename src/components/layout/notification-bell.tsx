@@ -81,7 +81,10 @@ export function NotificationBell() {
       markRead.mutate(n.id);
     }
     if (n.project_id) {
-      router.push(`/project/${n.project_id}`);
+      const url = n.task_id
+        ? `/project/${n.project_id}?task=${n.task_id}`
+        : `/project/${n.project_id}`;
+      router.push(url);
       setOpen(false);
     }
   };

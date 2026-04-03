@@ -97,8 +97,9 @@ export function TaskTable({ tasks, isLoading, projectId, sort, onSortToggle, onS
   const [editingCell, setEditingCell] = useState<{ taskId: string; field: string } | null>(null);
   const [page, setPage] = useState(0);
 
-  // Reset page when tasks change (filter/sort)
+  // Reset page when tasks change (filter/sort) or create row opens
   useEffect(() => { setPage(0); }, [tasks.length]);
+  useEffect(() => { if (showCreateRow) setPage(0); }, [showCreateRow]);
 
   const handleExpand = useCallback((taskId: string) => {
     setExpandedTasks(prev => {

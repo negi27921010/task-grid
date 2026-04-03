@@ -69,7 +69,7 @@ export function InlineCreateRow({
   };
 
   return (
-    <tr className="border-b border-blue-100 bg-blue-50/40">
+    <tr className="border-b-2 border-blue-200 bg-blue-50/60 animate-in">
       {/* Expand placeholder */}
       <td className="w-8 px-1 py-1.5" />
       {/* Serial placeholder */}

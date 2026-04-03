@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils/cn';
 import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/ui/tooltip';
 import { UserSwitcher } from './user-switcher';
+import { NotificationBell } from './notification-bell';
 import { useProject } from '@/lib/hooks/use-projects';
 import { useCurrentUser } from '@/lib/hooks/use-current-user';
 import { isAdmin } from '@/lib/utils/permissions';
@@ -124,6 +125,9 @@ export function Header({ viewMode, onViewModeChange, onSearchOpen }: HeaderProps
             </Link>
           </Tooltip>
         )}
+
+        {/* Notifications */}
+        <NotificationBell />
 
         {/* Divider */}
         <div className="mx-1.5 h-6 w-px bg-slate-200" />

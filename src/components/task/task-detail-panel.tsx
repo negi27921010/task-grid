@@ -15,6 +15,8 @@ import { useCurrentUser } from '@/lib/hooks/use-current-user';
 import { can } from '@/lib/utils/permissions';
 import { computeAgingStatus, getAgingLabel } from '@/lib/utils/aging';
 import { formatDate, formatRelative } from '@/lib/utils/dates';
+import { parseMentions, extractMentionQuery, insertMention } from '@/lib/utils/mentions';
+import { createBulkNotifications } from '@/lib/api/notifications';
 import { getTaskDepthLabel, STATUS_LABELS, PRIORITY_LABELS } from '@/lib/types/task';
 import type { Task, TaskStatus, Priority } from '@/lib/types';
 import { StatusSelect } from './status-select';
@@ -45,6 +47,8 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
   const [remarksDraft, setRemarksDraft] = useState('');
   const [commentText, setCommentText] = useState('');
   const [blockerOpen, setBlockerOpen] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionIdx, setMentionIdx] = useState(0);
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
 
   const canEditAll = can(currentUser, 'canModifyAllTaskFields');
@@ -109,9 +113,31 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
 
   const handleAddComment = () => {
     if (!task || !commentText.trim()) return;
+    const content = commentText.trim();
     addComment.mutate(
-      { taskId: task.id, authorId: currentUser.id, content: commentText.trim() },
-      { onSuccess: () => setCommentText('') }
+      { taskId: task.id, authorId: currentUser.id, content },
+      {
+        onSuccess: () => {
+          setCommentText('');
+          setMentionQuery(null);
+          // Create notifications for @mentioned users
+          const allUsers = users ?? [];
+          const mentionedIds = parseMentions(content, allUsers)
+            .filter(id => id !== currentUser.id); // don't notify self
+          if (mentionedIds.length > 0) {
+            createBulkNotifications(
+              mentionedIds.map(uid => ({
+                user_id: uid,
+                type: 'mention' as const,
+                title: `${currentUser.full_name} mentioned you`,
+                body: content.length > 80 ? content.slice(0, 80) + '...' : content,
+                task_id: task.id,
+                project_id: task.project_id,
+              }))
+            ).catch(() => {}); // fire and forget
+          }
+        },
+      }
     );
   };
 
@@ -401,22 +427,126 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                   </div>
                 )}
 
-                {/* Add comment */}
+                {/* Add comment with @mention */}
                 <div className="flex gap-3">
                   <Avatar
                     src={currentUser.avatar_url}
                     fullName={currentUser.full_name}
                     size="sm"
                   />
-                  <div className="flex-1">
+                  <div className="relative flex-1">
+                    {/* Mention dropdown */}
+                    {mentionQuery !== null && (() => {
+                      const allUsers = users ?? [];
+                      const q = mentionQuery.toLowerCase();
+                      const filtered = allUsers.filter(u =>
+                        u.id !== currentUser.id &&
+                        u.full_name.toLowerCase().includes(q)
+                      ).slice(0, 6);
+
+                      if (filtered.length === 0) return null;
+
+                      return (
+                        <div className="absolute bottom-full left-0 mb-1 w-full rounded-lg border border-slate-200 bg-white shadow-lg z-50 max-h-48 overflow-y-auto">
+                          {filtered.map((u, idx) => (
+                            <button
+                              key={u.id}
+                              type="button"
+                              onMouseDown={e => {
+                                e.preventDefault(); // prevent textarea blur
+                                const textarea = commentInputRef.current;
+                                if (!textarea) return;
+                                const { newText, newCursorPos } = insertMention(
+                                  commentText,
+                                  textarea.selectionStart,
+                                  u.full_name,
+                                );
+                                setCommentText(newText);
+                                setMentionQuery(null);
+                                setMentionIdx(0);
+                                requestAnimationFrame(() => {
+                                  textarea.focus();
+                                  textarea.setSelectionRange(newCursorPos, newCursorPos);
+                                });
+                              }}
+                              className={cn(
+                                'flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors',
+                                idx === mentionIdx ? 'bg-blue-50 text-blue-700' : 'text-slate-700 hover:bg-slate-50',
+                              )}
+                            >
+                              <Avatar fullName={u.full_name} src={u.avatar_url} size="sm" />
+                              <div className="text-left">
+                                <p className="text-sm font-medium">{u.full_name}</p>
+                                <p className="text-[10px] text-slate-400">{u.department}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    })()}
+
                     <textarea
                       ref={commentInputRef}
                       value={commentText}
-                      onChange={e => setCommentText(e.target.value)}
-                      placeholder="Write a comment..."
+                      onChange={e => {
+                        const val = e.target.value;
+                        setCommentText(val);
+                        const cursor = e.target.selectionStart;
+                        const q = extractMentionQuery(val, cursor);
+                        setMentionQuery(q);
+                        if (q !== null) setMentionIdx(0);
+                      }}
+                      placeholder="Write a comment... (type @ to mention)"
                       rows={2}
                       className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       onKeyDown={e => {
+                        if (mentionQuery !== null) {
+                          const allUsers = users ?? [];
+                          const q = mentionQuery.toLowerCase();
+                          const filtered = allUsers.filter(u =>
+                            u.id !== currentUser.id &&
+                            u.full_name.toLowerCase().includes(q)
+                          ).slice(0, 6);
+
+                          if (filtered.length > 0) {
+                            if (e.key === 'ArrowDown') {
+                              e.preventDefault();
+                              setMentionIdx(i => Math.min(i + 1, filtered.length - 1));
+                              return;
+                            }
+                            if (e.key === 'ArrowUp') {
+                              e.preventDefault();
+                              setMentionIdx(i => Math.max(i - 1, 0));
+                              return;
+                            }
+                            if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey) {
+                              e.preventDefault();
+                              const user = filtered[mentionIdx];
+                              if (user) {
+                                const textarea = commentInputRef.current;
+                                if (!textarea) return;
+                                const { newText, newCursorPos } = insertMention(
+                                  commentText,
+                                  textarea.selectionStart,
+                                  user.full_name,
+                                );
+                                setCommentText(newText);
+                                setMentionQuery(null);
+                                setMentionIdx(0);
+                                requestAnimationFrame(() => {
+                                  textarea.focus();
+                                  textarea.setSelectionRange(newCursorPos, newCursorPos);
+                                });
+                              }
+                              return;
+                            }
+                            if (e.key === 'Escape') {
+                              e.preventDefault();
+                              setMentionQuery(null);
+                              return;
+                            }
+                          }
+                        }
                         if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                           e.preventDefault();
                           handleAddComment();
@@ -425,7 +555,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                     />
                     <div className="mt-1.5 flex items-center justify-between">
                       <span className="text-[10px] text-slate-400">
-                        {navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}+Enter to post
+                        @ to mention · {typeof navigator !== 'undefined' && navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}+Enter to post
                       </span>
                       <Button
                         size="sm"

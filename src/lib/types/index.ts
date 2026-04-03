@@ -4,3 +4,4 @@ export * from './project';
 export * from './task';
 export * from './filters';
 export * from './standup';
+export * from './notification';

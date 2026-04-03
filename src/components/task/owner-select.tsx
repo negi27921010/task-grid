@@ -151,17 +151,19 @@ export function OwnerSelect({
       {open && (
         <div
           className="fixed z-[100] w-72 rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50"
-          style={{
-            top: containerRef.current
-              ? containerRef.current.getBoundingClientRect().bottom + 4
-              : 0,
-            left: containerRef.current
-              ? Math.min(
-                  containerRef.current.getBoundingClientRect().left,
-                  window.innerWidth - 288 - 8
-                )
-              : 0,
-          }}
+          style={(() => {
+            if (!containerRef.current) return { top: 0, left: 0 };
+            const rect = containerRef.current.getBoundingClientRect();
+            const dropdownHeight = 380; // max-h-72 (288) + header (50) + footer (42)
+            const spaceBelow = window.innerHeight - rect.bottom - 8;
+            const spaceAbove = rect.top - 8;
+            const flipUp = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
+            return {
+              top: flipUp ? Math.max(8, rect.top - dropdownHeight - 4) : rect.bottom + 4,
+              left: Math.min(rect.left, window.innerWidth - 288 - 8),
+              maxHeight: flipUp ? spaceAbove : spaceBelow,
+            };
+          })()}
           onClick={e => e.stopPropagation()}
         >
           <div className="border-b border-slate-100 p-2.5">

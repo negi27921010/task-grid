@@ -306,10 +306,11 @@ export async function submitEveningClosure(
 export async function getTeamStandups(
   date: string,
 ): Promise<TeamStandupSummary[]> {
-  // Get all users
+  // Get all non-admin users (admins don't fill daily standups)
   const { data: users, error: uErr } = await sb()
     .from('users')
-    .select('id, full_name, department')
+    .select('id, full_name, department, role')
+    .eq('role', 'member')
     .order('full_name', { ascending: true });
   if (uErr) throw uErr;
 

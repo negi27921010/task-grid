@@ -21,6 +21,8 @@ import { OwnerSelect } from './owner-select';
 import { TaskRowMenu } from './task-row-menu';
 import { DeleteDialog } from './delete-dialog';
 import { BlockerReasonDialog } from './blocker-reason-dialog';
+import { EtaRequiredDialog } from './eta-required-dialog';
+import { useToast } from '@/components/ui/toast';
 import { InlineCreateRow } from './inline-create-row';
 import { TaskChildren } from './task-children';
 
@@ -65,6 +67,8 @@ export const TaskRow = memo(function TaskRow({
   const [editEta, setEditEta] = useState(task.eta ?? '');
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [blockerOpen, setBlockerOpen] = useState(false);
+  const [etaDialogOpen, setEtaDialogOpen] = useState(false);
+  const { toast } = useToast();
   const [addingSubtask, setAddingSubtask] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const etaInputRef = useRef<HTMLInputElement>(null);
@@ -130,12 +134,20 @@ export const TaskRow = memo(function TaskRow({
 
   const handleStatusChange = useCallback((status: TaskStatus) => {
     if (status === 'blocked') { setBlockerOpen(true); return; }
+    if (status === 'in_progress' && !task.eta) { setEtaDialogOpen(true); return; }
     if (status === 'completed' && hasChildren && children) {
       const check = canCompleteTask(task, children);
-      if (!check.allowed) { alert(check.reason); return; }
+      if (!check.allowed) { toast(check.reason ?? 'Complete all subtasks first', 'error'); return; }
     }
     changeStatus.mutate({ id: task.id, status });
-  }, [task.id, hasChildren, children, changeStatus, task]);
+  }, [task.id, task.eta, hasChildren, children, changeStatus, task, toast]);
+
+  const handleEtaConfirmAndStart = useCallback((eta: string) => {
+    updateTask.mutate(
+      { id: task.id, updates: { eta } },
+      { onSuccess: () => changeStatus.mutate({ id: task.id, status: 'in_progress' }) },
+    );
+  }, [task.id, updateTask, changeStatus]);
 
   const handleBlockerConfirm = useCallback((reason: string) => {
     changeStatus.mutate({ id: task.id, status: 'blocked', metadata: { blocker_reason: reason } });
@@ -394,6 +406,7 @@ export const TaskRow = memo(function TaskRow({
 
       <DeleteDialog task={task} childrenCount={task.children_count ?? 0} open={deleteOpen} onOpenChange={setDeleteOpen} onConfirm={handleDeleteConfirm} />
       <BlockerReasonDialog open={blockerOpen} onOpenChange={setBlockerOpen} onConfirm={handleBlockerConfirm} />
+      <EtaRequiredDialog open={etaDialogOpen} onOpenChange={setEtaDialogOpen} onConfirm={handleEtaConfirmAndStart} />
     </>
   );
 });

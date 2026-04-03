@@ -25,6 +25,7 @@ export function InlineCreateRow({
   projectName,
 }: InlineCreateRowProps) {
   const [title, setTitle] = useState('');
+  const [eta, setEta] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const createTask = useCreateTask();
   const { currentUser } = useCurrentUser();
@@ -48,10 +49,12 @@ export function InlineCreateRow({
         status: 'not_started',
         priority: 'P3',
         owner_id: currentUser.id,
+        eta: eta || null,
       },
       {
         onSuccess: () => {
           setTitle('');
+          setEta('');
           onCreated();
         },
       }
@@ -68,8 +71,10 @@ export function InlineCreateRow({
     }
   };
 
+  const today = new Date().toISOString().slice(0, 10);
+
   return (
-    <tr className="border-b-2 border-blue-200 bg-blue-50/60 animate-in">
+    <tr className="border-b-2 border-blue-200 bg-blue-50/60">
       {/* Expand placeholder */}
       <td className="w-8 px-1 py-1.5" />
       {/* Serial placeholder */}
@@ -85,7 +90,6 @@ export function InlineCreateRow({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={handleKeyDown}
-            onBlur={() => { if (!title.trim()) onCancel(); }}
             aria-label="New task title"
             placeholder="Task title... (Enter to save, Esc to cancel)"
             className={cn(
@@ -96,18 +100,30 @@ export function InlineCreateRow({
           />
         </div>
       </td>
-      {/* Project column (only when showProject=true) */}
+      {/* Project column */}
       {showProject && (
         <td className="px-2 py-1.5 text-xs text-slate-400 truncate max-w-[160px]">
           {projectName || ''}
         </td>
       )}
       {/* Status placeholder */}
-      <td className="px-2 py-1.5" />
+      <td className="px-2 py-1.5">
+        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">To Do</span>
+      </td>
       {/* Owner placeholder */}
       <td className="px-2 py-1.5" />
-      {/* ETA placeholder */}
-      <td className="px-2 py-1.5" />
+      {/* ETA — date picker */}
+      <td className="px-2 py-1.5">
+        <input
+          type="date"
+          value={eta}
+          onChange={(e) => setEta(e.target.value)}
+          onKeyDown={handleKeyDown}
+          min={today}
+          className="w-full rounded border border-blue-200 bg-white px-1.5 py-0.5 text-xs text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/20"
+          disabled={createTask.isPending}
+        />
+      </td>
       {/* Aging placeholder */}
       <td className="px-2 py-1.5" />
       {/* Comments placeholder */}

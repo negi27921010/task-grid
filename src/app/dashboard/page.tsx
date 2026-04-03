@@ -178,6 +178,23 @@ function DashboardContent() {
           )}
         </div>
 
+        {/* Stat card skeletons while loading */}
+        {isLoading && (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="rounded-xl border border-slate-200 bg-white p-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-lg bg-slate-100 animate-pulse" />
+                  <div className="space-y-1.5">
+                    <div className="h-6 w-10 rounded bg-slate-100 animate-pulse" />
+                    <div className="h-3 w-16 rounded bg-slate-50 animate-pulse" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Stat cards + completion progress */}
         {!isLoading && allTasks.length > 0 && (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">

@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { createClient } from '../supabase';
 import type { Task, TaskStatus, CreateTaskInput, TaskComment } from '../types';
 import { computeAgingStatus } from '../utils';
+import { VALID_STATUS_TRANSITIONS } from '../types/task';
 
 function sb() {
   return createClient();
@@ -282,10 +283,17 @@ export async function changeTaskStatus(
 ): Promise<Task> {
   const { data: current, error: fetchErr } = await sb()
     .from('tasks')
-    .select('status, started_at')
+    .select('status, started_at, eta')
     .eq('id', id)
     .single();
   if (fetchErr) throw fetchErr;
+
+  // Validate transition
+  const currentStatus = current.status as TaskStatus;
+  const allowed = VALID_STATUS_TRANSITIONS[currentStatus];
+  if (!allowed?.includes(newStatus)) {
+    throw new Error(`Cannot transition from "${currentStatus}" to "${newStatus}"`);
+  }
 
   const now = new Date().toISOString();
   const updates: Record<string, unknown> = { status: newStatus };

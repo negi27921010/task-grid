@@ -24,6 +24,7 @@ import { PrioritySelect } from './priority-select';
 import { OwnerSelect } from './owner-select';
 import { LabelPicker } from './label-picker';
 import { BlockerReasonDialog } from './blocker-reason-dialog';
+import { EtaRequiredDialog } from './eta-required-dialog';
 
 interface TaskDetailPanelProps {
   taskId: string | null;
@@ -47,6 +48,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
   const [remarksDraft, setRemarksDraft] = useState('');
   const [commentText, setCommentText] = useState('');
   const [blockerOpen, setBlockerOpen] = useState(false);
+  const [etaDialogOpen, setEtaDialogOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionIdx, setMentionIdx] = useState(0);
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
@@ -103,7 +105,25 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
       setBlockerOpen(true);
       return;
     }
+    // ETA required for in_progress
+    if (status === 'in_progress' && !task.eta) {
+      setEtaDialogOpen(true);
+      return;
+    }
     changeStatus.mutate({ id: task.id, status });
+  };
+
+  const handleEtaConfirmAndStart = (eta: string) => {
+    if (!task) return;
+    // Set ETA first, then change status
+    updateTask.mutate(
+      { id: task.id, updates: { eta } },
+      {
+        onSuccess: () => {
+          changeStatus.mutate({ id: task.id, status: 'in_progress' });
+        },
+      },
+    );
   };
 
   const handleBlockerConfirm = (reason: string) => {
@@ -594,6 +614,11 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
         open={blockerOpen}
         onOpenChange={setBlockerOpen}
         onConfirm={handleBlockerConfirm}
+      />
+      <EtaRequiredDialog
+        open={etaDialogOpen}
+        onOpenChange={setEtaDialogOpen}
+        onConfirm={handleEtaConfirmAndStart}
       />
     </>
   );

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import Image from 'next/image';
-import { CheckCircle2, LayoutGrid, Users2, BarChart3, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, LayoutGrid, Users2, BarChart3, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 const FEATURES = [
   { icon: LayoutGrid, text: 'Hierarchical task management with infinite nesting' },
@@ -157,7 +157,7 @@ export default function LoginPage() {
 
             {error && (
               <div className="flex items-start gap-2 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
                 {error}
               </div>
             )}

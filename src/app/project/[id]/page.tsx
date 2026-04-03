@@ -181,7 +181,7 @@ function ProjectContent({ id }: { id: string }) {
                   <button
                     type="button"
                     onClick={startEditName}
-                    className="rounded p-1 text-slate-400 opacity-0 transition-opacity hover:bg-slate-100 hover:text-slate-600 group-hover/title:opacity-100"
+                    className="rounded p-1 text-slate-400 opacity-40 transition-opacity hover:bg-slate-100 hover:text-slate-600 group-hover/title:opacity-100"
                     title="Edit project name"
                   >
                     <Pencil className="h-3.5 w-3.5" />
@@ -229,7 +229,7 @@ function ProjectContent({ id }: { id: string }) {
                   <button
                     type="button"
                     onClick={startEditDesc}
-                    className="rounded p-1 text-slate-400 opacity-0 transition-opacity hover:bg-slate-100 hover:text-slate-600 group-hover/desc:opacity-100"
+                    className="rounded p-1 text-slate-400 opacity-40 transition-opacity hover:bg-slate-100 hover:text-slate-600 group-hover/desc:opacity-100"
                     title="Edit description"
                   >
                     <Pencil className="h-3 w-3" />
@@ -247,26 +247,56 @@ function ProjectContent({ id }: { id: string }) {
 
           {/* Project stats */}
           {!isLoading && projectStats && (
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              {/* Completion bar */}
-              <div className="flex items-center gap-2 min-w-[140px]">
-                <div className="h-2 w-24 overflow-hidden rounded-full bg-slate-100">
-                  <div
-                    className="h-full rounded-full bg-emerald-500 transition-all duration-500"
-                    style={{ width: `${projectStats.completionPct}%` }}
-                  />
+            <div className="mt-3 space-y-2">
+              {/* Stacked progress bar */}
+              <div className="flex items-center gap-3">
+                <div className="flex h-2.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                  {projectStats.completed > 0 && (
+                    <div
+                      className="bg-emerald-500 transition-all duration-500"
+                      style={{ width: `${(projectStats.completed / projectStats.total) * 100}%` }}
+                      title={`${projectStats.completed} completed`}
+                    />
+                  )}
+                  {projectStats.inProgress > 0 && (
+                    <div
+                      className="bg-blue-500 transition-all duration-500"
+                      style={{ width: `${(projectStats.inProgress / projectStats.total) * 100}%` }}
+                      title={`${projectStats.inProgress} in progress`}
+                    />
+                  )}
+                  {projectStats.blocked > 0 && (
+                    <div
+                      className="bg-red-500 transition-all duration-500"
+                      style={{ width: `${(projectStats.blocked / projectStats.total) * 100}%` }}
+                      title={`${projectStats.blocked} blocked`}
+                    />
+                  )}
                 </div>
-                <span className="text-xs font-semibold text-emerald-600">{projectStats.completionPct}%</span>
+                <span className="shrink-0 text-xs font-semibold text-emerald-600">{projectStats.completionPct}%</span>
               </div>
-              <span className="text-xs text-slate-400">|</span>
-              <span className="text-xs text-slate-500">{projectStats.total} tasks</span>
-              {projectStats.completed > 0 && <span className="text-xs text-emerald-600">{projectStats.completed} done</span>}
-              {projectStats.inProgress > 0 && <span className="text-xs text-blue-600">{projectStats.inProgress} in progress</span>}
-              {projectStats.blocked > 0 && <span className="text-xs text-red-600">{projectStats.blocked} blocked</span>}
-              {projectStats.overdue > 0 && <span className="text-xs text-amber-600">{projectStats.overdue} overdue</span>}
-              {hasActiveFilters && (
-                <span className="text-xs text-slate-400">(showing {filteredTasks.length} filtered)</span>
-              )}
+              {/* Legend */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                <span className="text-slate-500">{projectStats.total} tasks</span>
+                {projectStats.completed > 0 && (
+                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500" /><span className="text-slate-600">{projectStats.completed} done</span></span>
+                )}
+                {projectStats.inProgress > 0 && (
+                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-500" /><span className="text-slate-600">{projectStats.inProgress} in progress</span></span>
+                )}
+                {projectStats.blocked > 0 && (
+                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500" /><span className="text-slate-600">{projectStats.blocked} blocked</span></span>
+                )}
+                {projectStats.notStarted > 0 && (
+                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-slate-300" /><span className="text-slate-600">{projectStats.notStarted} not started</span></span>
+                )}
+                {projectStats.overdue > 0 && (
+                  <span className="text-amber-600">{projectStats.overdue} overdue</span>
+                )}
+                {hasActiveFilters && (
+                  <span className="text-slate-400">(showing {filteredTasks.length} filtered)</span>
+                )}
+              </div>
             </div>
           )}
         </div>

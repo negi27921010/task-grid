@@ -8,6 +8,7 @@ import { AgingSummaryBar } from '@/components/task/aging-summary-bar';
 import { FilterBar } from '@/components/task/filter-bar';
 import { TaskViewContainer } from '@/components/task/task-view-container';
 import { TaskDetailPanel } from '@/components/task/task-detail-panel';
+import { BulkUploadDialog } from '@/components/task/bulk-upload-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProject, useUpdateProject } from '@/lib/hooks/use-projects';
 import { useTasks } from '@/lib/hooks/use-tasks';
@@ -61,6 +62,7 @@ function ProjectContent({ id }: { id: string }) {
   const [showCreateRow, setShowCreateRow] = useState(false);
   const handleAddTask = useCallback(() => setShowCreateRow(true), []);
   const handleCloseCreateRow = useCallback(() => setShowCreateRow(false), []);
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
 
   useEffect(() => {
     if (editingName && nameInputRef.current) {
@@ -322,6 +324,7 @@ function ProjectContent({ id }: { id: string }) {
           onLoadPreset={loadPreset}
           onDeletePreset={deletePreset}
           onAddTask={can(currentUser, 'canCreateTasks') ? handleAddTask : undefined}
+          onBulkUpload={can(currentUser, 'canCreateTasks') ? () => setBulkUploadOpen(true) : undefined}
         />
 
         {/* View container */}
@@ -340,6 +343,7 @@ function ProjectContent({ id }: { id: string }) {
 
       {/* Task Detail Panel */}
       <TaskDetailPanel taskId={selectedTaskId} onClose={handleClosePanel} />
+      <BulkUploadDialog open={bulkUploadOpen} onOpenChange={setBulkUploadOpen} defaultProjectId={id} />
     </AppShell>
   );
 }

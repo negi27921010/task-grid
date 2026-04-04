@@ -8,6 +8,7 @@ import { AppShell } from '@/components/layout/app-shell';
 import { AgingSummaryBar } from '@/components/task/aging-summary-bar';
 import { FilterBar } from '@/components/task/filter-bar';
 import { TaskViewContainer } from '@/components/task/task-view-container';
+import { BulkUploadDialog } from '@/components/task/bulk-upload-dialog';
 import { TaskDetailPanel } from '@/components/task/task-detail-panel';
 import { useTasks, useTasksByOwner, useTasksByDepartment } from '@/lib/hooks/use-tasks';
 import { useProjects } from '@/lib/hooks/use-projects';
@@ -92,6 +93,8 @@ function DashboardContent() {
     setShowCreateRow(false);
     setAddTaskProjectId(null);
   }, []);
+
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
 
   const allTasks = tasks ?? [];
   const filteredTasks = useMemo(() => filterTasks(allTasks, filters), [allTasks, filters]);
@@ -249,6 +252,7 @@ function DashboardContent() {
           onLoadPreset={loadPreset}
           onDeletePreset={deletePreset}
           onAddTask={activeProjects.length > 0 && can(currentUser, 'canCreateTasks') ? handleAddTask : undefined}
+          onBulkUpload={activeProjects.length > 0 && can(currentUser, 'canCreateTasks') ? () => setBulkUploadOpen(true) : undefined}
         />
 
         {/* Project picker popover for Add Task on dashboard */}
@@ -293,6 +297,7 @@ function DashboardContent() {
       </div>
 
       <TaskDetailPanel taskId={selectedTaskId} onClose={handleClosePanel} />
+      <BulkUploadDialog open={bulkUploadOpen} onOpenChange={setBulkUploadOpen} />
     </AppShell>
   );
 }

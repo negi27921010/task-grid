@@ -8,12 +8,12 @@ function sb() {
   return createClient();
 }
 
-let hasAssigneeColumn = true;
+let hasAssigneeColumn = false;
 
 function isSchemaError(error: unknown): boolean {
   if (error && typeof error === 'object' && 'message' in error) {
     const msg = (error as { message: string }).message;
-    return msg.includes('assignee_ids') && msg.includes('schema cache');
+    return msg.includes('assignee_ids');
   }
   return false;
 }

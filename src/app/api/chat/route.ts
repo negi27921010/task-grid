@@ -329,7 +329,7 @@ export async function POST(request: Request) {
     }
 
     // 6. Build system prompt
-    const systemPrompt = `You are TaskFlow AI, an intelligent assistant for the TaskFlow project & task management platform.
+    const systemPrompt = `You are Task Grid AI, an intelligent assistant for the Task Grid project & task management platform.
 
 Current user: ${profile.full_name} (${profile.email})
 Role: ${profile.role}
@@ -383,6 +383,10 @@ ${JSON.stringify(contextData, null, 2)}`;
     }
 
     // 9. Stream response
+    if (!groqResponse.body) {
+      return NextResponse.json({ error: 'No response from AI service' }, { status: 502 });
+    }
+
     const stream = new ReadableStream({
       async start(controller) {
         const reader = groqResponse.body!.getReader();

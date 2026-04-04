@@ -81,7 +81,7 @@ export function ChatMessages({
         <div className="rounded-full bg-blue-100 p-3 mb-3">
           <Sparkles className="h-6 w-6 text-blue-600" />
         </div>
-        <h3 className="text-sm font-semibold text-slate-900 mb-1">TaskFlow AI</h3>
+        <h3 className="text-sm font-semibold text-slate-900 mb-1">Task Grid AI</h3>
         <p className="text-xs text-slate-500 text-center mb-5">
           Ask me anything about your tasks, projects, standups, or team.
         </p>

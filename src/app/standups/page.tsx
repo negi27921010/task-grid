@@ -247,6 +247,7 @@ function MorningSection({
                     type="text"
                     value={text}
                     onChange={e => handleOutcomeChange(idx, e.target.value)}
+                    maxLength={500}
                     placeholder={idx === 0 ? 'e.g. Complete 10 school registrations for Gujarat' : 'Next measurable outcome...'}
                     className={cn(
                       'flex-1 rounded-lg border px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20',

@@ -25,7 +25,6 @@ export function useSearch() {
         const found = await taskApi.searchAllTasks(query);
         setResults(found);
       } catch (err) {
-        console.error('[Search] Failed:', err);
         setResults([]);
       } finally {
         setIsSearching(false);

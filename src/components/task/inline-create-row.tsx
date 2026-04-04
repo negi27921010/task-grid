@@ -89,6 +89,7 @@ export function InlineCreateRow({
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            maxLength={200}
             onKeyDown={handleKeyDown}
             aria-label="New task title"
             placeholder="Task title... (Enter to save, Esc to cancel)"

@@ -213,10 +213,13 @@ export function BulkUploadDialog({
   const validRows = parsedRows.filter(r => r.errors.length === 0);
   const errorRows = parsedRows.filter(r => r.errors.length > 0);
 
+  const [failedImports, setFailedImports] = useState<{ title: string; error: string }[]>([]);
+
   const handleImport = async () => {
     if (validRows.length === 0) return;
     setImporting(true);
     let count = 0;
+    const failures: { title: string; error: string }[] = [];
 
     for (const row of validRows) {
       try {
@@ -233,20 +236,25 @@ export function BulkUploadDialog({
               tags: row.tags ? row.tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
             },
             {
-              onSuccess: () => { count++; resolve(); },
+              onSuccess: () => { count++; setImportedCount(count); resolve(); },
               onError: (err) => reject(err),
             },
           );
         });
-      } catch {
-        // Skip failed rows
+      } catch (err) {
+        failures.push({ title: row.title, error: err instanceof Error ? err.message : 'Unknown error' });
       }
     }
 
     setImportedCount(count);
+    setFailedImports(failures);
     setImporting(false);
     setStep('done');
-    toast(`${count} task${count !== 1 ? 's' : ''} imported successfully`, 'success');
+    if (failures.length > 0) {
+      toast(`${count} imported, ${failures.length} failed`, 'warning');
+    } else {
+      toast(`${count} task${count !== 1 ? 's' : ''} imported successfully`, 'success');
+    }
   };
 
   const handleReset = () => {
@@ -406,13 +414,22 @@ export function BulkUploadDialog({
           {/* Step: Done */}
           {step === 'done' && (
             <div className="py-6 text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-                <Check className="h-6 w-6 text-green-600" />
+              <div className={`mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full ${failedImports.length > 0 ? 'bg-amber-100' : 'bg-green-100'}`}>
+                <Check className={`h-6 w-6 ${failedImports.length > 0 ? 'text-amber-600' : 'text-green-600'}`} />
               </div>
               <p className="text-sm font-semibold text-slate-900">
-                {importedCount} task{importedCount !== 1 ? 's' : ''} imported successfully
+                {importedCount} task{importedCount !== 1 ? 's' : ''} imported
+                {failedImports.length > 0 && `, ${failedImports.length} failed`}
               </p>
               <p className="mt-1 text-xs text-slate-500">Tasks are now visible in their respective projects.</p>
+              {failedImports.length > 0 && (
+                <div className="mt-3 rounded-lg border border-red-200 bg-red-50/50 p-3 text-left">
+                  <p className="text-xs font-semibold text-red-700 mb-1">Failed rows:</p>
+                  {failedImports.map((f, i) => (
+                    <p key={i} className="text-xs text-red-600 truncate">{f.title}: {f.error}</p>
+                  ))}
+                </div>
+              )}
               <div className="mt-4 flex justify-center gap-2">
                 <Button variant="ghost" size="sm" onClick={() => { handleReset(); onOpenChange(false); }}>
                   Close

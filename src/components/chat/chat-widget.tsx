@@ -64,7 +64,17 @@ export function ChatWidget() {
       }
 
       // Stream the response
-      const reader = res.body!.getReader();
+      if (!res.body) {
+        const text = await res.text();
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { ...updated[updated.length - 1], content: text || 'No response received.' };
+          return updated;
+        });
+        setIsStreaming(false);
+        return;
+      }
+      const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let accumulated = '';
 
@@ -140,7 +150,7 @@ export function ChatWidget() {
                 <Bot className="h-4 w-4 text-blue-700" />
               </div>
               <div>
-                <span className="text-sm font-semibold text-slate-900">TaskFlow AI</span>
+                <span className="text-sm font-semibold text-slate-900">Task Grid AI</span>
                 <span className="ml-1.5 rounded-full bg-green-100 px-1.5 py-0.5 text-[9px] font-medium text-green-700">Online</span>
               </div>
             </div>

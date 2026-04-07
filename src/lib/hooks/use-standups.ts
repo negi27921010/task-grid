@@ -7,6 +7,7 @@ import type {
   CreateMorningStandupInput,
   UpdateMorningStandupInput,
   EveningClosureInput,
+  OutcomeEveningStatus,
 } from '../types';
 
 export function useStandupByDate(userId: string, date: string) {
@@ -104,5 +105,49 @@ export function useStandupHistory(
     queryFn: () => standupApi.getStandupHistory(userId, startDate, endDate),
     enabled: !!userId && !!startDate && !!endDate,
     staleTime: 60 * 1000,
+  });
+}
+
+export function useUpdateOutcomeStatus() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: ({
+      outcomeId,
+      status,
+      reason,
+    }: {
+      outcomeId: string;
+      status: OutcomeEveningStatus;
+      reason?: string;
+    }) => standupApi.updateOutcomeStatus(outcomeId, status, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['standups'] });
+    },
+    onError: (err: Error) => {
+      toast(`Failed to update outcome: ${err.message}`, 'error');
+    },
+  });
+}
+
+export function useAddStandupComment() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: ({
+      outcomeId,
+      authorId,
+      content,
+    }: {
+      outcomeId: string;
+      authorId: string;
+      content: string;
+    }) => standupApi.addStandupComment(outcomeId, authorId, content),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['standups'] });
+    },
+    onError: (err: Error) => {
+      toast(`Failed to add comment: ${err.message}`, 'error');
+    },
   });
 }

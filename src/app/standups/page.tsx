@@ -15,6 +15,8 @@ import {
   Flame,
   Users,
   Plus,
+  Send,
+  MessageSquare,
 } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
 import { Button } from '@/components/ui/button';
@@ -32,9 +34,12 @@ import {
   useUpdateMorningStandup,
   useSubmitEveningClosure,
   useTeamStandups,
+  useUpdateOutcomeStatus,
+  useAddStandupComment,
 } from '@/lib/hooks/use-standups';
 import { getTodayIST, getISTHour } from '@/lib/api/standups';
 import { cn } from '@/lib/utils/cn';
+import { formatDistanceToNow } from 'date-fns';
 import type { StandupOutcome, OutcomeEveningStatus } from '@/lib/types';
 
 /* ---- Outcome validation ---- */
@@ -329,75 +334,220 @@ function MorningSection({
   );
 }
 
+/* ---- Outcome Comment Thread ---- */
+
+function OutcomeComments({
+  outcome,
+  currentUserId,
+}: {
+  outcome: StandupOutcome;
+  currentUserId: string;
+}) {
+  const [text, setText] = useState('');
+  const addComment = useAddStandupComment();
+  const { data: allUsers } = useUsers();
+
+  const handlePost = () => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    addComment.mutate(
+      { outcomeId: outcome.id, authorId: currentUserId, content: trimmed },
+      { onSuccess: () => setText('') },
+    );
+  };
+
+  if (outcome.comments.length === 0 && outcome.evening_status === 'pending') return null;
+
+  return (
+    <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+      {outcome.comments.length > 0 && (
+        <div className="space-y-2">
+          {outcome.comments.map((c) => {
+            const author = (allUsers ?? []).find(u => u.id === c.author_id);
+            return (
+              <div key={c.id} className="flex items-start gap-2">
+                <Avatar fullName={author?.full_name ?? '?'} src={author?.avatar_url ?? null} size="sm" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-slate-700">{author?.full_name ?? 'Unknown'}</span>
+                    <span className="text-[10px] text-slate-400">{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}</span>
+                  </div>
+                  <p className="text-xs text-slate-600 whitespace-pre-wrap">{c.content}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {/* Comment input */}
+      {outcome.evening_status !== 'pending' && (
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={text}
+            onChange={e => setText(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handlePost(); } }}
+            placeholder="Add a comment..."
+            maxLength={500}
+            className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500/20"
+            disabled={addComment.isPending}
+          />
+          <button
+            type="button"
+            onClick={handlePost}
+            disabled={!text.trim() || addComment.isPending}
+            className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600 disabled:opacity-30"
+          >
+            <Send className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---- Single Outcome Card ---- */
+
+function OutcomeCard({
+  outcome,
+  currentUserId,
+}: {
+  outcome: StandupOutcome;
+  currentUserId: string;
+}) {
+  const [reason, setReason] = useState(outcome.reason_not_done ?? '');
+  const [localStatus, setLocalStatus] = useState<OutcomeEveningStatus>(outcome.evening_status);
+  const updateStatus = useUpdateOutcomeStatus();
+  const { toast } = useToast();
+
+  const isClosed = outcome.evening_status !== 'pending';
+  const hasUnsavedChange = localStatus !== outcome.evening_status;
+
+  const handleSave = () => {
+    if (localStatus === 'pending') return;
+    if (localStatus === 'not_done' && reason.trim().length < 10) {
+      toast('Provide a reason (min 10 chars)', 'warning');
+      return;
+    }
+    updateStatus.mutate({
+      outcomeId: outcome.id,
+      status: localStatus,
+      reason: localStatus === 'not_done' ? reason.trim() : undefined,
+    });
+  };
+
+  return (
+    <div className={cn(
+      'rounded-lg border px-4 py-3 transition-colors',
+      isClosed && outcome.evening_status === 'done' && 'border-green-200 bg-green-50/30',
+      isClosed && outcome.evening_status === 'not_done' && 'border-red-200 bg-red-50/30',
+      !isClosed && 'border-slate-200',
+    )}>
+      {/* Outcome text + status controls */}
+      <div className="flex items-start gap-3">
+        {outcome.is_carried && <RefreshCw className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm text-slate-800">{outcome.outcome_text}</p>
+          {outcome.is_carried && outcome.carry_streak >= 3 && (
+            <span className="inline-flex items-center gap-1 mt-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
+              <Flame className="h-3 w-3" /> STUCK {outcome.carry_streak} days
+            </span>
+          )}
+        </div>
+
+        {/* Status controls */}
+        {isClosed ? (
+          <div className="flex items-center gap-2 shrink-0">
+            <span className={cn(
+              'rounded-full px-2.5 py-1 text-xs font-semibold',
+              outcome.evening_status === 'done' && 'bg-green-100 text-green-700',
+              outcome.evening_status === 'not_done' && 'bg-red-100 text-red-700',
+            )}>
+              {outcome.evening_status === 'done' ? 'Done' : 'Not Done'}
+            </span>
+            {outcome.closed_at && (
+              <span className="text-[10px] text-slate-400">
+                {format(new Date(outcome.closed_at), 'h:mm a')}
+              </span>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setLocalStatus('done')}
+              disabled={updateStatus.isPending}
+              className={cn(
+                'rounded-lg px-3 py-1.5 text-xs font-medium transition-all',
+                localStatus === 'done'
+                  ? 'bg-green-600 text-white shadow-sm'
+                  : 'border border-slate-200 text-slate-500 hover:border-green-300 hover:bg-green-50 hover:text-green-700'
+              )}
+            >
+              <Check className="inline h-3.5 w-3.5 mr-1" />Done
+            </button>
+            <button
+              type="button"
+              onClick={() => setLocalStatus('not_done')}
+              disabled={updateStatus.isPending}
+              className={cn(
+                'rounded-lg px-3 py-1.5 text-xs font-medium transition-all',
+                localStatus === 'not_done'
+                  ? 'bg-red-600 text-white shadow-sm'
+                  : 'border border-slate-200 text-slate-500 hover:border-red-300 hover:bg-red-50 hover:text-red-700'
+              )}
+            >
+              <X className="inline h-3.5 w-3.5 mr-1" />Not Done
+            </button>
+            {hasUnsavedChange && localStatus !== 'pending' && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleSave}
+                disabled={updateStatus.isPending}
+                className="ml-1"
+              >
+                {updateStatus.isPending ? '...' : 'Save'}
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Reason for not_done (inline editing for pending, read-only for closed) */}
+      {!isClosed && localStatus === 'not_done' && (
+        <div className="mt-3">
+          <textarea
+            value={reason}
+            onChange={e => setReason(e.target.value)}
+            placeholder="Why wasn't this completed? (min 10 characters)"
+            rows={2}
+            maxLength={500}
+            className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm resize-none focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+          />
+        </div>
+      )}
+      {isClosed && outcome.evening_status === 'not_done' && outcome.reason_not_done && (
+        <p className="mt-2 text-xs text-red-600 italic">Reason: {outcome.reason_not_done}</p>
+      )}
+
+      {/* Comment thread */}
+      <OutcomeComments outcome={outcome} currentUserId={currentUserId} />
+    </div>
+  );
+}
+
 /* ---- Evening Section ---- */
 
 function EveningSection({
   standup,
+  currentUserId,
 }: {
   standup: NonNullable<ReturnType<typeof useStandupByDate>['data']>;
+  currentUserId: string;
 }) {
-  const [statuses, setStatuses] = useState<Record<string, OutcomeEveningStatus>>(() => {
-    const map: Record<string, OutcomeEveningStatus> = {};
-    for (const o of standup.outcomes) {
-      map[o.id] = o.evening_status;
-    }
-    return map;
-  });
-  const [reasons, setReasons] = useState<Record<string, string>>(() => {
-    const map: Record<string, string> = {};
-    for (const o of standup.outcomes) {
-      if (o.reason_not_done) map[o.id] = o.reason_not_done;
-    }
-    return map;
-  });
-  const [notes, setNotes] = useState(standup.evening_notes ?? '');
-  const submitClosure = useSubmitEveningClosure();
-  const { toast } = useToast();
-
-  const isSubmitted = !!standup.evening_submitted_at;
-  const istHour = getISTHour();
-  const canSubmit = istHour >= 17;
-
-  const handleToggle = (id: string, status: OutcomeEveningStatus) => {
-    setStatuses(prev => ({ ...prev, [id]: status }));
-    if (status === 'done') {
-      setReasons(prev => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
-    }
-  };
-
-  const handleSubmit = () => {
-    // Validate all outcomes have a status set (not pending)
-    const allSet = standup.outcomes.every(o => statuses[o.id] !== 'pending');
-    if (!allSet) {
-      toast('Mark all outcomes as Done or Not Done', 'warning');
-      return;
-    }
-
-    // Validate reasons for not_done
-    const missingReasons = standup.outcomes.filter(
-      o => statuses[o.id] === 'not_done' && (!reasons[o.id] || reasons[o.id].trim().length < 10)
-    );
-    if (missingReasons.length > 0) {
-      toast('Provide a reason (min 10 chars) for each outcome not done', 'warning');
-      return;
-    }
-
-    submitClosure.mutate({
-      standupId: standup.id,
-      input: {
-        outcomes: standup.outcomes.map(o => ({
-          id: o.id,
-          evening_status: statuses[o.id],
-          reason_not_done: statuses[o.id] === 'not_done' ? reasons[o.id]?.trim() : undefined,
-        })),
-        evening_notes: notes.trim() || undefined,
-      },
-    });
-  };
+  const allClosed = standup.outcomes.every(o => o.evening_status !== 'pending');
+  const closedCount = standup.outcomes.filter(o => o.evening_status !== 'pending').length;
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -409,127 +559,22 @@ function EveningSection({
           <div>
             <h2 className="text-sm font-semibold text-slate-900">Evening Closure</h2>
             <p className="text-xs text-slate-500">
-              {isSubmitted
-                ? `Closed ${standup.evening_is_late ? '(late) ' : ''}at ${standup.evening_submitted_at ? format(new Date(standup.evening_submitted_at), 'h:mm a') : ''}`
-                : canSubmit
-                  ? 'Mark each outcome as Done or Not Done'
-                  : 'Available after 5:00 PM'}
+              {allClosed
+                ? `All ${standup.outcomes.length} outcomes resolved`
+                : `${closedCount}/${standup.outcomes.length} outcomes resolved — mark each individually`}
             </p>
           </div>
         </div>
-        {isSubmitted && <Badge variant="success">Closed</Badge>}
+        {allClosed && <Badge variant="success">Day Closed</Badge>}
+        {!allClosed && closedCount > 0 && (
+          <span className="text-xs font-medium text-amber-600">{closedCount}/{standup.outcomes.length}</span>
+        )}
       </div>
 
       <div className="px-6 py-5 space-y-4">
-        {standup.outcomes.map((o) => {
-          const status = statuses[o.id];
-          return (
-            <div key={o.id} className={cn(
-              'rounded-lg border px-4 py-3 transition-colors',
-              isSubmitted && status === 'done' && 'border-green-200 bg-green-50/50',
-              isSubmitted && status === 'not_done' && 'border-red-200 bg-red-50/50',
-              !isSubmitted && 'border-slate-200',
-            )}>
-              <div className="flex items-start gap-3">
-                {o.is_carried && <RefreshCw className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />}
-                <div className="flex-1">
-                  <p className="text-sm text-slate-800">{o.outcome_text}</p>
-                  {o.is_carried && o.carry_streak >= 3 && (
-                    <span className="inline-flex items-center gap-1 mt-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
-                      <Flame className="h-3 w-3" /> STUCK {o.carry_streak} days
-                    </span>
-                  )}
-                </div>
-                {!isSubmitted && canSubmit && (
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => handleToggle(o.id, 'done')}
-                      className={cn(
-                        'rounded-lg px-3 py-1.5 text-xs font-medium transition-all',
-                        status === 'done'
-                          ? 'bg-green-600 text-white shadow-sm'
-                          : 'border border-slate-200 text-slate-500 hover:border-green-300 hover:bg-green-50 hover:text-green-700'
-                      )}
-                    >
-                      <Check className="inline h-3.5 w-3.5 mr-1" />Done
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleToggle(o.id, 'not_done')}
-                      className={cn(
-                        'rounded-lg px-3 py-1.5 text-xs font-medium transition-all',
-                        status === 'not_done'
-                          ? 'bg-red-600 text-white shadow-sm'
-                          : 'border border-slate-200 text-slate-500 hover:border-red-300 hover:bg-red-50 hover:text-red-700'
-                      )}
-                    >
-                      <X className="inline h-3.5 w-3.5 mr-1" />Not Done
-                    </button>
-                  </div>
-                )}
-                {isSubmitted && (
-                  <span className={cn(
-                    'shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold',
-                    status === 'done' && 'bg-green-100 text-green-700',
-                    status === 'not_done' && 'bg-red-100 text-red-700',
-                  )}>
-                    {status === 'done' ? 'Done' : 'Not Done'}
-                  </span>
-                )}
-              </div>
-
-              {/* Reason field for not_done */}
-              {!isSubmitted && status === 'not_done' && (
-                <div className="mt-3 ml-0">
-                  <textarea
-                    value={reasons[o.id] ?? ''}
-                    onChange={e => setReasons(prev => ({ ...prev, [o.id]: e.target.value }))}
-                    placeholder="Why wasn't this completed? (min 10 characters)"
-                    rows={2}
-                    className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm resize-none focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/20"
-                  />
-                </div>
-              )}
-              {isSubmitted && status === 'not_done' && o.reason_not_done && (
-                <p className="mt-2 text-xs text-red-600 italic">Reason: {o.reason_not_done}</p>
-              )}
-            </div>
-          );
-        })}
-
-        {!isSubmitted && canSubmit && (
-          <>
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-                End-of-day notes (optional)
-              </label>
-              <textarea
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                placeholder="Any additional notes about today..."
-                rows={2}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm resize-none focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              />
-            </div>
-            <div className="flex justify-end">
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleSubmit}
-                disabled={submitClosure.isPending}
-              >
-                {submitClosure.isPending ? 'Submitting...' : 'Submit Evening Closure'}
-              </Button>
-            </div>
-          </>
-        )}
-
-        {!isSubmitted && !canSubmit && (
-          <p className="text-center text-sm text-slate-400 py-4">
-            Evening closure opens at 5:00 PM IST
-          </p>
-        )}
+        {standup.outcomes.map((o) => (
+          <OutcomeCard key={o.id} outcome={o} currentUserId={currentUserId} />
+        ))}
       </div>
     </div>
   );
@@ -973,7 +1018,7 @@ function StandupsContent() {
               />
 
               {standup?.morning_submitted_at && (
-                <EveningSection standup={standup} />
+                <EveningSection standup={standup} currentUserId={currentUser.id} />
               )}
             </div>
           )

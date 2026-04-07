@@ -3,6 +3,7 @@ import { createClient } from '../supabase';
 import type {
   DailyStandup,
   StandupOutcome,
+  StandupComment,
   CreateMorningStandupInput,
   UpdateMorningStandupInput,
   EveningClosureInput,
@@ -37,7 +38,10 @@ export function getISTHour(): number {
 
 /* ---- Row mappers ---- */
 
-function mapOutcomeRow(row: Record<string, unknown>): StandupOutcome {
+function mapOutcomeRow(
+  row: Record<string, unknown>,
+  comments: StandupComment[] = [],
+): StandupOutcome {
   return {
     id: row.id as string,
     standup_id: row.standup_id as string,
@@ -48,7 +52,9 @@ function mapOutcomeRow(row: Record<string, unknown>): StandupOutcome {
     carry_streak: row.carry_streak as number,
     evening_status: row.evening_status as OutcomeEveningStatus,
     reason_not_done: (row.reason_not_done as string) ?? null,
+    closed_at: (row.closed_at as string) ?? null,
     created_at: row.created_at as string,
+    comments,
   };
 }
 
@@ -74,6 +80,16 @@ function mapStandupRow(
 
 /* ---- Queries ---- */
 
+function mapCommentRow(row: Record<string, unknown>): StandupComment {
+  return {
+    id: row.id as string,
+    outcome_id: row.outcome_id as string,
+    author_id: row.author_id as string,
+    content: row.content as string,
+    created_at: row.created_at as string,
+  };
+}
+
 async function fetchOutcomes(standupId: string): Promise<StandupOutcome[]> {
   const { data, error } = await sb()
     .from('standup_outcomes')
@@ -82,7 +98,25 @@ async function fetchOutcomes(standupId: string): Promise<StandupOutcome[]> {
     .order('is_carried', { ascending: false })
     .order('priority_order', { ascending: true });
   if (error) throw error;
-  return (data ?? []).map(mapOutcomeRow);
+
+  const outcomeIds = (data ?? []).map(r => r.id as string);
+  let commentsMap: Record<string, StandupComment[]> = {};
+
+  if (outcomeIds.length > 0) {
+    const { data: commentRows } = await sb()
+      .from('standup_comments')
+      .select('*')
+      .in('outcome_id', outcomeIds)
+      .order('created_at', { ascending: true });
+
+    for (const row of commentRows ?? []) {
+      const oid = row.outcome_id as string;
+      if (!commentsMap[oid]) commentsMap[oid] = [];
+      commentsMap[oid].push(mapCommentRow(row));
+    }
+  }
+
+  return (data ?? []).map(r => mapOutcomeRow(r, commentsMap[r.id as string] ?? []));
 }
 
 export async function getStandupByDate(
@@ -127,7 +161,7 @@ export async function getCarriedOutcomes(
     .eq('evening_status', 'not_done')
     .order('priority_order', { ascending: true });
   if (error) throw error;
-  return (data ?? []).map(mapOutcomeRow);
+  return (data ?? []).map(r => mapOutcomeRow(r));
 }
 
 /* ---- Mutations ---- */
@@ -330,7 +364,7 @@ export async function getTeamStandups(
       .select('*')
       .in('standup_id', standupIds);
     if (oErr) throw oErr;
-    allOutcomes = (outcomeRows ?? []).map(mapOutcomeRow);
+    allOutcomes = (outcomeRows ?? []).map(r => mapOutcomeRow(r));
   }
 
   return (users ?? []).map((u) => {
@@ -409,4 +443,77 @@ export async function getStandupHistory(
     results.push(mapStandupRow(s, outcomes));
   }
   return results;
+}
+
+/* ---- Per-outcome operations ---- */
+
+export async function updateOutcomeStatus(
+  outcomeId: string,
+  status: OutcomeEveningStatus,
+  reason?: string,
+): Promise<void> {
+  const now = new Date().toISOString();
+  const updates: Record<string, unknown> = {
+    evening_status: status,
+    closed_at: status !== 'pending' ? now : null,
+  };
+  if (status === 'not_done') {
+    updates.reason_not_done = reason ?? null;
+  } else {
+    updates.reason_not_done = null;
+  }
+
+  const { error } = await sb()
+    .from('standup_outcomes')
+    .update(updates)
+    .eq('id', outcomeId);
+  if (error) throw error;
+
+  // Check if all outcomes in this standup are now resolved → auto-set evening_submitted_at
+  const { data: outcome } = await sb()
+    .from('standup_outcomes')
+    .select('standup_id')
+    .eq('id', outcomeId)
+    .single();
+  if (!outcome) return;
+
+  const { data: siblings } = await sb()
+    .from('standup_outcomes')
+    .select('evening_status')
+    .eq('standup_id', outcome.standup_id as string);
+
+  const allResolved = (siblings ?? []).every(
+    s => (s.evening_status as string) !== 'pending',
+  );
+
+  if (allResolved) {
+    await sb()
+      .from('daily_standups')
+      .update({
+        evening_submitted_at: now,
+        evening_is_late: getISTHour() >= 20,
+      })
+      .eq('id', outcome.standup_id as string)
+      .is('evening_submitted_at', null);
+  }
+}
+
+export async function addStandupComment(
+  outcomeId: string,
+  authorId: string,
+  content: string,
+): Promise<StandupComment> {
+  const row = {
+    id: uuidv4(),
+    outcome_id: outcomeId,
+    author_id: authorId,
+    content,
+  };
+  const { data, error } = await sb()
+    .from('standup_comments')
+    .insert(row)
+    .select()
+    .single();
+  if (error) throw error;
+  return mapCommentRow(data);
 }

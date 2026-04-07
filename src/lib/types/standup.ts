@@ -1,5 +1,13 @@
 export type OutcomeEveningStatus = 'pending' | 'done' | 'not_done';
 
+export interface StandupComment {
+  id: string;
+  outcome_id: string;
+  author_id: string;
+  content: string;
+  created_at: string;
+}
+
 export interface StandupOutcome {
   id: string;
   standup_id: string;
@@ -10,7 +18,9 @@ export interface StandupOutcome {
   carry_streak: number;
   evening_status: OutcomeEveningStatus;
   reason_not_done: string | null;
+  closed_at: string | null;
   created_at: string;
+  comments: StandupComment[];
 }
 
 export interface DailyStandup {

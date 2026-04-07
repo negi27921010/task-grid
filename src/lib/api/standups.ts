@@ -103,16 +103,20 @@ async function fetchOutcomes(standupId: string): Promise<StandupOutcome[]> {
   let commentsMap: Record<string, StandupComment[]> = {};
 
   if (outcomeIds.length > 0) {
-    const { data: commentRows } = await sb()
-      .from('standup_comments')
-      .select('*')
-      .in('outcome_id', outcomeIds)
-      .order('created_at', { ascending: true });
+    try {
+      const { data: commentRows } = await sb()
+        .from('standup_comments')
+        .select('*')
+        .in('outcome_id', outcomeIds)
+        .order('created_at', { ascending: true });
 
-    for (const row of commentRows ?? []) {
-      const oid = row.outcome_id as string;
-      if (!commentsMap[oid]) commentsMap[oid] = [];
-      commentsMap[oid].push(mapCommentRow(row));
+      for (const row of commentRows ?? []) {
+        const oid = row.outcome_id as string;
+        if (!commentsMap[oid]) commentsMap[oid] = [];
+        commentsMap[oid].push(mapCommentRow(row));
+      }
+    } catch {
+      // standup_comments table may not exist yet — graceful fallback
     }
   }
 
@@ -447,6 +451,8 @@ export async function getStandupHistory(
 
 /* ---- Per-outcome operations ---- */
 
+let hasClosedAtColumn = true;
+
 export async function updateOutcomeStatus(
   outcomeId: string,
   status: OutcomeEveningStatus,
@@ -455,8 +461,10 @@ export async function updateOutcomeStatus(
   const now = new Date().toISOString();
   const updates: Record<string, unknown> = {
     evening_status: status,
-    closed_at: status !== 'pending' ? now : null,
   };
+  if (hasClosedAtColumn) {
+    updates.closed_at = status !== 'pending' ? now : null;
+  }
   if (status === 'not_done') {
     updates.reason_not_done = reason ?? null;
   } else {
@@ -467,7 +475,21 @@ export async function updateOutcomeStatus(
     .from('standup_outcomes')
     .update(updates)
     .eq('id', outcomeId);
-  if (error) throw error;
+
+  if (error) {
+    // If closed_at column doesn't exist, retry without it
+    if (error.message?.includes('closed_at')) {
+      hasClosedAtColumn = false;
+      delete updates.closed_at;
+      const { error: e2 } = await sb()
+        .from('standup_outcomes')
+        .update(updates)
+        .eq('id', outcomeId);
+      if (e2) throw e2;
+    } else {
+      throw error;
+    }
+  }
 
   // Check if all outcomes in this standup are now resolved → auto-set evening_submitted_at
   const { data: outcome } = await sb()

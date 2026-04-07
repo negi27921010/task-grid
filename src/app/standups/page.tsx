@@ -415,24 +415,35 @@ function OutcomeCard({
   outcome: StandupOutcome;
   currentUserId: string;
 }) {
+  const [showReasonForm, setShowReasonForm] = useState(false);
   const [reason, setReason] = useState(outcome.reason_not_done ?? '');
-  const [localStatus, setLocalStatus] = useState<OutcomeEveningStatus>(outcome.evening_status);
   const updateStatus = useUpdateOutcomeStatus();
   const { toast } = useToast();
 
   const isClosed = outcome.evening_status !== 'pending';
-  const hasUnsavedChange = localStatus !== outcome.evening_status;
 
-  const handleSave = () => {
-    if (localStatus === 'pending') return;
-    if (localStatus === 'not_done' && reason.trim().length < 10) {
+  // Click Done → save immediately
+  const handleDone = () => {
+    updateStatus.mutate({ outcomeId: outcome.id, status: 'done' });
+  };
+
+  // Click Not Done → show reason form
+  const handleNotDone = () => {
+    setShowReasonForm(true);
+  };
+
+  // Submit reason → save not_done
+  const handleSubmitReason = () => {
+    if (reason.trim().length < 10) {
       toast('Provide a reason (min 10 chars)', 'warning');
       return;
     }
     updateStatus.mutate({
       outcomeId: outcome.id,
-      status: localStatus,
-      reason: localStatus === 'not_done' ? reason.trim() : undefined,
+      status: 'not_done',
+      reason: reason.trim(),
+    }, {
+      onSuccess: () => setShowReasonForm(false),
     });
   };
 
@@ -475,56 +486,53 @@ function OutcomeCard({
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
-              onClick={() => setLocalStatus('done')}
+              onClick={handleDone}
               disabled={updateStatus.isPending}
-              className={cn(
-                'rounded-lg px-3 py-1.5 text-xs font-medium transition-all',
-                localStatus === 'done'
-                  ? 'bg-green-600 text-white shadow-sm'
-                  : 'border border-slate-200 text-slate-500 hover:border-green-300 hover:bg-green-50 hover:text-green-700'
-              )}
+              className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all hover:bg-green-700 disabled:opacity-50"
             >
-              <Check className="inline h-3.5 w-3.5 mr-1" />Done
+              {updateStatus.isPending ? '...' : <><Check className="inline h-3.5 w-3.5 mr-1" />Done</>}
             </button>
             <button
               type="button"
-              onClick={() => setLocalStatus('not_done')}
-              disabled={updateStatus.isPending}
-              className={cn(
-                'rounded-lg px-3 py-1.5 text-xs font-medium transition-all',
-                localStatus === 'not_done'
-                  ? 'bg-red-600 text-white shadow-sm'
-                  : 'border border-slate-200 text-slate-500 hover:border-red-300 hover:bg-red-50 hover:text-red-700'
-              )}
+              onClick={handleNotDone}
+              disabled={updateStatus.isPending || showReasonForm}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-500 transition-all hover:border-red-300 hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
             >
               <X className="inline h-3.5 w-3.5 mr-1" />Not Done
             </button>
-            {hasUnsavedChange && localStatus !== 'pending' && (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleSave}
-                disabled={updateStatus.isPending}
-                className="ml-1"
-              >
-                {updateStatus.isPending ? '...' : 'Save'}
-              </Button>
-            )}
           </div>
         )}
       </div>
 
-      {/* Reason for not_done (inline editing for pending, read-only for closed) */}
-      {!isClosed && localStatus === 'not_done' && (
-        <div className="mt-3">
+      {/* Reason form for not_done — appears inline after clicking "Not Done" */}
+      {!isClosed && showReasonForm && (
+        <div className="mt-3 space-y-2">
           <textarea
             value={reason}
             onChange={e => setReason(e.target.value)}
             placeholder="Why wasn't this completed? (min 10 characters)"
             rows={2}
             maxLength={500}
+            autoFocus
             className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm resize-none focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/20"
           />
+          <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => { setShowReasonForm(false); setReason(''); }}
+              className="rounded-md px-3 py-1 text-xs text-slate-500 hover:text-slate-700"
+            >
+              Cancel
+            </button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleSubmitReason}
+              disabled={reason.trim().length < 10 || updateStatus.isPending}
+            >
+              {updateStatus.isPending ? 'Saving...' : 'Mark Not Done'}
+            </Button>
+          </div>
         </div>
       )}
       {isClosed && outcome.evening_status === 'not_done' && outcome.reason_not_done && (

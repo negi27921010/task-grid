@@ -5,7 +5,11 @@ export function filterTasks(tasks: Task[], filters: TaskFilters): Task[] {
   return tasks.filter(task => {
     if (filters.status?.length && !filters.status.includes(task.status)) return false;
     if (filters.priority?.length && !filters.priority.includes(task.priority)) return false;
-    if (filters.owner_id?.length && !filters.owner_id.includes(task.owner_id)) return false;
+    if (filters.owner_id?.length) {
+      const isOwner = filters.owner_id.includes(task.owner_id);
+      const isAssignee = (task.assignee_ids ?? []).some(id => filters.owner_id!.includes(id));
+      if (!isOwner && !isAssignee) return false;
+    }
     if (filters.aging_status?.length) {
       const aging = computeAgingStatus(task);
       if (!filters.aging_status.includes(aging)) return false;

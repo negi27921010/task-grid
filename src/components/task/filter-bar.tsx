@@ -114,7 +114,7 @@ function FilterDropdown<T extends string>({
         </button>
       </Popover.Trigger>
       <Popover.Content align="start" className="w-56 p-2">
-        <div className="space-y-1">
+        <div className="max-h-64 overflow-y-auto space-y-1">
           {options.map((option) => (
             <label
               key={option.value}

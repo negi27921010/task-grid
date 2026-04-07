@@ -196,8 +196,8 @@ export const TaskRow = memo(function TaskRow({
           className={cn(
             'group/row border-b border-slate-100 transition-colors',
             depth === 0 && 'bg-white hover:bg-slate-50/80',
-            depth === 1 && 'bg-blue-50/30 hover:bg-blue-50/50',
-            depth >= 2 && 'bg-violet-50/30 hover:bg-violet-50/50',
+            depth === 1 && 'bg-blue-50/60 hover:bg-blue-50/80',
+            depth >= 2 && 'bg-violet-50/60 hover:bg-violet-50/80',
             borderColor && `border-l-4 ${borderColor}`,
             !borderColor && 'border-l-4 border-l-transparent',
             isCompleted && 'opacity-50',
@@ -249,7 +249,11 @@ export const TaskRow = memo(function TaskRow({
           <td className="min-w-[220px] py-2 pr-3">
             <div className="flex items-center" style={{ paddingLeft: `${depth * 24}px` }}>
               {depth > 0 && (
-                <span className="mr-1.5 shrink-0 rounded bg-slate-100 px-1 py-0.5 text-[9px] font-semibold text-slate-500 uppercase">
+                <span className={cn(
+                  'mr-1.5 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase',
+                  depth === 1 && 'bg-blue-100 text-blue-700',
+                  depth >= 2 && 'bg-violet-100 text-violet-700',
+                )}>
                   {depthLabel}
                 </span>
               )}

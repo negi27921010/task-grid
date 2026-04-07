@@ -179,7 +179,7 @@ export function OwnerSelect({
               />
             </div>
           </div>
-          <div className="max-h-72 overflow-y-auto p-1.5">
+          <div className="overflow-y-auto p-1.5" style={{ maxHeight: 'min(288px, calc(100vh - 200px))' }}>
             {departments.map(dept => {
               const deptUsers = filtered.filter(u => u.department === dept);
               if (deptUsers.length === 0) return null;

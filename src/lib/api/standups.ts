@@ -157,12 +157,12 @@ export async function getCarriedOutcomes(
   if (psErr) throw psErr;
   if (!prevStandup) return [];
 
-  // Get outcomes that were not_done
+  // Get outcomes that were not completed (not_done OR still pending)
   const { data, error } = await sb()
     .from('standup_outcomes')
     .select('*')
     .eq('standup_id', prevStandup.id as string)
-    .eq('evening_status', 'not_done')
+    .in('evening_status', ['not_done', 'pending'])
     .order('priority_order', { ascending: true });
   if (error) throw error;
   return (data ?? []).map(r => mapOutcomeRow(r));
@@ -511,18 +511,23 @@ export async function addStandupComment(
   outcomeId: string,
   authorId: string,
   content: string,
-): Promise<StandupComment> {
+): Promise<StandupComment | null> {
   const row = {
     id: uuidv4(),
     outcome_id: outcomeId,
     author_id: authorId,
     content,
   };
-  const { data, error } = await sb()
-    .from('standup_comments')
-    .insert(row)
-    .select()
-    .single();
-  if (error) throw error;
-  return mapCommentRow(data);
+  try {
+    const { data, error } = await sb()
+      .from('standup_comments')
+      .insert(row)
+      .select()
+      .single();
+    if (error) throw error;
+    return mapCommentRow(data);
+  } catch {
+    // standup_comments table may not exist until migration 005 is run
+    throw new Error('Comments feature requires a database update. Please contact your admin.');
+  }
 }

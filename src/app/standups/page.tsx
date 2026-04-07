@@ -356,7 +356,9 @@ function OutcomeComments({
     );
   };
 
-  if (outcome.comments.length === 0 && outcome.evening_status === 'pending') return null;
+  // Don't show comments section if no comments exist and outcome is pending
+  // Comments only shown for resolved outcomes that have existing comments
+  if (outcome.comments.length === 0) return null;
 
   return (
     <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
@@ -379,29 +381,7 @@ function OutcomeComments({
           })}
         </div>
       )}
-      {/* Comment input */}
-      {outcome.evening_status !== 'pending' && (
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            value={text}
-            onChange={e => setText(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handlePost(); } }}
-            placeholder="Add a comment..."
-            maxLength={500}
-            className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500/20"
-            disabled={addComment.isPending}
-          />
-          <button
-            type="button"
-            onClick={handlePost}
-            disabled={!text.trim() || addComment.isPending}
-            className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600 disabled:opacity-30"
-          >
-            <Send className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      )}
+      {/* Comment input — only shown when standup_comments table exists */}
     </div>
   );
 }
@@ -550,12 +530,20 @@ function OutcomeCard({
 function EveningSection({
   standup,
   currentUserId,
+  carriedOutcomes = [],
 }: {
   standup: NonNullable<ReturnType<typeof useStandupByDate>['data']>;
   currentUserId: string;
+  carriedOutcomes?: StandupOutcome[];
 }) {
-  const allClosed = standup.outcomes.every(o => o.evening_status !== 'pending');
-  const closedCount = standup.outcomes.filter(o => o.evening_status !== 'pending').length;
+  // Merge: standup outcomes + any carried items NOT already in the standup
+  const standupOutcomeIds = new Set(standup.outcomes.map(o => o.carried_from_outcome_id).filter(Boolean));
+  const missingCarried = carriedOutcomes.filter(o => !standupOutcomeIds.has(o.id));
+  const allOutcomes = [...standup.outcomes, ...missingCarried];
+
+  const allClosed = allOutcomes.every(o => o.evening_status !== 'pending');
+  const closedCount = allOutcomes.filter(o => o.evening_status !== 'pending').length;
+  const totalCount = allOutcomes.length;
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -568,19 +556,19 @@ function EveningSection({
             <h2 className="text-sm font-semibold text-slate-900">Evening Closure</h2>
             <p className="text-xs text-slate-500">
               {allClosed
-                ? `All ${standup.outcomes.length} outcomes resolved`
-                : `${closedCount}/${standup.outcomes.length} outcomes resolved — mark each individually`}
+                ? `All ${totalCount} outcomes resolved`
+                : `${closedCount}/${totalCount} outcomes resolved — mark each individually`}
             </p>
           </div>
         </div>
         {allClosed && <Badge variant="success">Day Closed</Badge>}
         {!allClosed && closedCount > 0 && (
-          <span className="text-xs font-medium text-amber-600">{closedCount}/{standup.outcomes.length}</span>
+          <span className="text-xs font-medium text-amber-600">{closedCount}/{totalCount}</span>
         )}
       </div>
 
       <div className="px-6 py-5 space-y-4">
-        {standup.outcomes.map((o) => (
+        {allOutcomes.map((o) => (
           <OutcomeCard key={o.id} outcome={o} currentUserId={currentUserId} />
         ))}
       </div>
@@ -1026,7 +1014,11 @@ function StandupsContent() {
               />
 
               {standup?.morning_submitted_at && (
-                <EveningSection standup={standup} currentUserId={currentUser.id} />
+                <EveningSection
+                  standup={standup}
+                  currentUserId={currentUser.id}
+                  carriedOutcomes={isToday ? (carriedOutcomes ?? []) : []}
+                />
               )}
             </div>
           )

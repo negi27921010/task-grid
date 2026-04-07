@@ -451,7 +451,8 @@ export async function getStandupHistory(
 
 /* ---- Per-outcome operations ---- */
 
-let hasClosedAtColumn = true;
+// Default false — column doesn't exist until migration 005 is run
+let hasClosedAtColumn = false;
 
 export async function updateOutcomeStatus(
   outcomeId: string,
@@ -475,21 +476,7 @@ export async function updateOutcomeStatus(
     .from('standup_outcomes')
     .update(updates)
     .eq('id', outcomeId);
-
-  if (error) {
-    // If closed_at column doesn't exist, retry without it
-    if (error.message?.includes('closed_at')) {
-      hasClosedAtColumn = false;
-      delete updates.closed_at;
-      const { error: e2 } = await sb()
-        .from('standup_outcomes')
-        .update(updates)
-        .eq('id', outcomeId);
-      if (e2) throw e2;
-    } else {
-      throw error;
-    }
-  }
+  if (error) throw error;
 
   // Check if all outcomes in this standup are now resolved → auto-set evening_submitted_at
   const { data: outcome } = await sb()

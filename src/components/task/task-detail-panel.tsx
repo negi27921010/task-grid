@@ -57,13 +57,15 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
   const canEditStatus = can(currentUser, 'canUpdateTaskStatus');
   const canSetPriority = can(currentUser, 'canSetPriority');
 
+  // Only reset drafts when switching to a different task, NOT on every refetch
+  const currentTaskId = task?.id;
   useEffect(() => {
     if (task) {
       setTitleDraft(task.title);
       setDescDraft(task.description);
       setRemarksDraft(task.remarks ?? '');
     }
-  }, [task]);
+  }, [currentTaskId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {

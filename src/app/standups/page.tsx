@@ -17,6 +17,7 @@ import {
   Plus,
   Send,
   MessageSquare,
+  Search,
 } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,7 @@ import {
   useTeamStandups,
   useUpdateOutcomeStatus,
   useAddStandupComment,
+  usePushBackOutcome,
 } from '@/lib/hooks/use-standups';
 import { getTodayIST, getISTHour } from '@/lib/api/standups';
 import { cn } from '@/lib/utils/cn';
@@ -576,10 +578,124 @@ function EveningSection({
   );
 }
 
+/* ---- Carried Outcome Card (admin detail with push-back + expandable reason) ---- */
+
+function CarriedOutcomeCard({
+  outcome: o,
+  pushBack,
+  pushBackId,
+  setPushBackId,
+  pushBackReason,
+  setPushBackReason,
+}: {
+  outcome: StandupOutcome;
+  pushBack: ReturnType<typeof usePushBackOutcome>;
+  pushBackId: string | null;
+  setPushBackId: (id: string | null) => void;
+  pushBackReason: string;
+  setPushBackReason: (v: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const hasClosed = o.evening_status !== 'pending';
+
+  return (
+    <div className={cn(
+      'rounded-lg border px-3 py-2 text-sm',
+      hasClosed && o.evening_status === 'done' && 'border-green-200 bg-green-50/50',
+      hasClosed && o.evening_status === 'not_done' && 'border-red-200 bg-red-50/50',
+      !hasClosed && 'border-red-100 bg-red-50/30',
+    )}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start gap-2 flex-1">
+          <RefreshCw className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-400" />
+          <div className="flex-1 min-w-0">
+            <span className="text-slate-800">{o.outcome_text}</span>
+            {o.carry_streak >= 3 && (
+              <span className="ml-2 inline-flex items-center gap-0.5 rounded-full bg-red-100 px-1.5 py-0.5 text-[9px] font-semibold text-red-700">
+                <Flame className="h-2.5 w-2.5" /> STUCK {o.carry_streak}d
+              </span>
+            )}
+            {o.carry_streak > 0 && o.carry_streak < 3 && (
+              <span className="ml-2 text-[10px] text-red-400">Carried {o.carry_streak}d</span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className={cn(
+            'rounded-full px-2 py-0.5 text-[10px] font-semibold',
+            o.evening_status === 'done' && 'bg-green-100 text-green-700',
+            o.evening_status === 'not_done' && 'bg-red-100 text-red-700',
+            o.evening_status === 'pending' && 'bg-amber-100 text-amber-700',
+          )}>
+            {o.evening_status === 'done' ? 'Done' : o.evening_status === 'not_done' ? 'Not Done' : 'Pending'}
+          </span>
+          {/* Expand reason toggle */}
+          {(o.reason_not_done || o.carry_streak > 0) && (
+            <button
+              type="button"
+              onClick={() => setExpanded(v => !v)}
+              className="rounded px-1.5 py-0.5 text-[10px] text-slate-500 border border-slate-200 hover:bg-slate-50"
+            >
+              {expanded ? 'Hide' : 'Details'}
+            </button>
+          )}
+          {/* Push back button — available on all outcomes */}
+          <button
+            type="button"
+            onClick={() => { setPushBackId(o.id); setPushBackReason(''); }}
+            className="rounded px-1.5 py-0.5 text-[10px] font-medium text-amber-600 border border-amber-200 hover:bg-amber-50"
+          >
+              Push Back
+            </button>
+        </div>
+      </div>
+
+      {/* Expandable reason */}
+      {expanded && o.reason_not_done && (
+        <p className="ml-5 mt-2 text-xs text-red-600 italic border-l-2 border-red-200 pl-2">
+          {o.reason_not_done}
+        </p>
+      )}
+
+      {/* Push back form */}
+      {pushBackId === o.id && (
+        <div className="mt-2 space-y-2 rounded-lg border border-amber-200 bg-amber-50/50 p-2">
+          <textarea
+            value={pushBackReason}
+            onChange={e => setPushBackReason(e.target.value)}
+            placeholder="Why are you pushing this back?"
+            rows={2}
+            autoFocus
+            className="w-full rounded border border-amber-200 bg-white px-2 py-1.5 text-xs resize-none focus:border-amber-400 focus:outline-none"
+          />
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setPushBackId(null)} className="text-xs text-slate-500 hover:text-slate-700">Cancel</button>
+            <button
+              type="button"
+              disabled={!pushBackReason.trim() || pushBack.isPending}
+              onClick={() => {
+                pushBack.mutate({ outcomeId: o.id, reason: pushBackReason.trim() }, {
+                  onSuccess: () => setPushBackId(null),
+                });
+              }}
+              className="rounded bg-amber-600 px-2 py-1 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+            >
+              {pushBack.isPending ? 'Sending...' : 'Push Back'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ---- Member Detail Card (expanded view in admin) ---- */
 
 function MemberStandupDetail({ userId, date }: { userId: string; date: string }) {
   const { data: standup, isLoading } = useStandupByDate(userId, date);
+  const pushBack = usePushBackOutcome();
+  const [pushBackId, setPushBackId] = useState<string | null>(null);
+  const [pushBackReason, setPushBackReason] = useState('');
 
   if (isLoading) {
     return (
@@ -624,37 +740,7 @@ function MemberStandupDetail({ userId, date }: { userId: string; date: string })
             <RefreshCw className="h-3 w-3" /> Carried ({carriedOutcomes.length})
           </p>
           {carriedOutcomes.map((o) => (
-            <div key={o.id} className={cn(
-              'rounded-lg border px-3 py-2 text-sm',
-              hasClosed && o.evening_status === 'done' && 'border-green-200 bg-green-50/50',
-              hasClosed && o.evening_status === 'not_done' && 'border-red-200 bg-red-50/50',
-              !hasClosed && 'border-red-100 bg-red-50/30',
-            )}>
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-start gap-2 flex-1">
-                  <RefreshCw className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-400" />
-                  <span className="text-slate-800">{o.outcome_text}</span>
-                </div>
-                {hasClosed && (
-                  <span className={cn(
-                    'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold',
-                    o.evening_status === 'done' && 'bg-green-100 text-green-700',
-                    o.evening_status === 'not_done' && 'bg-red-100 text-red-700',
-                    o.evening_status === 'pending' && 'bg-slate-100 text-slate-500',
-                  )}>
-                    {o.evening_status === 'done' ? 'Done' : o.evening_status === 'not_done' ? 'Not Done' : 'Pending'}
-                  </span>
-                )}
-              </div>
-              {o.carry_streak >= 3 && (
-                <span className="ml-5 mt-1 inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
-                  <Flame className="h-3 w-3" /> STUCK {o.carry_streak} days
-                </span>
-              )}
-              {o.evening_status === 'not_done' && o.reason_not_done && (
-                <p className="ml-5 mt-1 text-xs text-red-600 italic">Reason: {o.reason_not_done}</p>
-              )}
-            </div>
+            <CarriedOutcomeCard key={o.id} outcome={o} pushBack={pushBack} pushBackId={pushBackId} setPushBackId={setPushBackId} pushBackReason={pushBackReason} setPushBackReason={setPushBackReason} />
           ))}
         </div>
       )}
@@ -676,19 +762,54 @@ function MemberStandupDetail({ userId, date }: { userId: string; date: string })
                 <span className="mt-0.5 shrink-0 text-xs font-semibold text-slate-400">{idx + 1}.</span>
                 <span className="text-slate-800">{o.outcome_text}</span>
               </div>
-              {hasClosed && (
+              <div className="flex items-center gap-1.5 shrink-0">
                 <span className={cn(
-                  'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold',
+                  'rounded-full px-2 py-0.5 text-[10px] font-semibold',
                   o.evening_status === 'done' && 'bg-green-100 text-green-700',
                   o.evening_status === 'not_done' && 'bg-red-100 text-red-700',
-                  o.evening_status === 'pending' && 'bg-slate-100 text-slate-500',
+                  o.evening_status === 'pending' && 'bg-amber-100 text-amber-700',
                 )}>
                   {o.evening_status === 'done' ? 'Done' : o.evening_status === 'not_done' ? 'Not Done' : 'Pending'}
                 </span>
-              )}
+                <button
+                  type="button"
+                  onClick={() => { setPushBackId(o.id); setPushBackReason(''); }}
+                  className="rounded px-1.5 py-0.5 text-[10px] font-medium text-amber-600 border border-amber-200 hover:bg-amber-50 transition-colors"
+                >
+                  Push Back
+                </button>
+              </div>
             </div>
             {o.evening_status === 'not_done' && o.reason_not_done && (
               <p className="ml-5 mt-1 text-xs text-red-600 italic">Reason: {o.reason_not_done}</p>
+            )}
+            {/* Push back form */}
+            {pushBackId === o.id && (
+              <div className="mt-2 space-y-2 rounded-lg border border-amber-200 bg-amber-50/50 p-2">
+                <textarea
+                  value={pushBackReason}
+                  onChange={e => setPushBackReason(e.target.value)}
+                  placeholder="Why are you pushing this back? (e.g. 'Too generic — add specific numbers')"
+                  rows={2}
+                  autoFocus
+                  className="w-full rounded border border-amber-200 bg-white px-2 py-1.5 text-xs resize-none focus:border-amber-400 focus:outline-none"
+                />
+                <div className="flex justify-end gap-2">
+                  <button type="button" onClick={() => setPushBackId(null)} className="text-xs text-slate-500 hover:text-slate-700">Cancel</button>
+                  <button
+                    type="button"
+                    disabled={!pushBackReason.trim() || pushBack.isPending}
+                    onClick={() => {
+                      pushBack.mutate({ outcomeId: o.id, reason: pushBackReason.trim() }, {
+                        onSuccess: () => setPushBackId(null),
+                      });
+                    }}
+                    className="rounded bg-amber-600 px-2 py-1 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+                  >
+                    {pushBack.isPending ? 'Sending...' : 'Push Back'}
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         ))}
@@ -723,6 +844,8 @@ function TeamOverviewSection({ date }: { date: string }) {
   const { data: team, isLoading } = useTeamStandups(date);
   const { data: allUsers } = useUsers();
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [deptFilter, setDeptFilter] = useState<string>('all');
 
   if (isLoading) {
     return (
@@ -732,7 +855,21 @@ function TeamOverviewSection({ date }: { date: string }) {
     );
   }
 
-  const summaries = team ?? [];
+  const allSummaries = team ?? [];
+
+  // Get unique departments for filter
+  const departments = [...new Set(allSummaries.map(s => s.department).filter(Boolean))].sort();
+
+  // Apply filters
+  const summaries = allSummaries.filter(s => {
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      if (!s.user_name.toLowerCase().includes(q) && !s.department.toLowerCase().includes(q)) return false;
+    }
+    if (deptFilter !== 'all' && s.department !== deptFilter) return false;
+    return true;
+  });
+
   const totalOutcomes = summaries.reduce((s, m) => s + m.total_outcomes, 0);
   const totalDone = summaries.reduce((s, m) => s + m.done_count, 0);
   const totalCarried = summaries.reduce((s, m) => s + m.carried_count, 0);
@@ -743,6 +880,38 @@ function TeamOverviewSection({ date }: { date: string }) {
 
   return (
     <div className="space-y-4">
+      {/* Search + Department Filter */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 flex-1 min-w-[200px] max-w-xs">
+          <Search className="h-3.5 w-3.5 text-slate-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search by name or department..."
+            className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
+          />
+          {searchQuery && (
+            <button type="button" onClick={() => setSearchQuery('')} className="text-slate-400 hover:text-slate-600">
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+        <select
+          value={deptFilter}
+          onChange={e => setDeptFilter(e.target.value)}
+          className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:border-blue-500 focus:outline-none"
+        >
+          <option value="all">All Departments</option>
+          {departments.map(d => (
+            <option key={d} value={d}>{d}</option>
+          ))}
+        </select>
+        {(searchQuery || deptFilter !== 'all') && (
+          <span className="text-xs text-slate-500">{summaries.length} of {allSummaries.length} members</span>
+        )}
+      </div>
+
       {/* Team stats bar */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-xl border border-slate-200 bg-white p-3">

@@ -151,3 +151,24 @@ export function useAddStandupComment() {
     },
   });
 }
+
+export function usePushBackOutcome() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: ({
+      outcomeId,
+      reason,
+    }: {
+      outcomeId: string;
+      reason: string;
+    }) => standupApi.pushBackOutcome(outcomeId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['standups'] });
+      toast('Outcome pushed back to member', 'success');
+    },
+    onError: (err: Error) => {
+      toast(`Failed to push back: ${err.message}`, 'error');
+    },
+  });
+}

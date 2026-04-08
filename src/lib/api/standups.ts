@@ -507,6 +507,34 @@ export async function updateOutcomeStatus(
   }
 }
 
+export async function pushBackOutcome(
+  outcomeId: string,
+  reason: string,
+): Promise<void> {
+  // Reset outcome to pending so member must re-address it
+  const { error } = await sb()
+    .from('standup_outcomes')
+    .update({
+      evening_status: 'pending',
+      reason_not_done: `[PUSHED BACK] ${reason}`,
+    })
+    .eq('id', outcomeId);
+  if (error) throw error;
+
+  // Also reset the standup's evening_submitted_at since not all outcomes are resolved now
+  const { data: outcome } = await sb()
+    .from('standup_outcomes')
+    .select('standup_id')
+    .eq('id', outcomeId)
+    .single();
+  if (outcome) {
+    await sb()
+      .from('daily_standups')
+      .update({ evening_submitted_at: null })
+      .eq('id', outcome.standup_id as string);
+  }
+}
+
 export async function addStandupComment(
   outcomeId: string,
   authorId: string,

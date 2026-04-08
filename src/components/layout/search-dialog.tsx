@@ -88,7 +88,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   const navigateToTask = useCallback(
     (task: Task) => {
       onOpenChange(false);
-      router.push(`/project/${task.project_id}`);
+      router.push(`/project/${task.project_id}?task=${task.id}`);
     },
     [onOpenChange, router]
   );

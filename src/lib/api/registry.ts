@@ -80,7 +80,12 @@ export async function createRegistry(input: CreateRegistryInput): Promise<Workst
     })
     .select()
     .single();
-  if (error) throw error;
+  if (error) {
+    if (error.message?.includes('workstream_registry')) {
+      throw new Error('Ownership Repo requires database setup. Please run migration 006 in Supabase SQL Editor.');
+    }
+    throw error;
+  }
   return mapRow(data);
 }
 

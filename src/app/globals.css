@@ -1,33 +1,51 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: #ffffff;
-  --color-foreground: #0f172a;
-  --color-muted: #f1f5f9;
-  --color-muted-foreground: #64748b;
-  --color-border: #e2e8f0;
-  --color-ring: #3b82f6;
-  --color-surface: #f8fafc;
+  /* ── Tabler Design System ── */
+
+  /* Core palette */
+  --color-background: #f6f8fb;
+  --color-foreground: #1f2937;
+  --color-surface: #ffffff;
+  --color-surface-secondary: #f9fafb;
+  --color-surface-tertiary: #f3f4f6;
+  --color-muted: #f3f4f6;
+  --color-muted-foreground: #6b7280;
+  --color-border: #e5e7eb;
+  --color-border-dark: #d1d5db;
+  --color-ring: #066fd1;
+
+  /* Brand / Primary */
+  --color-primary: #066fd1;
+  --color-primary-hover: #0559a8;
+  --color-primary-light: #e8f2fc;
+
+  /* Semantic */
+  --color-success: #2fb344;
+  --color-danger: #d63939;
+  --color-warning: #f59f00;
+  --color-info: #4299e1;
 
   /* Priority colors */
-  --color-priority-p1: #ef4444;
-  --color-priority-p2: #ec4899;
-  --color-priority-p3: #3b82f6;
-  --color-priority-p4: #94a3b8;
+  --color-priority-p1: #d63939;
+  --color-priority-p2: #d6336c;
+  --color-priority-p3: #066fd1;
+  --color-priority-p4: #9ca3af;
 
   /* Aging colors */
-  --color-aging-overdue: #ef4444;
-  --color-aging-at-risk: #f59e0b;
-  --color-aging-on-track: #22c55e;
-  --color-aging-no-eta: #94a3b8;
-  --color-aging-stale: #cbd5e1;
+  --color-aging-overdue: #d63939;
+  --color-aging-at-risk: #f59f00;
+  --color-aging-on-track: #2fb344;
+  --color-aging-no-eta: #9ca3af;
+  --color-aging-stale: #d1d5db;
 
   /* Department colors */
-  --color-dept-sales: #3b82f6;
-  --color-dept-ops: #10b981;
-  --color-dept-tech: #8b5cf6;
-  --color-dept-content: #f59e0b;
+  --color-dept-sales: #066fd1;
+  --color-dept-ops: #0ca678;
+  --color-dept-tech: #4263eb;
+  --color-dept-content: #f76707;
 
+  /* Typography */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -35,11 +53,14 @@
 body {
   background: var(--color-background);
   color: var(--color-foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ── Tabler Scrollbars ── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -48,9 +69,32 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #d1d5db;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #9ca3af;
+}
+
+/* ── Tabler Card Shadows ── */
+.card-tabler {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.047);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px 0 rgba(18, 18, 23, 0.05);
+  transition: box-shadow 0.2s ease-in-out;
+}
+.card-tabler:hover {
+  box-shadow: 0px 4px 6px -2px rgba(18, 18, 23, 0.05), 0px 10px 15px -3px rgba(18, 18, 23, 0.08);
+}
+
+/* ── Tabler Focus Ring ── */
+*:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 0.25rem rgba(6, 111, 209, 0.25);
+}
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  border-color: #066fd1;
 }

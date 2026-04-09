@@ -126,10 +126,10 @@ export function TaskTable({ tasks, isLoading, projectId, sort, onSortToggle, onS
 
   if (isLoading) {
     return (
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-lg card-tabler">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-slate-200 bg-slate-50/80">
+            <tr className="border-b border-[#e5e7eb] bg-[#f9fafb]">
               {columns.map((col, i) => (
                 <th key={i} className={cn('px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500', col.className)}>
                   {col.label}
@@ -161,7 +161,7 @@ export function TaskTable({ tasks, isLoading, projectId, sort, onSortToggle, onS
 
   if (tasks.length === 0 && !showCreateRow) {
     return (
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-lg card-tabler">
         <EmptyState
           icon={ListTodo}
           title={emptyTitle ?? 'No tasks yet'}
@@ -175,11 +175,11 @@ export function TaskTable({ tasks, isLoading, projectId, sort, onSortToggle, onS
   const handleCreated = () => onCloseCreateRow?.();
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-lg card-tabler">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-slate-200 bg-slate-50/80">
+            <tr className="border-b border-[#e5e7eb] bg-[#f9fafb]">
               {columns.map((col, i) => {
                 const isSorted = col.sortable && sortField === col.key;
                 return (

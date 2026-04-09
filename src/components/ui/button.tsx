@@ -12,17 +12,17 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants: Record<ButtonVariant, string> = {
-  primary: 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm',
-  secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-200 border border-slate-200',
-  ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
-  destructive: 'bg-red-600 text-white hover:bg-red-700 shadow-sm',
+  primary: 'bg-[#066fd1] text-white hover:bg-[#0559a8] shadow-[0_1px_2px_0_rgba(18,18,23,0.05)]',
+  secondary: 'bg-white text-[#1f2937] hover:bg-[#f3f4f6] border border-[#e5e7eb] shadow-[0_1px_2px_0_rgba(18,18,23,0.05)]',
+  ghost: 'text-[#4b5563] hover:bg-[#f3f4f6] hover:text-[#1f2937]',
+  destructive: 'bg-[#d63939] text-white hover:bg-[#c02d2d] shadow-[0_1px_2px_0_rgba(18,18,23,0.05)]',
 };
 
 const sizes: Record<ButtonSize, string> = {
-  sm: 'h-8 px-3 text-xs',
-  md: 'h-9 px-4 text-sm',
-  lg: 'h-10 px-6 text-sm',
-  icon: 'h-8 w-8',
+  sm: 'h-[30px] px-2 text-xs gap-1',
+  md: 'h-[34px] px-3 text-sm gap-1.5',
+  lg: 'h-[38px] px-4 text-sm gap-2',
+  icon: 'h-[34px] w-[34px]',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -30,7 +30,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     <button
       ref={ref}
       className={cn(
-        'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+        'inline-flex items-center justify-center rounded-md font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#066fd1]/25 focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-50',
         variants[variant],
         sizes[size],
         className

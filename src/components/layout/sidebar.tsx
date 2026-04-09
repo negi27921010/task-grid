@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { CheckSquare, Users, ClipboardCheck, PanelLeftClose, PanelLeft, FolderKanban, Settings, LogOut, Plus, X } from 'lucide-react';
+import { CheckSquare, Users, ClipboardCheck, BookOpen, PanelLeftClose, PanelLeft, FolderKanban, Settings, LogOut, Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useCurrentUser } from '@/lib/hooks/use-current-user';
 import { useProjects, useCreateProject } from '@/lib/hooks/use-projects';
@@ -104,13 +104,14 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const isMyTasks = pathname === '/dashboard' && searchParams.get('view') !== 'team';
   const isTeamView = pathname === '/dashboard' && searchParams.get('view') === 'team';
   const isStandups = pathname === '/standups';
+  const isRegistry = pathname === '/registry';
   const isSettings = pathname === '/settings';
 
   return (
     <aside
       className={cn(
-        'flex h-full flex-col border-r border-slate-200 bg-white transition-all duration-200 ease-in-out',
-        collapsed ? 'w-16' : 'w-64'
+        'flex h-full flex-col border-r border-[#e5e7eb] bg-white transition-all duration-200 ease-in-out',
+        collapsed ? 'w-16' : 'w-60'
       )}
     >
       {/* Logo */}
@@ -157,6 +158,13 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           icon={<ClipboardCheck className="h-[18px] w-[18px]" />}
           label="Daily Standup"
           active={isStandups}
+          collapsed={collapsed}
+        />
+        <NavItem
+          href="/registry"
+          icon={<BookOpen className="h-[18px] w-[18px]" />}
+          label="Ownership Repo"
+          active={isRegistry}
           collapsed={collapsed}
         />
 

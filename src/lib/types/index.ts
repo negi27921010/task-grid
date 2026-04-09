@@ -5,3 +5,4 @@ export * from './task';
 export * from './filters';
 export * from './standup';
 export * from './notification';
+export * from './registry';

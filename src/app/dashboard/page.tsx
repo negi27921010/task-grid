@@ -129,10 +129,10 @@ function DashboardContent() {
   }, [statsSource]);
 
   const statCards = [
-    { label: 'Total Tasks', value: stats.total, icon: ListTodo, bg: 'bg-slate-50', text: 'text-slate-600', accent: 'bg-slate-200' },
-    { label: 'In Progress', value: stats.inProgress, icon: PlayCircle, bg: 'bg-blue-50', text: 'text-blue-600', accent: 'bg-blue-200' },
-    { label: 'Blocked', value: stats.blocked, icon: ShieldAlert, bg: 'bg-red-50', text: 'text-red-600', accent: 'bg-red-200' },
-    { label: 'Overdue', value: stats.overdue, icon: Clock, bg: 'bg-amber-50', text: 'text-amber-600', accent: 'bg-amber-200' },
+    { label: 'Total Tasks', value: stats.total, icon: ListTodo, bg: 'bg-[#f3f4f6]', text: 'text-[#4b5563]' },
+    { label: 'In Progress', value: stats.inProgress, icon: PlayCircle, bg: 'bg-[#e8f2fc]', text: 'text-[#066fd1]' },
+    { label: 'Blocked', value: stats.blocked, icon: ShieldAlert, bg: 'bg-[#fde8e8]', text: 'text-[#d63939]' },
+    { label: 'Overdue', value: stats.overdue, icon: Clock, bg: 'bg-[#fef3e2]', text: 'text-[#f59f00]' },
   ];
 
   return (
@@ -200,34 +200,34 @@ function DashboardContent() {
 
         {/* Stat cards + completion progress */}
         {!isLoading && allTasks.length > 0 && (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
             {statCards.map(({ label, value, icon: Icon, bg, text }) => (
-              <div key={label} className="rounded-xl border border-slate-200 bg-white p-4 transition-shadow hover:shadow-md">
+              <div key={label} className="card-tabler p-5">
                 <div className="flex items-center gap-3">
-                  <div className={cn('rounded-lg p-2', bg)}>
+                  <div className={cn('rounded-lg p-2.5', bg)}>
                     <Icon className={cn('h-5 w-5', text)} />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-slate-900">{value}</p>
-                    <p className="text-xs text-slate-500">{label}</p>
+                    <p className="text-2xl font-semibold text-[#1f2937]">{value}</p>
+                    <p className="text-xs text-[#6b7280]">{label}</p>
                   </div>
                 </div>
               </div>
             ))}
             {/* Completion rate card */}
-            <div className="rounded-xl border border-slate-200 bg-white p-4 transition-shadow hover:shadow-md">
+            <div className="card-tabler p-5">
               <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-emerald-50 p-2">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                <div className="rounded-lg bg-[#e6f7ed] p-2.5">
+                  <CheckCircle2 className="h-5 w-5 text-[#2fb344]" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-2xl font-bold text-slate-900">{stats.completionRate}%</p>
-                  <p className="text-xs text-slate-500">Completed</p>
+                  <p className="text-2xl font-semibold text-[#1f2937]">{stats.completionRate}%</p>
+                  <p className="text-xs text-[#6b7280]">Completed</p>
                 </div>
               </div>
-              <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+              <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-[#f3f4f6]">
                 <div
-                  className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                  className="h-full rounded-full bg-[#2fb344] transition-all duration-500"
                   style={{ width: `${stats.completionRate}%` }}
                 />
               </div>

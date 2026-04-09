@@ -19,6 +19,7 @@ export interface StandupOutcome {
   evening_status: OutcomeEveningStatus;
   reason_not_done: string | null;
   closed_at: string | null;
+  effort_hours: number | null;
   created_at: string;
   comments: StandupComment[];
 }
@@ -41,13 +42,13 @@ export interface DailyStandup {
 export interface CreateMorningStandupInput {
   user_id: string;
   standup_date: string;
-  outcomes: { outcome_text: string; priority_order: number }[];
+  outcomes: { outcome_text: string; priority_order: number; effort_hours?: number | null }[];
   carried_outcome_ids: string[];
   dependencies_risks?: string;
 }
 
 export interface UpdateMorningStandupInput {
-  outcomes: { id?: string; outcome_text: string; priority_order: number }[];
+  outcomes: { id?: string; outcome_text: string; priority_order: number; effort_hours?: number | null }[];
   dependencies_risks?: string;
 }
 

@@ -53,6 +53,7 @@ function mapOutcomeRow(
     evening_status: row.evening_status as OutcomeEveningStatus,
     reason_not_done: (row.reason_not_done as string) ?? null,
     closed_at: (row.closed_at as string) ?? null,
+    effort_hours: (row.effort_hours as number) ?? null,
     created_at: row.created_at as string,
     comments,
   };
@@ -221,17 +222,29 @@ export async function createMorningStandup(
 
   // Insert new outcomes
   for (const outcome of input.outcomes) {
-    await sb()
-      .from('standup_outcomes')
-      .insert({
-        id: uuidv4(),
-        standup_id: standupId,
-        outcome_text: outcome.outcome_text,
-        priority_order: orderCounter,
-        is_carried: false,
-        carry_streak: 0,
-        evening_status: 'pending',
-      });
+    const row: Record<string, unknown> = {
+      id: uuidv4(),
+      standup_id: standupId,
+      outcome_text: outcome.outcome_text,
+      priority_order: orderCounter,
+      is_carried: false,
+      carry_streak: 0,
+      evening_status: 'pending',
+    };
+    // effort_hours column may not exist yet
+    if ('effort_hours' in outcome && outcome.effort_hours != null) {
+      row.effort_hours = outcome.effort_hours;
+    }
+    const { error: insertErr } = await sb().from('standup_outcomes').insert(row);
+    if (insertErr) {
+      // If effort_hours column doesn't exist, retry without it
+      if (insertErr.message?.includes('effort_hours')) {
+        delete row.effort_hours;
+        await sb().from('standup_outcomes').insert(row);
+      } else {
+        throw insertErr;
+      }
+    }
     orderCounter++;
   }
 
@@ -268,17 +281,25 @@ export async function updateMorningStandup(
 
   // Insert updated new outcomes
   for (const outcome of input.outcomes) {
-    await sb()
-      .from('standup_outcomes')
-      .insert({
-        id: outcome.id ?? uuidv4(),
-        standup_id: standupId,
-        outcome_text: outcome.outcome_text,
-        priority_order: carriedCount + outcome.priority_order,
-        is_carried: false,
-        carry_streak: 0,
-        evening_status: 'pending',
-      });
+    const row: Record<string, unknown> = {
+      id: outcome.id ?? uuidv4(),
+      standup_id: standupId,
+      outcome_text: outcome.outcome_text,
+      priority_order: carriedCount + outcome.priority_order,
+      is_carried: false,
+      carry_streak: 0,
+      evening_status: 'pending',
+    };
+    if ('effort_hours' in outcome && outcome.effort_hours != null) {
+      row.effort_hours = outcome.effort_hours;
+    }
+    const { error: iErr } = await sb().from('standup_outcomes').insert(row);
+    if (iErr && iErr.message?.includes('effort_hours')) {
+      delete row.effort_hours;
+      await sb().from('standup_outcomes').insert(row);
+    } else if (iErr) {
+      throw iErr;
+    }
   }
 
   const { data: standupRow, error: fErr } = await sb()
@@ -511,6 +532,13 @@ export async function pushBackOutcome(
   outcomeId: string,
   reason: string,
 ): Promise<void> {
+  // Get outcome details for notification
+  const { data: outcomeData } = await sb()
+    .from('standup_outcomes')
+    .select('standup_id, outcome_text')
+    .eq('id', outcomeId)
+    .single();
+
   // Reset outcome to pending so member must re-address it
   const { error } = await sb()
     .from('standup_outcomes')
@@ -521,17 +549,36 @@ export async function pushBackOutcome(
     .eq('id', outcomeId);
   if (error) throw error;
 
-  // Also reset the standup's evening_submitted_at since not all outcomes are resolved now
-  const { data: outcome } = await sb()
-    .from('standup_outcomes')
-    .select('standup_id')
-    .eq('id', outcomeId)
-    .single();
-  if (outcome) {
+  if (outcomeData) {
+    // Reset the standup's evening_submitted_at
     await sb()
       .from('daily_standups')
       .update({ evening_submitted_at: null })
-      .eq('id', outcome.standup_id as string);
+      .eq('id', outcomeData.standup_id as string);
+
+    // Send notification to the member
+    const { data: standup } = await sb()
+      .from('daily_standups')
+      .select('user_id')
+      .eq('id', outcomeData.standup_id as string)
+      .single();
+
+    if (standup) {
+      try {
+        const { v4: uuidv4_notif } = await import('uuid');
+        await sb().from('notifications').insert({
+          id: uuidv4_notif(),
+          user_id: standup.user_id as string,
+          type: 'status_change',
+          title: `Outcome pushed back: "${(outcomeData.outcome_text as string).slice(0, 50)}"`,
+          body: reason,
+          task_id: null,
+          project_id: null,
+        });
+      } catch {
+        // Notification creation is best-effort
+      }
+    }
   }
 }
 

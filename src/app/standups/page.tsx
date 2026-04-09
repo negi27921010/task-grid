@@ -84,13 +84,14 @@ function MorningSection({
   onCancelEdit: () => void;
 }) {
   const [outcomes, setOutcomes] = useState<string[]>(['']);
+  const [effortHours, setEffortHours] = useState<(number | null)[]>([null]);
   const [deps, setDeps] = useState('');
   const [errors, setErrors] = useState<(string | null)[]>([null]);
   const createStandup = useCreateMorningStandup();
   const updateStandup = useUpdateMorningStandup();
 
   const isSubmitted = !!standup?.morning_submitted_at;
-  const canEdit = isSubmitted && getISTHour() < 12;
+  const canEdit = isSubmitted; // Members can edit anytime
   const showForm = !isSubmitted || isEditing;
 
   // Pre-fill when editing
@@ -118,12 +119,14 @@ function MorningSection({
 
   const handleAddOutcome = () => {
     setOutcomes(prev => [...prev, '']);
+    setEffortHours(prev => [...prev, null]);
     setErrors(prev => [...prev, null]);
   };
 
   const handleRemoveOutcome = (idx: number) => {
     if (outcomes.length <= 1) return;
     setOutcomes(prev => prev.filter((_, i) => i !== idx));
+    setEffortHours(prev => prev.filter((_, i) => i !== idx));
     setErrors(prev => prev.filter((_, i) => i !== idx));
   };
 
@@ -137,13 +140,19 @@ function MorningSection({
     setErrors(newErrors);
     if (hasError) return;
 
+    // Map effort hours to filled outcomes (preserve index mapping)
+    const filledWithHours = outcomes
+      .map((text, idx) => ({ text, hours: effortHours[idx] }))
+      .filter(o => o.text.trim());
+
     if (isEditing && standup) {
       updateStandup.mutate({
         id: standup.id,
         input: {
-          outcomes: filledOutcomes.map((text, i) => ({
-            outcome_text: text.trim(),
+          outcomes: filledWithHours.map((o, i) => ({
+            outcome_text: o.text.trim(),
             priority_order: i + 1,
+            effort_hours: o.hours,
           })),
           dependencies_risks: deps.trim() || undefined,
         },
@@ -154,9 +163,10 @@ function MorningSection({
       createStandup.mutate({
         user_id: userId,
         standup_date: date,
-        outcomes: filledOutcomes.map((text, i) => ({
-          outcome_text: text.trim(),
+        outcomes: filledWithHours.map((o, i) => ({
+          outcome_text: o.text.trim(),
           priority_order: i + 1,
+          effort_hours: o.hours,
         })),
         carried_outcome_ids: carriedOutcomes.map(o => o.id),
         dependencies_risks: deps.trim() || undefined,
@@ -260,6 +270,20 @@ function MorningSection({
                       'flex-1 rounded-lg border px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20',
                       errors[idx] ? 'border-red-300 bg-red-50/50 focus:border-red-400' : 'border-slate-300 focus:border-blue-500'
                     )}
+                    disabled={isPending}
+                  />
+                  <input
+                    type="number"
+                    value={effortHours[idx] ?? ''}
+                    onChange={e => {
+                      const val = e.target.value ? parseFloat(e.target.value) : null;
+                      setEffortHours(prev => { const n = [...prev]; n[idx] = val; return n; });
+                    }}
+                    placeholder="Hrs"
+                    min={0}
+                    max={24}
+                    step={0.5}
+                    className="w-16 shrink-0 rounded-lg border border-slate-300 px-2 py-2 text-xs text-center focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     disabled={isPending}
                   />
                   {outcomes.length > 1 && (
@@ -573,6 +597,20 @@ function EveningSection({
         {allOutcomes.map((o) => (
           <OutcomeCard key={o.id} outcome={o} currentUserId={currentUserId} />
         ))}
+
+        {/* Evening notes / dependencies */}
+        {standup.dependencies_risks && (
+          <div className="rounded-lg border border-amber-100 bg-amber-50/50 px-4 py-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 mb-1">Dependencies / Risks</p>
+            <p className="text-sm text-slate-700 whitespace-pre-wrap">{standup.dependencies_risks}</p>
+          </div>
+        )}
+        {standup.evening_notes && (
+          <div className="rounded-lg border border-indigo-100 bg-indigo-50/50 px-4 py-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-600 mb-1">Evening Remarks</p>
+            <p className="text-sm text-slate-700 whitespace-pre-wrap">{standup.evening_notes}</p>
+          </div>
+        )}
       </div>
     </div>
   );

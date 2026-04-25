@@ -23,6 +23,8 @@ import { AppShell } from '@/components/layout/app-shell';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
+import { Tooltip } from '@/components/ui/tooltip';
+import * as Dialog from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/toast';
 import { useCurrentUser } from '@/lib/hooks/use-current-user';
 import { useUsers } from '@/lib/hooks/use-users';
@@ -39,10 +41,16 @@ import {
   useAddStandupComment,
   usePushBackOutcome,
 } from '@/lib/hooks/use-standups';
-import { getTodayIST, getISTHour } from '@/lib/api/standups';
+import { getTodayIST, getISTHour, isEffortRequired } from '@/lib/api/standups';
 import { cn } from '@/lib/utils/cn';
 import { formatDistanceToNow } from 'date-fns';
-import type { StandupOutcome, OutcomeEveningStatus } from '@/lib/types';
+import type { StandupOutcome, OutcomeEveningStatus, CreateMorningStandupInput } from '@/lib/types';
+
+/* ---- Layout constants ---- */
+
+// One source of truth so the team table header and rows stay in lockstep.
+const TEAM_TABLE_GRID =
+  'grid items-center gap-3 grid-cols-[minmax(180px,1fr)_84px_84px_72px_60px_60px_60px_24px]';
 
 /* ---- Outcome validation ---- */
 
@@ -61,6 +69,13 @@ function validateOutcome(text: string): string | null {
       return `"${vague}..." is too vague. Write a verifiable outcome (e.g. "Complete 10 school registrations").`;
     }
   }
+  return null;
+}
+
+function validateEffortHours(hours: number | null): string | null {
+  if (hours == null || Number.isNaN(hours)) return 'Hours required';
+  if (hours <= 0) return 'Must be > 0';
+  if (hours > 24) return 'Max 24';
   return null;
 }
 
@@ -83,10 +98,15 @@ function MorningSection({
   onStartEdit: () => void;
   onCancelEdit: () => void;
 }) {
+  // Hours are mandatory for standups dated tomorrow IST onwards.
+  // Today and earlier remain lenient — empty hours default to 1.
+  const effortRequired = isEffortRequired(date);
   const [outcomes, setOutcomes] = useState<string[]>(['']);
   const [effortHours, setEffortHours] = useState<(number | null)[]>([null]);
   const [deps, setDeps] = useState('');
   const [errors, setErrors] = useState<(string | null)[]>([null]);
+  const [hourErrors, setHourErrors] = useState<(string | null)[]>([null]);
+  const [lateConfirmPayload, setLateConfirmPayload] = useState<CreateMorningStandupInput | null>(null);
   const createStandup = useCreateMorningStandup();
   const updateStandup = useUpdateMorningStandup();
 
@@ -97,13 +117,18 @@ function MorningSection({
   // Pre-fill when editing
   const handleStartEdit = useCallback(() => {
     if (standup) {
-      const newOutcomes = standup.outcomes
-        .filter(o => !o.is_carried)
-        .map(o => o.outcome_text);
-      if (newOutcomes.length === 0) newOutcomes.push('');
+      const editable = standup.outcomes.filter(o => !o.is_carried);
+      const newOutcomes = editable.map(o => o.outcome_text);
+      const newHours = editable.map(o => o.effort_hours);
+      if (newOutcomes.length === 0) {
+        newOutcomes.push('');
+        newHours.push(null);
+      }
       setOutcomes(newOutcomes);
+      setEffortHours(newHours);
       setDeps(standup.dependencies_risks ?? '');
       setErrors(newOutcomes.map(() => null));
+      setHourErrors(newOutcomes.map(() => null));
     }
     onStartEdit();
   }, [standup, onStartEdit]);
@@ -117,10 +142,26 @@ function MorningSection({
     setErrors(nextErrors);
   };
 
+  const handleHoursChange = (idx: number, raw: string) => {
+    const val = raw === '' ? null : parseFloat(raw);
+    setEffortHours(prev => {
+      const n = [...prev];
+      n[idx] = val;
+      return n;
+    });
+    setHourErrors(prev => {
+      const n = [...prev];
+      // Skip validation for non-required dates so the user can leave blank.
+      n[idx] = effortRequired && outcomes[idx]?.trim() ? validateEffortHours(val) : null;
+      return n;
+    });
+  };
+
   const handleAddOutcome = () => {
     setOutcomes(prev => [...prev, '']);
     setEffortHours(prev => [...prev, null]);
     setErrors(prev => [...prev, null]);
+    setHourErrors(prev => [...prev, null]);
   };
 
   const handleRemoveOutcome = (idx: number) => {
@@ -128,53 +169,73 @@ function MorningSection({
     setOutcomes(prev => prev.filter((_, i) => i !== idx));
     setEffortHours(prev => prev.filter((_, i) => i !== idx));
     setErrors(prev => prev.filter((_, i) => i !== idx));
+    setHourErrors(prev => prev.filter((_, i) => i !== idx));
   };
 
   const handleSubmit = () => {
-    const filledOutcomes = outcomes.filter(o => o.trim());
-    if (filledOutcomes.length === 0) return;
+    const filledIndices = outcomes
+      .map((o, i) => (o.trim() ? i : -1))
+      .filter(i => i >= 0);
+    if (filledIndices.length === 0) return;
 
-    // Validate all
     const newErrors = outcomes.map(o => (o.trim() ? validateOutcome(o) : null));
-    const hasError = filledOutcomes.some((o) => validateOutcome(o) !== null);
+    const newHourErrors = outcomes.map((o, i) =>
+      effortRequired && o.trim() ? validateEffortHours(effortHours[i]) : null,
+    );
     setErrors(newErrors);
-    if (hasError) return;
+    setHourErrors(newHourErrors);
 
-    // Map effort hours to filled outcomes (preserve index mapping)
-    const filledWithHours = outcomes
-      .map((text, idx) => ({ text, hours: effortHours[idx] }))
-      .filter(o => o.text.trim());
+    const hasTextError = filledIndices.some(i => newErrors[i] !== null);
+    const hasHourError = filledIndices.some(i => newHourErrors[i] !== null);
+    if (hasTextError || hasHourError) return;
+
+    const payload = filledIndices.map((i, position) => ({
+      outcome_text: outcomes[i].trim(),
+      priority_order: position + 1,
+      effort_hours: effortHours[i],
+    }));
 
     if (isEditing && standup) {
-      updateStandup.mutate({
-        id: standup.id,
-        input: {
-          outcomes: filledWithHours.map((o, i) => ({
-            outcome_text: o.text.trim(),
-            priority_order: i + 1,
-            effort_hours: o.hours,
-          })),
-          dependencies_risks: deps.trim() || undefined,
+      updateStandup.mutate(
+        {
+          id: standup.id,
+          input: {
+            outcomes: payload,
+            dependencies_risks: deps.trim() || undefined,
+          },
         },
-      }, {
-        onSuccess: onCancelEdit,
-      });
+        { onSuccess: onCancelEdit },
+      );
     } else {
-      createStandup.mutate({
+      const createInput: CreateMorningStandupInput = {
         user_id: userId,
         standup_date: date,
-        outcomes: filledWithHours.map((o, i) => ({
-          outcome_text: o.text.trim(),
-          priority_order: i + 1,
-          effort_hours: o.hours,
-        })),
+        outcomes: payload,
         carried_outcome_ids: carriedOutcomes.map(o => o.id),
         dependencies_risks: deps.trim() || undefined,
-      });
+      };
+      // Past the 11:00 AM IST cutoff — confirm before submitting.
+      if (getISTHour() >= 11) {
+        setLateConfirmPayload(createInput);
+      } else {
+        createStandup.mutate(createInput);
+      }
+    }
+  };
+
+  const confirmLateSubmit = () => {
+    if (lateConfirmPayload) {
+      createStandup.mutate(lateConfirmPayload);
+      setLateConfirmPayload(null);
     }
   };
 
   const isPending = createStandup.isPending || updateStandup.isPending;
+  const submitDisabled =
+    isPending ||
+    outcomes.filter(o => o.trim()).length === 0 ||
+    (effortRequired &&
+      outcomes.some((o, i) => o.trim() && validateEffortHours(effortHours[i]) !== null));
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -256,6 +317,22 @@ function MorningSection({
                 <Plus className="h-3 w-3" /> Add Outcome
               </button>
             </div>
+            {/* Column labels — single source of truth for the required marker */}
+            <div className="flex items-center gap-2 px-1 pb-1">
+              <span className="w-4 shrink-0" />
+              <span className="flex-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                Outcome
+              </span>
+              <span className="w-16 shrink-0 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                Hrs
+                {effortRequired ? (
+                  <span className="ml-0.5 text-red-500">*</span>
+                ) : (
+                  <span className="ml-0.5 text-slate-300">(opt)</span>
+                )}
+              </span>
+              {outcomes.length > 1 && <span className="w-6 shrink-0" />}
+            </div>
             {outcomes.map((text, idx) => (
               <div key={idx}>
                 <div className="flex items-center gap-2">
@@ -275,15 +352,20 @@ function MorningSection({
                   <input
                     type="number"
                     value={effortHours[idx] ?? ''}
-                    onChange={e => {
-                      const val = e.target.value ? parseFloat(e.target.value) : null;
-                      setEffortHours(prev => { const n = [...prev]; n[idx] = val; return n; });
-                    }}
+                    onChange={e => handleHoursChange(idx, e.target.value)}
                     placeholder="Hrs"
-                    min={0}
+                    min={0.5}
                     max={24}
                     step={0.5}
-                    className="w-16 shrink-0 rounded-lg border border-slate-300 px-2 py-2 text-xs text-center focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    aria-label="Effort hours (required)"
+                    aria-required="true"
+                    aria-invalid={!!hourErrors[idx]}
+                    className={cn(
+                      'w-16 shrink-0 rounded-lg border px-2 py-2 text-xs text-center focus:outline-none focus:ring-2',
+                      hourErrors[idx]
+                        ? 'border-red-300 bg-red-50/50 focus:border-red-400 focus:ring-red-500/20'
+                        : 'border-slate-300 focus:border-blue-500 focus:ring-blue-500/20',
+                    )}
                     disabled={isPending}
                   />
                   {outcomes.length > 1 && (
@@ -297,16 +379,21 @@ function MorningSection({
                     </button>
                   )}
                 </div>
-                {errors[idx] && (
+                {(errors[idx] || hourErrors[idx]) && (
                   <p className="mt-1 ml-6 text-xs text-red-500 flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3" />
-                    {errors[idx]}
+                    {errors[idx] ?? hourErrors[idx]}
                   </p>
                 )}
               </div>
             ))}
             <p className="text-[11px] text-slate-400 ml-6">
-              Tip: Write an outcome, not a task. Example: &quot;Submit 5 verified order forms to ops team&quot; instead of &quot;Work on order forms&quot;
+              Tip: Write an outcome, not a task. Example: &quot;Submit 5 verified order forms to ops team&quot; instead of &quot;Work on order forms&quot;.{' '}
+              {effortRequired ? (
+                <span className="text-slate-500">Effort hours are required.</span>
+              ) : (
+                <span className="text-slate-500">Effort hours optional for this date — left blank entries default to 1h.</span>
+              )}
             </p>
 
             <div>
@@ -328,7 +415,7 @@ function MorningSection({
                 variant="primary"
                 size="sm"
                 onClick={handleSubmit}
-                disabled={isPending || outcomes.filter(o => o.trim()).length === 0}
+                disabled={submitDisabled}
               >
                 {isPending ? 'Submitting...' : isEditing ? 'Update Standup' : 'Submit Morning Standup'}
               </Button>
@@ -342,7 +429,12 @@ function MorningSection({
             {standup?.outcomes.filter(o => !o.is_carried).map((o, idx) => (
               <div key={o.id} className="flex items-start gap-3 rounded-lg border border-slate-100 px-4 py-3">
                 <span className="mt-0.5 shrink-0 text-xs font-semibold text-slate-400">{idx + 1}.</span>
-                <p className="text-sm text-slate-800">{o.outcome_text}</p>
+                <p className="flex-1 text-sm text-slate-800">{o.outcome_text}</p>
+                {o.effort_hours != null && (
+                  <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                    {o.effort_hours}h
+                  </span>
+                )}
               </div>
             ))}
             {standup?.dependencies_risks && (
@@ -356,6 +448,42 @@ function MorningSection({
           </div>
         )}
       </div>
+
+      <Dialog.Root
+        open={!!lateConfirmPayload}
+        onOpenChange={(open) => { if (!open) setLateConfirmPayload(null); }}
+      >
+        <Dialog.Content>
+          <Dialog.Title className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-amber-500" />
+            Delayed Submission
+          </Dialog.Title>
+          <Dialog.Description>
+            It&apos;s past the 11:00 AM IST cutoff. This standup will be marked
+            as a <span className="font-semibold text-amber-600">delayed submission</span> and
+            shown as <span className="font-semibold">Late</span> in the team
+            overview. Continue?
+          </Dialog.Description>
+          <div className="mt-5 flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLateConfirmPayload(null)}
+              disabled={isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={confirmLateSubmit}
+              disabled={isPending}
+            >
+              {isPending ? 'Submitting...' : 'Submit as Late'}
+            </Button>
+          </div>
+        </Dialog.Content>
+      </Dialog.Root>
     </div>
   );
 }
@@ -464,7 +592,14 @@ function OutcomeCard({
       <div className="flex items-start gap-3">
         {outcome.is_carried && <RefreshCw className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />}
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-slate-800">{outcome.outcome_text}</p>
+          <div className="flex items-start gap-2">
+            <p className="flex-1 text-sm text-slate-800">{outcome.outcome_text}</p>
+            {outcome.effort_hours != null && (
+              <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                {outcome.effort_hours}h
+              </span>
+            )}
+          </div>
           {outcome.is_carried && outcome.carry_streak >= 3 && (
             <span className="inline-flex items-center gap-1 mt-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
               <Flame className="h-3 w-3" /> STUCK {outcome.carry_streak} days
@@ -659,6 +794,11 @@ function CarriedOutcomeCard({
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
+          {o.effort_hours != null && (
+            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
+              {o.effort_hours}h
+            </span>
+          )}
           <span className={cn(
             'rounded-full px-2 py-0.5 text-[10px] font-semibold',
             o.evening_status === 'done' && 'bg-green-100 text-green-700',
@@ -752,6 +892,10 @@ function MemberStandupDetail({ userId, date }: { userId: string; date: string })
   const carriedOutcomes = standup.outcomes.filter(o => o.is_carried);
   const newOutcomes = standup.outcomes.filter(o => !o.is_carried);
   const hasClosed = !!standup.evening_submitted_at;
+  const totalCommittedHours = standup.outcomes.reduce(
+    (sum, o) => sum + (o.effort_hours ?? 0),
+    0,
+  );
 
   return (
     <div className="space-y-4">
@@ -767,6 +911,11 @@ function MemberStandupDetail({ userId, date }: { userId: string; date: string })
             <Moon className="h-3.5 w-3.5 text-indigo-500" />
             Evening: {standup.evening_submitted_at ? format(new Date(standup.evening_submitted_at), 'h:mm a') : '—'}
             {standup.evening_is_late && <span className="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">LATE</span>}
+          </span>
+        )}
+        {totalCommittedHours > 0 && (
+          <span className="ml-auto rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">
+            Committed: {totalCommittedHours}h
           </span>
         )}
       </div>
@@ -801,6 +950,11 @@ function MemberStandupDetail({ userId, date }: { userId: string; date: string })
                 <span className="text-slate-800">{o.outcome_text}</span>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
+                {o.effort_hours != null && (
+                  <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
+                    {o.effort_hours}h
+                  </span>
+                )}
                 <span className={cn(
                   'rounded-full px-2 py-0.5 text-[10px] font-semibold',
                   o.evening_status === 'done' && 'bg-green-100 text-green-700',
@@ -982,7 +1136,36 @@ function TeamOverviewSection({ date }: { date: string }) {
           </div>
         </div>
 
+        {/* Column headers (aligned with row widths below — same grid template) */}
+        <div className={cn(TEAM_TABLE_GRID, 'border-b border-slate-200 bg-slate-50/60 px-6 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500')}>
+          <div className="truncate">Member</div>
+          <Tooltip content="Morning standup status. Submissions after 11:00 AM IST are marked Late.">
+            <div className="cursor-help">Morning</div>
+          </Tooltip>
+          <Tooltip content="Evening closure status. Closures after 8:00 PM IST are marked Late.">
+            <div className="cursor-help">Evening</div>
+          </Tooltip>
+          <Tooltip content="Outcomes completed today vs. total committed (done / total).">
+            <div className="cursor-help text-center">Outcomes</div>
+          </Tooltip>
+          <Tooltip content="Outcomes carried over from previous days.">
+            <div className="cursor-help text-center">Carried</div>
+          </Tooltip>
+          <Tooltip content="Outcomes carried for 3 or more days — flagged as stuck.">
+            <div className="cursor-help text-center">Stuck</div>
+          </Tooltip>
+          <Tooltip content="Completion rate: done outcomes ÷ total outcomes for today.">
+            <div className="cursor-help text-center">Rate</div>
+          </Tooltip>
+          <div aria-hidden="true" />
+        </div>
+
         <div className="divide-y divide-slate-100">
+          {summaries.length === 0 && (
+            <div className="px-6 py-10 text-center text-sm text-slate-400">
+              No team members match the current filter.
+            </div>
+          )}
           {summaries.map((s) => {
             const user = (allUsers ?? []).find(u => u.id === s.user_id);
             const isExpanded = expandedUserId === s.user_id;
@@ -995,36 +1178,39 @@ function TeamOverviewSection({ date }: { date: string }) {
                   type="button"
                   onClick={() => setExpandedUserId(isExpanded ? null : s.user_id)}
                   className={cn(
-                    'w-full flex items-center gap-4 px-6 py-3.5 text-left transition-colors',
+                    TEAM_TABLE_GRID,
+                    'w-full px-6 py-3.5 text-left transition-colors',
                     isExpanded ? 'bg-blue-50/50' : 'hover:bg-slate-50/50',
                     !hasSubmitted && 'opacity-60',
                   )}
                 >
                   {/* Member */}
-                  <div className="flex items-center gap-2.5 min-w-[160px]">
+                  <div className="flex min-w-0 items-center gap-2.5">
                     <Avatar fullName={s.user_name} src={user?.avatar_url ?? null} size="sm" />
-                    <div>
-                      <p className="text-sm font-medium text-slate-900">{s.user_name}</p>
-                      <p className="text-[10px] text-slate-400">{s.department}</p>
+                    <div className="min-w-0 flex-1">
+                      <Tooltip content={s.user_name}>
+                        <p className="truncate text-sm font-medium text-slate-900">{s.user_name}</p>
+                      </Tooltip>
+                      <p className="truncate text-[10px] text-slate-400">{s.department || '—'}</p>
                     </div>
                   </div>
 
                   {/* Morning status */}
-                  <div className="w-20">
+                  <div className="flex items-center">
                     <Badge variant={s.morning_status === 'submitted' ? 'success' : s.morning_status === 'late' ? 'warning' : 'default'}>
                       {s.morning_status === 'submitted' ? 'Done' : s.morning_status === 'late' ? 'Late' : 'Pending'}
                     </Badge>
                   </div>
 
                   {/* Evening status */}
-                  <div className="w-20">
+                  <div className="flex items-center">
                     <Badge variant={s.evening_status === 'submitted' ? 'success' : s.evening_status === 'late' ? 'warning' : 'default'}>
                       {s.evening_status === 'submitted' ? 'Closed' : s.evening_status === 'late' ? 'Late' : 'Pending'}
                     </Badge>
                   </div>
 
                   {/* Outcomes */}
-                  <div className="w-16 text-center">
+                  <div className="flex items-center justify-center">
                     {s.total_outcomes > 0 ? (
                       <span className="text-sm">
                         <span className="font-semibold text-green-600">{s.done_count}</span>
@@ -1036,7 +1222,7 @@ function TeamOverviewSection({ date }: { date: string }) {
                   </div>
 
                   {/* Carried */}
-                  <div className="w-12 text-center">
+                  <div className="flex items-center justify-center">
                     {s.carried_count > 0 ? (
                       <span className="text-sm font-medium text-amber-600">{s.carried_count}</span>
                     ) : (
@@ -1045,7 +1231,7 @@ function TeamOverviewSection({ date }: { date: string }) {
                   </div>
 
                   {/* Stuck */}
-                  <div className="w-12 text-center">
+                  <div className="flex items-center justify-center">
                     {s.stuck_count > 0 ? (
                       <span className="inline-flex items-center gap-0.5 text-sm font-semibold text-red-600">
                         <Flame className="h-3.5 w-3.5" />{s.stuck_count}
@@ -1056,7 +1242,7 @@ function TeamOverviewSection({ date }: { date: string }) {
                   </div>
 
                   {/* Rate */}
-                  <div className="w-14 text-center">
+                  <div className="flex items-center justify-center">
                     {s.total_outcomes > 0 ? (
                       <span className={cn(
                         'text-sm font-semibold',
@@ -1072,7 +1258,7 @@ function TeamOverviewSection({ date }: { date: string }) {
                   </div>
 
                   {/* Expand indicator */}
-                  <div className="ml-auto">
+                  <div className="flex items-center justify-end">
                     <ChevronRight className={cn(
                       'h-4 w-4 text-slate-400 transition-transform',
                       isExpanded && 'rotate-90',
@@ -1116,11 +1302,15 @@ function StandupsContent() {
 
   const isToday = viewDate === today;
 
+  // Pass an empty userId on the Team tab so the My-Standup queries
+  // skip (their `enabled` flag drops to false). Saves two round-trips
+  // for admins who only ever look at Team Overview.
+  const myStandupUserId = tab === 'my' ? currentUser.id : '';
   const { data: standup, isLoading: standupLoading } = useStandupByDate(
-    currentUser.id,
+    myStandupUserId,
     viewDate,
   );
-  const { data: carriedOutcomes } = useCarriedOutcomes(currentUser.id);
+  const { data: carriedOutcomes } = useCarriedOutcomes(myStandupUserId);
 
   const formattedDate = useMemo(() => {
     try {

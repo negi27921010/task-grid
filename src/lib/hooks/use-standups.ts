@@ -15,7 +15,8 @@ export function useStandupByDate(userId: string, date: string) {
     queryKey: ['standups', 'byDate', userId, date],
     queryFn: () => standupApi.getStandupByDate(userId, date),
     enabled: !!userId && !!date,
-    staleTime: 30 * 1000,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 }
 
@@ -24,7 +25,8 @@ export function useCarriedOutcomes(userId: string) {
     queryKey: ['standups', 'carried', userId],
     queryFn: () => standupApi.getCarriedOutcomes(userId),
     enabled: !!userId,
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
   });
 }
 
@@ -91,7 +93,9 @@ export function useTeamStandups(date: string) {
     queryKey: ['standups', 'team', date],
     queryFn: () => standupApi.getTeamStandups(date),
     enabled: !!date,
-    staleTime: 30 * 1000,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 }
 

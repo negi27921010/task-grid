@@ -42,13 +42,13 @@ export interface DailyStandup {
 export interface CreateMorningStandupInput {
   user_id: string;
   standup_date: string;
-  outcomes: { outcome_text: string; priority_order: number; effort_hours?: number | null }[];
+  outcomes: { outcome_text: string; priority_order: number; effort_hours: number | null }[];
   carried_outcome_ids: string[];
   dependencies_risks?: string;
 }
 
 export interface UpdateMorningStandupInput {
-  outcomes: { id?: string; outcome_text: string; priority_order: number; effort_hours?: number | null }[];
+  outcomes: { id?: string; outcome_text: string; priority_order: number; effort_hours: number | null }[];
   dependencies_risks?: string;
 }
 

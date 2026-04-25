@@ -32,6 +32,22 @@ export function getTodayIST(): string {
   return `${y}-${m}-${d}`;
 }
 
+export function getTomorrowIST(): string {
+  const ist = getCurrentIST();
+  ist.setUTCDate(ist.getUTCDate() + 1);
+  const y = ist.getUTCFullYear();
+  const m = String(ist.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(ist.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+// effort_hours is mandatory for standups dated tomorrow (IST) onwards.
+// Historical submissions (today and earlier) stay lenient — the UI lets
+// the user submit without filling hours, and the API defaults to 1.0.
+export function isEffortRequired(standupDate: string): boolean {
+  return standupDate >= getTomorrowIST();
+}
+
 export function getISTHour(): number {
   return getCurrentIST().getUTCHours();
 }
@@ -171,28 +187,117 @@ export async function getCarriedOutcomes(
 
 /* ---- Mutations ---- */
 
+// Default applied to historical (lenient) submissions — keeps team views
+// from rendering "missing" data and matches the DB backfill in migration 007.
+const DEFAULT_EFFORT_HOURS = 1.0;
+
+function validateOutcomesInput(
+  outcomes: { outcome_text: string; effort_hours: number | null }[],
+  requireEffort: boolean,
+): void {
+  if (outcomes.length === 0) {
+    throw new Error('Add at least one outcome before submitting.');
+  }
+  for (const o of outcomes) {
+    if (!o.outcome_text?.trim()) {
+      throw new Error('Every outcome needs a description.');
+    }
+    if (requireEffort) {
+      if (
+        o.effort_hours == null ||
+        Number.isNaN(o.effort_hours) ||
+        o.effort_hours <= 0 ||
+        o.effort_hours > 24
+      ) {
+        throw new Error('Every outcome needs effort hours between 0.5 and 24.');
+      }
+    } else if (
+      o.effort_hours != null &&
+      (Number.isNaN(o.effort_hours) || o.effort_hours < 0 || o.effort_hours > 24)
+    ) {
+      throw new Error('Effort hours must be between 0 and 24.');
+    }
+  }
+}
+
+function effortFor(
+  hours: number | null | undefined,
+  requireEffort: boolean,
+): number {
+  if (hours != null && !Number.isNaN(hours) && hours > 0) return hours;
+  // For historical (non-required) submissions, default to 1h so team
+  // dashboards stay populated. The required path has already validated.
+  return requireEffort ? hours as number : DEFAULT_EFFORT_HOURS;
+}
+
 export async function createMorningStandup(
   input: CreateMorningStandupInput,
 ): Promise<DailyStandup> {
-  const standupId = uuidv4();
+  const requireEffort = isEffortRequired(input.standup_date);
+  validateOutcomesInput(input.outcomes, requireEffort);
+
   const now = new Date().toISOString();
   const istHour = getISTHour();
-  const isLate = istHour >= 10;
+  const isLate = istHour >= 11;
 
-  // Insert standup row
-  const { data: standupRow, error: sErr } = await sb()
+  // Check for an existing standup row for (user_id, standup_date).
+  // The table has UNIQUE(user_id, standup_date), so plain INSERT here
+  // races against a prior partial submission or a second tab.
+  const { data: existing, error: lookupErr } = await sb()
     .from('daily_standups')
-    .insert({
-      id: standupId,
-      user_id: input.user_id,
-      standup_date: input.standup_date,
-      morning_submitted_at: now,
-      morning_is_late: isLate,
-      dependencies_risks: input.dependencies_risks ?? null,
-    })
-    .select()
-    .single();
-  if (sErr) throw sErr;
+    .select('id, morning_submitted_at')
+    .eq('user_id', input.user_id)
+    .eq('standup_date', input.standup_date)
+    .maybeSingle();
+  if (lookupErr) throw lookupErr;
+
+  if (existing?.morning_submitted_at) {
+    throw new Error(
+      'Morning standup already submitted for today — refresh the page to see it.',
+    );
+  }
+
+  const standupId = (existing?.id as string) ?? uuidv4();
+
+  if (existing) {
+    // A row exists but morning was never marked submitted (partial earlier
+    // attempt). Update it and clear any stray outcomes so we start clean.
+    const { error: uErr } = await sb()
+      .from('daily_standups')
+      .update({
+        morning_submitted_at: now,
+        morning_is_late: isLate,
+        dependencies_risks: input.dependencies_risks ?? null,
+      })
+      .eq('id', standupId);
+    if (uErr) throw uErr;
+
+    const { error: dErr } = await sb()
+      .from('standup_outcomes')
+      .delete()
+      .eq('standup_id', standupId);
+    if (dErr) throw dErr;
+  } else {
+    const { error: sErr } = await sb()
+      .from('daily_standups')
+      .insert({
+        id: standupId,
+        user_id: input.user_id,
+        standup_date: input.standup_date,
+        morning_submitted_at: now,
+        morning_is_late: isLate,
+        dependencies_risks: input.dependencies_risks ?? null,
+      });
+    if (sErr) {
+      // Belt-and-braces: another tab won the race between our lookup and insert.
+      if ((sErr as { code?: string }).code === '23505') {
+        throw new Error(
+          'Morning standup already submitted for today — refresh the page to see it.',
+        );
+      }
+      throw sErr;
+    }
+  }
 
   // Insert carried outcomes first
   let orderCounter = 1;
@@ -204,7 +309,7 @@ export async function createMorningStandup(
       .single();
 
     if (origOutcome) {
-      await sb()
+      const { error: cErr } = await sb()
         .from('standup_outcomes')
         .insert({
           id: uuidv4(),
@@ -215,14 +320,16 @@ export async function createMorningStandup(
           carried_from_outcome_id: carriedId,
           carry_streak: ((origOutcome.carry_streak as number) ?? 0) + 1,
           evening_status: 'pending',
+          effort_hours: (origOutcome.effort_hours as number) ?? null,
         });
+      if (cErr) throw cErr;
       orderCounter++;
     }
   }
 
   // Insert new outcomes
   for (const outcome of input.outcomes) {
-    const row: Record<string, unknown> = {
+    const { error: insertErr } = await sb().from('standup_outcomes').insert({
       id: uuidv4(),
       standup_id: standupId,
       outcome_text: outcome.outcome_text,
@@ -230,23 +337,18 @@ export async function createMorningStandup(
       is_carried: false,
       carry_streak: 0,
       evening_status: 'pending',
-    };
-    // effort_hours column may not exist yet
-    if ('effort_hours' in outcome && outcome.effort_hours != null) {
-      row.effort_hours = outcome.effort_hours;
-    }
-    const { error: insertErr } = await sb().from('standup_outcomes').insert(row);
-    if (insertErr) {
-      // If effort_hours column doesn't exist, retry without it
-      if (insertErr.message?.includes('effort_hours')) {
-        delete row.effort_hours;
-        await sb().from('standup_outcomes').insert(row);
-      } else {
-        throw insertErr;
-      }
-    }
+      effort_hours: effortFor(outcome.effort_hours, requireEffort),
+    });
+    if (insertErr) throw insertErr;
     orderCounter++;
   }
+
+  const { data: standupRow, error: fErr } = await sb()
+    .from('daily_standups')
+    .select('*')
+    .eq('id', standupId)
+    .single();
+  if (fErr) throw fErr;
 
   const outcomes = await fetchOutcomes(standupId);
   return mapStandupRow(standupRow, outcomes);
@@ -256,6 +358,16 @@ export async function updateMorningStandup(
   standupId: string,
   input: UpdateMorningStandupInput,
 ): Promise<DailyStandup> {
+  // We don't have standup_date here; look it up to apply the same gating.
+  const { data: parent, error: pErr } = await sb()
+    .from('daily_standups')
+    .select('standup_date')
+    .eq('id', standupId)
+    .single();
+  if (pErr) throw pErr;
+  const requireEffort = isEffortRequired(parent.standup_date as string);
+  validateOutcomesInput(input.outcomes, requireEffort);
+
   // Update dependencies
   const { error: sErr } = await sb()
     .from('daily_standups')
@@ -281,7 +393,7 @@ export async function updateMorningStandup(
 
   // Insert updated new outcomes
   for (const outcome of input.outcomes) {
-    const row: Record<string, unknown> = {
+    const { error: iErr } = await sb().from('standup_outcomes').insert({
       id: outcome.id ?? uuidv4(),
       standup_id: standupId,
       outcome_text: outcome.outcome_text,
@@ -289,17 +401,9 @@ export async function updateMorningStandup(
       is_carried: false,
       carry_streak: 0,
       evening_status: 'pending',
-    };
-    if ('effort_hours' in outcome && outcome.effort_hours != null) {
-      row.effort_hours = outcome.effort_hours;
-    }
-    const { error: iErr } = await sb().from('standup_outcomes').insert(row);
-    if (iErr && iErr.message?.includes('effort_hours')) {
-      delete row.effort_hours;
-      await sb().from('standup_outcomes').insert(row);
-    } else if (iErr) {
-      throw iErr;
-    }
+      effort_hours: effortFor(outcome.effort_hours, requireEffort),
+    });
+    if (iErr) throw iErr;
   }
 
   const { data: standupRow, error: fErr } = await sb()
@@ -365,22 +469,26 @@ export async function submitEveningClosure(
 export async function getTeamStandups(
   date: string,
 ): Promise<TeamStandupSummary[]> {
-  // Get all non-admin users (admins don't fill daily standups)
-  const { data: users, error: uErr } = await sb()
-    .from('users')
-    .select('id, full_name, department, role')
-    .eq('role', 'member')
-    .order('full_name', { ascending: true });
-  if (uErr) throw uErr;
+  // Run users + standups in parallel (independent), then fetch the
+  // outcomes (which depends on standup ids). Two round-trips total.
+  const [usersRes, standupsRes] = await Promise.all([
+    sb()
+      .from('users')
+      .select('id, full_name, department, role')
+      .eq('role', 'member')
+      .order('full_name', { ascending: true }),
+    sb()
+      .from('daily_standups')
+      .select('*')
+      .eq('standup_date', date),
+  ]);
+  if (usersRes.error) throw usersRes.error;
+  if (standupsRes.error) throw standupsRes.error;
 
-  // Get all standups for the date
-  const { data: standups, error: sErr } = await sb()
-    .from('daily_standups')
-    .select('*')
-    .eq('standup_date', date);
-  if (sErr) throw sErr;
+  const users = usersRes.data ?? [];
+  const standups = standupsRes.data ?? [];
 
-  const standupIds = (standups ?? []).map(s => s.id as string);
+  const standupIds = standups.map(s => s.id as string);
   let allOutcomes: StandupOutcome[] = [];
 
   if (standupIds.length > 0) {
@@ -392,8 +500,8 @@ export async function getTeamStandups(
     allOutcomes = (outcomeRows ?? []).map(r => mapOutcomeRow(r));
   }
 
-  return (users ?? []).map((u) => {
-    const standup = (standups ?? []).find(
+  return users.map((u) => {
+    const standup = standups.find(
       s => (s.user_id as string) === (u.id as string),
     );
 
@@ -421,15 +529,19 @@ export async function getTeamStandups(
     const stuckCount = outcomes.filter(o => o.carry_streak >= 3).length;
     const total = outcomes.length;
 
-    let morningStatus: 'not_submitted' | 'submitted' | 'late' = 'not_submitted';
-    if (standup.morning_submitted_at) {
-      morningStatus = (standup.morning_is_late as boolean) ? 'late' : 'submitted';
-    }
+    const morningStatus: 'not_submitted' | 'submitted' | 'late' =
+      !standup.morning_submitted_at
+        ? 'not_submitted'
+        : (standup.morning_is_late as boolean)
+          ? 'late'
+          : 'submitted';
 
-    let eveningStatus: 'not_submitted' | 'submitted' | 'late' = 'not_submitted';
-    if (standup.evening_submitted_at) {
-      eveningStatus = (standup.evening_is_late as boolean) ? 'late' : 'submitted';
-    }
+    const eveningStatus: 'not_submitted' | 'submitted' | 'late' =
+      !standup.evening_submitted_at
+        ? 'not_submitted'
+        : (standup.evening_is_late as boolean)
+          ? 'late'
+          : 'submitted';
 
     return {
       user_id: u.id as string,

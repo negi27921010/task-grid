@@ -71,6 +71,20 @@ DO $$ BEGIN
     CREATE POLICY "auth_full_access" ON workstream_registry FOR ALL TO authenticated USING (true) WITH CHECK (true);
   END IF;
 END $$;
+
+-- Migration 007: Standup fixes (effort_hours + priority_order relax)
+ALTER TABLE standup_outcomes ADD COLUMN IF NOT EXISTS effort_hours numeric(4,1);
+UPDATE standup_outcomes SET effort_hours = 1.0 WHERE effort_hours IS NULL;
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.table_constraints
+    WHERE table_name='standup_outcomes' AND constraint_name='standup_outcomes_priority_order_check'
+  ) THEN
+    ALTER TABLE standup_outcomes DROP CONSTRAINT standup_outcomes_priority_order_check;
+  END IF;
+END $$;
+ALTER TABLE standup_outcomes
+  ADD CONSTRAINT standup_outcomes_priority_order_check CHECK (priority_order BETWEEN 1 AND 30);
     `.trim();
 
     return NextResponse.json({

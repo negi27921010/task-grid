@@ -4,11 +4,11 @@
 
 const SCRIPT = `
 try {
+  // Light is the explicit default. We only honour stored preference;
+  // OS-level prefers-color-scheme is intentionally ignored so a user on
+  // a dark-mode device still sees the app in light unless they opt in.
   var stored = localStorage.getItem('taskflow-theme');
-  var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  var theme = stored === 'dark' || stored === 'light'
-    ? stored
-    : (prefersDark ? 'dark' : 'light');
+  var theme = stored === 'dark' || stored === 'light' ? stored : 'light';
   document.documentElement.setAttribute('data-theme', theme);
 } catch (e) {}
 `.trim();

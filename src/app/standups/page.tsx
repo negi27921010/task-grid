@@ -237,8 +237,8 @@ function MorningSection({
     <div className="rounded-xl border border-border-color bg-surface shadow-sm">
       <div className="flex items-center justify-between border-b border-border-color px-6 py-4">
         <div className="flex items-center gap-3">
-          <div className="rounded-lg bg-amber-50 p-2">
-            <Sun className="h-5 w-5 text-amber-600" />
+          <div className="rounded-lg bg-amber-50 p-2 dark:bg-amber-500/15">
+            <Sun className="h-5 w-5 text-amber-600 dark:text-amber-300" />
           </div>
           <div>
             <h2 className="text-sm font-semibold text-text">Morning Standup</h2>
@@ -266,21 +266,21 @@ function MorningSection({
         {/* Carried items */}
         {carriedOutcomes.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-red-500 flex items-center gap-1.5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-red-500 dark:text-red-300 flex items-center gap-1.5">
               <RefreshCw className="h-3.5 w-3.5" />
               Carried from yesterday
             </p>
             {carriedOutcomes.map((o) => (
               <div
                 key={o.id}
-                className="flex items-start gap-3 rounded-lg border border-red-100 bg-red-50/50 px-4 py-3"
+                className="flex items-start gap-3 rounded-lg border border-red-100 dark:border-red-500/30 bg-red-50/50 dark:bg-red-500/12 px-4 py-3"
               >
                 <RefreshCw className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
                 <div className="flex-1">
                   <p className="text-sm text-text">{o.outcome_text}</p>
                   <div className="mt-1 flex items-center gap-2">
                     {o.carry_streak >= 3 && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-500/20 px-2 py-0.5 text-[10px] font-semibold text-red-700 dark:text-red-300">
                         <Flame className="h-3 w-3" /> STUCK {o.carry_streak} days
                       </span>
                     )}
@@ -322,7 +322,7 @@ function MorningSection({
               <span className="w-16 shrink-0 text-center text-[10px] font-semibold uppercase tracking-wider text-text-faint">
                 Hrs
                 {effortRequired ? (
-                  <span className="ml-0.5 text-red-500">*</span>
+                  <span className="ml-0.5 text-red-500 dark:text-red-300">*</span>
                 ) : (
                   <span className="ml-0.5 text-text-faint">(opt)</span>
                 )}
@@ -341,7 +341,7 @@ function MorningSection({
                     placeholder={idx === 0 ? 'e.g. Complete 10 school registrations for Gujarat' : 'Next measurable outcome...'}
                     className={cn(
                       'flex-1 rounded-lg border px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20',
-                      errors[idx] ? 'border-red-300 bg-red-50/50 focus:border-red-400' : 'border-border-color focus:border-[var(--accent)]'
+                      errors[idx] ? 'border-red-300 bg-red-50/50 dark:bg-red-500/12 focus:border-red-400' : 'border-border-color focus:border-[var(--accent)]'
                     )}
                     disabled={isPending}
                   />
@@ -359,7 +359,7 @@ function MorningSection({
                     className={cn(
                       'w-16 shrink-0 rounded-lg border px-2 py-2 text-xs text-center focus:outline-none focus:ring-2',
                       hourErrors[idx]
-                        ? 'border-red-300 bg-red-50/50 focus:border-red-400 focus:ring-red-500/20'
+                        ? 'border-red-300 bg-red-50/50 dark:bg-red-500/12 focus:border-red-400 focus:ring-red-500/20'
                         : 'border-border-color focus:border-[var(--accent)] focus:ring-[var(--accent)]/20',
                     )}
                     disabled={isPending}
@@ -368,7 +368,7 @@ function MorningSection({
                     <button
                       type="button"
                       onClick={() => handleRemoveOutcome(idx)}
-                      className="shrink-0 rounded p-1 text-text-faint transition-colors hover:bg-red-50 hover:text-red-500"
+                      className="shrink-0 rounded p-1 text-text-faint transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/15 dark:text-red-300"
                       disabled={isPending}
                     >
                       <X className="h-3.5 w-3.5" />
@@ -376,7 +376,7 @@ function MorningSection({
                   )}
                 </div>
                 {(errors[idx] || hourErrors[idx]) && (
-                  <p className="mt-1 ml-6 text-xs text-red-500 flex items-center gap-1">
+                  <p className="mt-1 ml-6 text-xs text-red-500 dark:text-red-300 flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3" />
                     {errors[idx] ?? hourErrors[idx]}
                   </p>
@@ -436,7 +436,7 @@ function MorningSection({
             {standup?.dependencies_risks && (
               <div className="mt-2">
                 <p className="text-xs font-medium text-text-muted mb-1">Dependencies / Risks</p>
-                <p className="text-sm text-text-muted bg-amber-50/50 rounded-lg px-4 py-2 border border-amber-100">
+                <p className="text-sm text-text-muted bg-amber-50/50 dark:bg-amber-500/12 rounded-lg px-4 py-2 border border-amber-100 dark:border-amber-500/30">
                   {standup.dependencies_risks}
                 </p>
               </div>
@@ -456,7 +456,7 @@ function MorningSection({
           </Dialog.Title>
           <Dialog.Description>
             It&apos;s past the 11:00 AM IST cutoff. This standup will be marked
-            as a <span className="font-semibold text-amber-600">delayed submission</span> and
+            as a <span className="font-semibold text-amber-600 dark:text-amber-300">delayed submission</span> and
             shown as <span className="font-semibold">Late</span> in the team
             overview. Continue?
           </Dialog.Description>
@@ -580,8 +580,8 @@ function OutcomeCard({
   return (
     <div className={cn(
       'rounded-lg border px-4 py-3 transition-colors',
-      isClosed && outcome.evening_status === 'done' && 'border-green-200 bg-green-50/30',
-      isClosed && outcome.evening_status === 'not_done' && 'border-red-200 bg-red-50/30',
+      isClosed && outcome.evening_status === 'done' && 'border-green-200 dark:border-green-500/30 bg-green-50/30 dark:bg-green-500/10',
+      isClosed && outcome.evening_status === 'not_done' && 'border-red-200 dark:border-red-500/30 bg-red-50/30 dark:bg-red-500/10',
       !isClosed && 'border-border-color',
     )}>
       {/* Outcome text + status controls */}
@@ -597,7 +597,7 @@ function OutcomeCard({
             )}
           </div>
           {outcome.is_carried && outcome.carry_streak >= 3 && (
-            <span className="inline-flex items-center gap-1 mt-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
+            <span className="inline-flex items-center gap-1 mt-1 rounded-full bg-red-100 dark:bg-red-500/20 px-2 py-0.5 text-[10px] font-semibold text-red-700 dark:text-red-300">
               <Flame className="h-3 w-3" /> STUCK {outcome.carry_streak} days
             </span>
           )}
@@ -608,8 +608,8 @@ function OutcomeCard({
           <div className="flex items-center gap-2 shrink-0">
             <span className={cn(
               'rounded-full px-2.5 py-1 text-xs font-semibold',
-              outcome.evening_status === 'done' && 'bg-green-100 text-green-700',
-              outcome.evening_status === 'not_done' && 'bg-red-100 text-red-700',
+              outcome.evening_status === 'done' && 'bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-300',
+              outcome.evening_status === 'not_done' && 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300',
             )}>
               {outcome.evening_status === 'done' ? 'Done' : 'Not Done'}
             </span>
@@ -633,7 +633,7 @@ function OutcomeCard({
               type="button"
               onClick={handleNotDone}
               disabled={updateStatus.isPending || showReasonForm}
-              className="rounded-lg border border-border-color px-3 py-1.5 text-xs font-medium text-text-muted transition-all hover:border-red-300 hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
+              className="rounded-lg border border-border-color px-3 py-1.5 text-xs font-medium text-text-muted transition-all hover:border-red-300 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-500/15 dark:text-red-300 disabled:opacity-50"
             >
               <X className="inline h-3.5 w-3.5 mr-1" />Not Done
             </button>
@@ -651,7 +651,7 @@ function OutcomeCard({
             rows={2}
             maxLength={500}
             autoFocus
-            className="w-full rounded-lg border border-red-200 bg-surface px-3 py-2 text-sm resize-none focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+            className="w-full rounded-lg border border-red-200 dark:border-red-500/30 bg-surface px-3 py-2 text-sm resize-none focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/20"
           />
           <div className="flex items-center justify-end gap-2">
             <button
@@ -673,7 +673,7 @@ function OutcomeCard({
         </div>
       )}
       {isClosed && outcome.evening_status === 'not_done' && outcome.reason_not_done && (
-        <p className="mt-2 text-xs text-red-600 italic">Reason: {outcome.reason_not_done}</p>
+        <p className="mt-2 text-xs text-red-600 dark:text-red-300 italic">Reason: {outcome.reason_not_done}</p>
       )}
 
       {/* Comment thread */}
@@ -706,8 +706,8 @@ function EveningSection({
     <div className="rounded-xl border border-border-color bg-surface shadow-sm">
       <div className="flex items-center justify-between border-b border-border-color px-6 py-4">
         <div className="flex items-center gap-3">
-          <div className="rounded-lg bg-indigo-50 p-2">
-            <Moon className="h-5 w-5 text-indigo-600" />
+          <div className="rounded-lg bg-indigo-50 p-2 dark:bg-indigo-500/15">
+            <Moon className="h-5 w-5 text-indigo-600 dark:text-indigo-300" />
           </div>
           <div>
             <h2 className="text-sm font-semibold text-text">Evening Closure</h2>
@@ -720,7 +720,7 @@ function EveningSection({
         </div>
         {allClosed && <Badge variant="success">Day Closed</Badge>}
         {!allClosed && closedCount > 0 && (
-          <span className="text-xs font-medium text-amber-600">{closedCount}/{totalCount}</span>
+          <span className="text-xs font-medium text-amber-600 dark:text-amber-300">{closedCount}/{totalCount}</span>
         )}
       </div>
 
@@ -731,14 +731,14 @@ function EveningSection({
 
         {/* Evening notes / dependencies */}
         {standup.dependencies_risks && (
-          <div className="rounded-lg border border-amber-100 bg-amber-50/50 px-4 py-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 mb-1">Dependencies / Risks</p>
+          <div className="rounded-lg border border-amber-100 dark:border-amber-500/30 bg-amber-50/50 dark:bg-amber-500/12 px-4 py-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-300 mb-1">Dependencies / Risks</p>
             <p className="text-sm text-text whitespace-pre-wrap">{standup.dependencies_risks}</p>
           </div>
         )}
         {standup.evening_notes && (
-          <div className="rounded-lg border border-indigo-100 bg-indigo-50/50 px-4 py-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-600 mb-1">Evening Remarks</p>
+          <div className="rounded-lg border border-indigo-100 dark:border-indigo-500/30 bg-indigo-50/50 dark:bg-indigo-500/12 px-4 py-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-300 mb-1">Evening Remarks</p>
             <p className="text-sm text-text whitespace-pre-wrap">{standup.evening_notes}</p>
           </div>
         )}
@@ -770,9 +770,9 @@ function CarriedOutcomeCard({
   return (
     <div className={cn(
       'rounded-lg border px-3 py-2 text-sm',
-      hasClosed && o.evening_status === 'done' && 'border-green-200 bg-green-50/50',
-      hasClosed && o.evening_status === 'not_done' && 'border-red-200 bg-red-50/50',
-      !hasClosed && 'border-red-100 bg-red-50/30',
+      hasClosed && o.evening_status === 'done' && 'border-green-200 dark:border-green-500/30 bg-green-50/50 dark:bg-green-500/12',
+      hasClosed && o.evening_status === 'not_done' && 'border-red-200 dark:border-red-500/30 bg-red-50/50 dark:bg-red-500/12',
+      !hasClosed && 'border-red-100 dark:border-red-500/30 bg-red-50/30 dark:bg-red-500/10',
     )}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-2 flex-1">
@@ -780,7 +780,7 @@ function CarriedOutcomeCard({
           <div className="flex-1 min-w-0">
             <span className="text-text">{o.outcome_text}</span>
             {o.carry_streak >= 3 && (
-              <span className="ml-2 inline-flex items-center gap-0.5 rounded-full bg-red-100 px-1.5 py-0.5 text-[9px] font-semibold text-red-700">
+              <span className="ml-2 inline-flex items-center gap-0.5 rounded-full bg-red-100 dark:bg-red-500/20 px-1.5 py-0.5 text-[9px] font-semibold text-red-700 dark:text-red-300">
                 <Flame className="h-2.5 w-2.5" /> STUCK {o.carry_streak}d
               </span>
             )}
@@ -797,9 +797,9 @@ function CarriedOutcomeCard({
           )}
           <span className={cn(
             'rounded-full px-2 py-0.5 text-[10px] font-semibold',
-            o.evening_status === 'done' && 'bg-green-100 text-green-700',
-            o.evening_status === 'not_done' && 'bg-red-100 text-red-700',
-            o.evening_status === 'pending' && 'bg-amber-100 text-amber-700',
+            o.evening_status === 'done' && 'bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-300',
+            o.evening_status === 'not_done' && 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300',
+            o.evening_status === 'pending' && 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300',
           )}>
             {o.evening_status === 'done' ? 'Done' : o.evening_status === 'not_done' ? 'Not Done' : 'Pending'}
           </span>
@@ -817,7 +817,7 @@ function CarriedOutcomeCard({
           <button
             type="button"
             onClick={() => { setPushBackId(o.id); setPushBackReason(''); }}
-            className="rounded px-1.5 py-0.5 text-[10px] font-medium text-amber-600 border border-amber-200 hover:bg-amber-50"
+            className="rounded px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 hover:bg-amber-50 dark:hover:bg-amber-500/15"
           >
               Push Back
             </button>
@@ -826,21 +826,21 @@ function CarriedOutcomeCard({
 
       {/* Expandable reason */}
       {expanded && o.reason_not_done && (
-        <p className="ml-5 mt-2 text-xs text-red-600 italic border-l-2 border-red-200 pl-2">
+        <p className="ml-5 mt-2 text-xs text-red-600 dark:text-red-300 italic border-l-2 border-red-200 dark:border-red-500/30 pl-2">
           {o.reason_not_done}
         </p>
       )}
 
       {/* Push back form */}
       {pushBackId === o.id && (
-        <div className="mt-2 space-y-2 rounded-lg border border-amber-200 bg-amber-50/50 p-2">
+        <div className="mt-2 space-y-2 rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50/50 dark:bg-amber-500/12 p-2">
           <textarea
             value={pushBackReason}
             onChange={e => setPushBackReason(e.target.value)}
             placeholder="Why are you pushing this back?"
             rows={2}
             autoFocus
-            className="w-full rounded border border-amber-200 bg-surface px-2 py-1.5 text-xs resize-none focus:border-amber-400 focus:outline-none"
+            className="w-full rounded border border-amber-200 dark:border-amber-500/30 bg-surface px-2 py-1.5 text-xs resize-none focus:border-amber-400 focus:outline-none"
           />
           <div className="flex justify-end gap-2">
             <button type="button" onClick={() => setPushBackId(null)} className="text-xs text-text-muted hover:text-text">Cancel</button>
@@ -900,13 +900,13 @@ function MemberStandupDetail({ userId, date }: { userId: string; date: string })
         <span className="flex items-center gap-1">
           <Sun className="h-3.5 w-3.5 text-amber-500" />
           Morning: {standup.morning_submitted_at ? format(new Date(standup.morning_submitted_at), 'h:mm a') : '—'}
-          {standup.morning_is_late && <span className="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">LATE</span>}
+          {standup.morning_is_late && <span className="ml-1 rounded bg-amber-100 dark:bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300">LATE</span>}
         </span>
         {hasClosed && (
           <span className="flex items-center gap-1">
             <Moon className="h-3.5 w-3.5 text-indigo-500" />
             Evening: {standup.evening_submitted_at ? format(new Date(standup.evening_submitted_at), 'h:mm a') : '—'}
-            {standup.evening_is_late && <span className="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">LATE</span>}
+            {standup.evening_is_late && <span className="ml-1 rounded bg-amber-100 dark:bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300">LATE</span>}
           </span>
         )}
         {totalCommittedHours > 0 && (
@@ -922,7 +922,7 @@ function MemberStandupDetail({ userId, date }: { userId: string; date: string })
       {/* Carried outcomes */}
       {carriedOutcomes.length > 0 && (
         <div className="space-y-2">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-red-500 flex items-center gap-1">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-red-500 dark:text-red-300 flex items-center gap-1">
             <RefreshCw className="h-3 w-3" /> Carried ({carriedOutcomes.length})
           </p>
           {carriedOutcomes.map((o) => (
@@ -939,8 +939,8 @@ function MemberStandupDetail({ userId, date }: { userId: string; date: string })
         {newOutcomes.map((o, idx) => (
           <div key={o.id} className={cn(
             'rounded-lg border px-3 py-2 text-sm',
-            hasClosed && o.evening_status === 'done' && 'border-green-200 bg-green-50/50',
-            hasClosed && o.evening_status === 'not_done' && 'border-red-200 bg-red-50/50',
+            hasClosed && o.evening_status === 'done' && 'border-green-200 dark:border-green-500/30 bg-green-50/50 dark:bg-green-500/12',
+            hasClosed && o.evening_status === 'not_done' && 'border-red-200 dark:border-red-500/30 bg-red-50/50 dark:bg-red-500/12',
             !hasClosed && 'border-border-color',
           )}>
             <div className="flex items-start justify-between gap-2">
@@ -956,34 +956,34 @@ function MemberStandupDetail({ userId, date }: { userId: string; date: string })
                 )}
                 <span className={cn(
                   'rounded-full px-2 py-0.5 text-[10px] font-semibold',
-                  o.evening_status === 'done' && 'bg-green-100 text-green-700',
-                  o.evening_status === 'not_done' && 'bg-red-100 text-red-700',
-                  o.evening_status === 'pending' && 'bg-amber-100 text-amber-700',
+                  o.evening_status === 'done' && 'bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-300',
+                  o.evening_status === 'not_done' && 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300',
+                  o.evening_status === 'pending' && 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300',
                 )}>
                   {o.evening_status === 'done' ? 'Done' : o.evening_status === 'not_done' ? 'Not Done' : 'Pending'}
                 </span>
                 <button
                   type="button"
                   onClick={() => { setPushBackId(o.id); setPushBackReason(''); }}
-                  className="rounded px-1.5 py-0.5 text-[10px] font-medium text-amber-600 border border-amber-200 hover:bg-amber-50 transition-colors"
+                  className="rounded px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 hover:bg-amber-50 dark:hover:bg-amber-500/15 transition-colors"
                 >
                   Push Back
                 </button>
               </div>
             </div>
             {o.evening_status === 'not_done' && o.reason_not_done && (
-              <p className="ml-5 mt-1 text-xs text-red-600 italic">Reason: {o.reason_not_done}</p>
+              <p className="ml-5 mt-1 text-xs text-red-600 dark:text-red-300 italic">Reason: {o.reason_not_done}</p>
             )}
             {/* Push back form */}
             {pushBackId === o.id && (
-              <div className="mt-2 space-y-2 rounded-lg border border-amber-200 bg-amber-50/50 p-2">
+              <div className="mt-2 space-y-2 rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50/50 dark:bg-amber-500/12 p-2">
                 <textarea
                   value={pushBackReason}
                   onChange={e => setPushBackReason(e.target.value)}
                   placeholder="Why are you pushing this back? (e.g. 'Too generic — add specific numbers')"
                   rows={2}
                   autoFocus
-                  className="w-full rounded border border-amber-200 bg-surface px-2 py-1.5 text-xs resize-none focus:border-amber-400 focus:outline-none"
+                  className="w-full rounded border border-amber-200 dark:border-amber-500/30 bg-surface px-2 py-1.5 text-xs resize-none focus:border-amber-400 focus:outline-none"
                 />
                 <div className="flex justify-end gap-2">
                   <button type="button" onClick={() => setPushBackId(null)} className="text-xs text-text-muted hover:text-text">Cancel</button>
@@ -1009,8 +1009,8 @@ function MemberStandupDetail({ userId, date }: { userId: string; date: string })
       {/* Dependencies */}
       {standup.dependencies_risks && (
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-600 mb-1">Dependencies / Risks</p>
-          <p className="text-sm text-text-muted rounded-lg bg-amber-50/50 border border-amber-100 px-3 py-2">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-300 mb-1">Dependencies / Risks</p>
+          <p className="text-sm text-text-muted rounded-lg bg-amber-50/50 dark:bg-amber-500/12 border border-amber-100 dark:border-amber-500/30 px-3 py-2">
             {standup.dependencies_risks}
           </p>
         </div>
@@ -1019,8 +1019,8 @@ function MemberStandupDetail({ userId, date }: { userId: string; date: string })
       {/* Evening notes */}
       {standup.evening_notes && (
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-indigo-600 mb-1">Evening Notes</p>
-          <p className="text-sm text-text-muted rounded-lg bg-indigo-50/50 border border-indigo-100 px-3 py-2">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-300 mb-1">Evening Notes</p>
+          <p className="text-sm text-text-muted rounded-lg bg-indigo-50/50 dark:bg-indigo-500/12 border border-indigo-100 dark:border-indigo-500/30 px-3 py-2">
             {standup.evening_notes}
           </p>
         </div>
@@ -1114,11 +1114,11 @@ function TeamOverviewSection({ date }: { date: string }) {
           <p className="text-xs text-text-muted">Evening Closed</p>
         </div>
         <div className="rounded-xl border border-border-color bg-surface p-3">
-          <p className={cn('text-2xl font-bold', teamRate >= 70 ? 'text-green-600' : teamRate >= 40 ? 'text-amber-600' : 'text-red-600')}>{teamRate}%</p>
+          <p className={cn('text-2xl font-bold', teamRate >= 70 ? 'text-green-600 dark:text-green-300' : teamRate >= 40 ? 'text-amber-600 dark:text-amber-300' : 'text-red-600 dark:text-red-300')}>{teamRate}%</p>
           <p className="text-xs text-text-muted">Completion Rate</p>
         </div>
         <div className="rounded-xl border border-border-color bg-surface p-3">
-          <p className={cn('text-2xl font-bold', totalStuck > 0 ? 'text-red-600' : 'text-text')}>{totalStuck}</p>
+          <p className={cn('text-2xl font-bold', totalStuck > 0 ? 'text-red-600 dark:text-red-300' : 'text-text')}>{totalStuck}</p>
           <p className="text-xs text-text-muted">Stuck Items</p>
         </div>
       </div>
@@ -1212,7 +1212,7 @@ function TeamOverviewSection({ date }: { date: string }) {
                   <div className="flex items-center justify-center">
                     {s.total_outcomes > 0 ? (
                       <span className="text-sm">
-                        <span className="font-semibold text-green-600">{s.done_count}</span>
+                        <span className="font-semibold text-green-600 dark:text-green-300">{s.done_count}</span>
                         <span className="text-text-faint">/{s.total_outcomes}</span>
                       </span>
                     ) : (
@@ -1223,7 +1223,7 @@ function TeamOverviewSection({ date }: { date: string }) {
                   {/* Carried */}
                   <div className="flex items-center justify-center">
                     {s.carried_count > 0 ? (
-                      <span className="text-sm font-medium text-amber-600">{s.carried_count}</span>
+                      <span className="text-sm font-medium text-amber-600 dark:text-amber-300">{s.carried_count}</span>
                     ) : (
                       <span className="text-xs text-text-faint">0</span>
                     )}
@@ -1232,7 +1232,7 @@ function TeamOverviewSection({ date }: { date: string }) {
                   {/* Stuck */}
                   <div className="flex items-center justify-center">
                     {s.stuck_count > 0 ? (
-                      <span className="inline-flex items-center gap-0.5 text-sm font-semibold text-red-600">
+                      <span className="inline-flex items-center gap-0.5 text-sm font-semibold text-red-600 dark:text-red-300">
                         <Flame className="h-3.5 w-3.5" />{s.stuck_count}
                       </span>
                     ) : (
@@ -1245,9 +1245,9 @@ function TeamOverviewSection({ date }: { date: string }) {
                     {s.total_outcomes > 0 ? (
                       <span className={cn(
                         'text-sm font-semibold',
-                        s.completion_rate >= 80 && 'text-green-600',
-                        s.completion_rate >= 50 && s.completion_rate < 80 && 'text-amber-600',
-                        s.completion_rate < 50 && 'text-red-600',
+                        s.completion_rate >= 80 && 'text-green-600 dark:text-green-300',
+                        s.completion_rate >= 50 && s.completion_rate < 80 && 'text-amber-600 dark:text-amber-300',
+                        s.completion_rate < 50 && 'text-red-600 dark:text-red-300',
                       )}>
                         {s.completion_rate}%
                       </span>

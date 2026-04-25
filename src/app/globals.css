@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Enable data-theme-driven dark variant so `dark:bg-amber-500/15` style
+   utilities can opt in to dark-mode specific values without falling
+   back to the prefers-color-scheme media query (we ignore OS prefs). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 /* ────────────────────────────────────────────────────────────
    Refined Design System (overhaul)
    Theme tokens are exposed as CSS variables on :root (light) and
@@ -116,7 +121,9 @@
   /* Core palette */
   --color-background: #f6f8fb;
   --color-foreground: #1f2937;
-  --color-surface: #ffffff;
+  /* --color-surface intentionally NOT defined here — the Refined block
+     above owns it (mapped to var(--surface)) so bg-surface theme-swaps
+     between light + dark. A literal here would override the dynamic one. */
   --color-surface-secondary: #f9fafb;
   --color-surface-tertiary: #f3f4f6;
   --color-muted: #f3f4f6;

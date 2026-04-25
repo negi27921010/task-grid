@@ -23,21 +23,24 @@ function classifyIntent(message: string): string[] {
 
   const taskKw = ['task', 'todo', 'blocked', 'overdue', 'in progress', 'completed',
     'priority', 'p1', 'p2', 'p3', 'p4', 'assigned', 'eta', 'status', 'aging',
-    'stale', 'blocker', 'done', 'pending', 'cancelled', 'progress'];
-  const projKw = ['project', 'projects'];
+    'stale', 'blocker', 'done', 'pending', 'cancelled', 'progress', 'working on',
+    'doing', 'work', 'item', 'items', 'list', 'show', 'what is', 'whats'];
   const standupKw = ['standup', 'stand-up', 'morning', 'evening', 'outcome',
     'closure', 'carried', 'daily standup', 'daily', 'yesterday', 'today',
-    'history', 'last week', 'past', 'summary', 'submitted', 'stuck',
-    'completion rate', 'not done', 'outcomes'];
-  const teamKw = ['team', 'member', 'members', 'department', 'who',
-    'everyone', 'colleague', 'people', 'user', 'users'];
+    'history', 'last week', 'past', 'submitted', 'stuck',
+    'completion rate', 'not done', 'outcomes', 'late', 'defaulter'];
 
   if (taskKw.some(k => lower.includes(k))) intents.push('tasks');
-  if (projKw.some(k => lower.includes(k))) intents.push('projects');
   if (standupKw.some(k => lower.includes(k))) intents.push('standups');
-  if (teamKw.some(k => lower.includes(k))) intents.push('team');
 
-  if (intents.length === 0) intents.push('tasks', 'projects', 'general');
+  // ALWAYS include team and projects in context — cheap to fetch (small
+  // tables) and atom-level questions ("what's Yash working on?", "who owns
+  // K8?") need them even when no obvious keyword fires.
+  intents.push('team');
+  intents.push('projects');
+
+  // Light summary if nothing specific asked
+  if (intents.length === 2) intents.push('general');
   return intents;
 }
 
@@ -329,19 +332,27 @@ export async function POST(request: Request) {
     }
 
     // 6. Build system prompt
-    const systemPrompt = `You are Task Grid AI, an intelligent assistant for the Task Grid project & task management platform.
+    const systemPrompt = `You are **Bolt**, the in-app AI assistant for Task Grid (PW Academy's project & task management platform).
 
 Current user: ${profile.full_name} (${profile.email})
-Role: ${profile.role}
+Role: ${profile.role}${profile.role === 'admin' ? ' — has access to ALL data' : ' — sees own/team data only'}
 Department: ${profile.department}
-Current date: ${new Date().toISOString()}
-IST date: ${getTodayIST()}
+Now (UTC): ${new Date().toISOString()}
+Today (IST): ${getTodayIST()}
 
-You help users understand their tasks, projects, daily standups, and team activity.
-Answer based ONLY on the data provided below. If the data doesn't contain enough information, say so honestly.
-Be concise and helpful. Use bullet points and bold for readability. Reference task titles and project names specifically.
-When showing counts or statuses, format them clearly.
-Do NOT make up data that isn't in the context.
+YOUR JOB
+- Answer questions about tasks, projects, daily standups, and team members using the DATA CONTEXT below.
+- Be specific and atom-level: when asked about a person, task, or project, name them and quote actual data (status, ETA, owner, blockers, carried streak, etc.). Don't generalise.
+- If asked "who's working on X" or "what is X doing today", look up the person in team_members and cross-reference with their tasks/standups.
+- If a person's name is in the question, find them in team_members by name match (case-insensitive substring) and report THEIR data.
+- For aggregate questions ("how many overdue", "completion rate", etc.), compute from the data you have and show the math.
+- Use markdown: **bold** for names/titles/numbers, bullet lists for multi-item answers, short tables when comparing.
+- If the data doesn't contain what's needed (e.g. user asks about a project not in context), say so honestly — never fabricate.
+
+STYLE
+- Default to concise (2–6 sentences for simple Qs). Go longer only when asked for a report/summary.
+- Use INR (₹) and IST when relevant.
+- Skip preamble — answer directly.
 
 === DATA CONTEXT ===
 ${JSON.stringify(contextData, null, 2)}`;

@@ -108,8 +108,8 @@ export function OwnerSelect({
         className={cn(
           'inline-flex items-center gap-1.5 rounded-md transition-all',
           compact
-            ? 'p-0.5 hover:bg-slate-100'
-            : 'border border-slate-200 px-3 py-1.5 text-sm hover:border-slate-300 hover:bg-slate-50',
+            ? 'p-0.5 hover:bg-neutral-100'
+            : 'border border-border-color px-3 py-1.5 text-sm hover:border-border-color hover:bg-hover',
           disabled && 'cursor-default opacity-60'
         )}
       >
@@ -121,12 +121,12 @@ export function OwnerSelect({
               </Tooltip>
             ))}
             {selectedUsers.length > 3 && (
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-[9px] font-semibold text-slate-600 ring-2 ring-white">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-200 text-[9px] font-semibold text-text-muted ring-2 ring-white">
                 +{selectedUsers.length - 3}
               </span>
             )}
             {selectedUsers.length === 0 && (
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-[10px] text-slate-400">?</span>
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-100 text-[10px] text-text-faint">?</span>
             )}
           </div>
         ) : (
@@ -136,21 +136,21 @@ export function OwnerSelect({
                 <Avatar key={u.id} src={u.avatar_url} fullName={u.full_name} size="sm" />
               ))}
             </div>
-            <span className="text-sm text-slate-700">
+            <span className="text-sm text-text">
               {selectedUsers.length === 0
                 ? 'Unassigned'
                 : selectedUsers.length === 1
                   ? selectedUsers[0].full_name
                   : `${selectedUsers.length} assigned`}
             </span>
-            <ChevronDown className="h-3 w-3 text-slate-400" />
+            <ChevronDown className="h-3 w-3 text-text-faint" />
           </>
         )}
       </button>
 
       {open && (
         <div
-          className="fixed z-[100] w-72 rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50"
+          className="fixed z-[100] w-72 rounded-xl border border-border-color bg-surface shadow-xl shadow-slate-200/50"
           style={(() => {
             if (!containerRef.current) return { top: 0, left: 0 };
             const rect = containerRef.current.getBoundingClientRect();
@@ -166,16 +166,16 @@ export function OwnerSelect({
           })()}
           onClick={e => e.stopPropagation()}
         >
-          <div className="border-b border-slate-100 p-2.5">
-            <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2">
-              <Search className="h-3.5 w-3.5 text-slate-400" />
+          <div className="border-b border-border-color p-2.5">
+            <div className="flex items-center gap-2 rounded-lg border border-border-color bg-hover px-2.5 py-2">
+              <Search className="h-3.5 w-3.5 text-text-faint" />
               <input
                 ref={searchRef}
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search team members..."
-                className="flex-1 bg-transparent text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
+                className="flex-1 bg-transparent text-sm text-text placeholder:text-text-faint focus:outline-none"
               />
             </div>
           </div>
@@ -185,7 +185,7 @@ export function OwnerSelect({
               if (deptUsers.length === 0) return null;
               return (
                 <div key={dept}>
-                  <div className="px-2.5 pb-1 pt-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  <div className="px-2.5 pb-1 pt-2.5 text-[10px] font-semibold uppercase tracking-wider text-text-faint">
                     {dept}
                   </div>
                   {deptUsers.map(user => {
@@ -200,16 +200,16 @@ export function OwnerSelect({
                         }}
                         className={cn(
                           'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors',
-                          isSelected ? 'bg-blue-50' : 'hover:bg-slate-50'
+                          isSelected ? 'bg-accent-soft' : 'hover:bg-hover'
                         )}
                       >
                         <Avatar src={user.avatar_url} fullName={user.full_name} size="sm" />
                         <div className="flex flex-1 flex-col items-start min-w-0">
-                          <span className="text-sm font-medium text-slate-900 truncate">{user.full_name}</span>
-                          <span className="text-[10px] text-slate-400">{user.role}</span>
+                          <span className="text-sm font-medium text-text truncate">{user.full_name}</span>
+                          <span className="text-[10px] text-text-faint">{user.role}</span>
                         </div>
                         {multi && isSelected && (
-                          <Check className="h-4 w-4 shrink-0 text-blue-600" />
+                          <Check className="h-4 w-4 shrink-0 text-[var(--accent)]" />
                         )}
                       </button>
                     );
@@ -218,14 +218,14 @@ export function OwnerSelect({
               );
             })}
             {filtered.length === 0 && (
-              <p className="px-2 py-6 text-center text-sm text-slate-400">No matches found</p>
+              <p className="px-2 py-6 text-center text-sm text-text-faint">No matches found</p>
             )}
           </div>
           {multi && selectedUsers.length > 0 && (
-            <div className="border-t border-slate-100 px-3 py-2">
+            <div className="border-t border-border-color px-3 py-2">
               <div className="flex flex-wrap gap-1">
                 {selectedUsers.map(u => (
-                  <span key={u.id} className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">
+                  <span key={u.id} className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-[var(--accent)]">
                     {u.full_name.split(' ')[0]}
                     <button
                       type="button"

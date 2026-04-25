@@ -54,7 +54,7 @@ export function BlockerReasonDialog({ open, onOpenChange, onConfirm }: BlockerRe
               handleSubmit();
             }
           }}
-          className="mt-4 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          className="mt-4 w-full rounded-lg border border-border-color px-3 py-2 text-sm text-text placeholder:text-text-faint focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
         />
 
         <div className="mt-4 flex justify-end gap-2">

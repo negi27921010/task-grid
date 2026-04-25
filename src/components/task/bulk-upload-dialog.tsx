@@ -267,7 +267,7 @@ export function BulkUploadDialog({
     <Dialog.Root open={open} onOpenChange={(v) => { if (!v) handleReset(); onOpenChange(v); }}>
       <Dialog.Content className="max-w-2xl">
         <Dialog.Title>
-          <FileSpreadsheet className="inline h-5 w-5 mr-2 text-blue-600" />
+          <FileSpreadsheet className="inline h-5 w-5 mr-2 text-[var(--accent)]" />
           Bulk Import Tasks
         </Dialog.Title>
         <Dialog.Description>
@@ -279,10 +279,10 @@ export function BulkUploadDialog({
           {step === 'upload' && (
             <div className="space-y-4">
               {/* Sample download */}
-              <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50/50 p-6 text-center">
-                <Upload className="mx-auto h-8 w-8 text-slate-300 mb-3" />
-                <p className="text-sm font-medium text-slate-700 mb-1">Upload your CSV file</p>
-                <p className="text-xs text-slate-500 mb-4">
+              <div className="rounded-lg border border-dashed border-border-color bg-hover/50 p-6 text-center">
+                <Upload className="mx-auto h-8 w-8 text-text-faint mb-3" />
+                <p className="text-sm font-medium text-text mb-1">Upload your CSV file</p>
+                <p className="text-xs text-text-muted mb-4">
                   Required column: <strong>title</strong>. Optional: description, project, priority (P1-P4), status, owner, eta (YYYY-MM-DD), tags
                 </p>
                 <div className="flex items-center justify-center gap-3">
@@ -313,17 +313,17 @@ export function BulkUploadDialog({
               </div>
 
               {/* CSV format guide */}
-              <div className="rounded-lg border border-slate-200 bg-white p-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">CSV Column Reference</p>
+              <div className="rounded-lg border border-border-color bg-surface p-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">CSV Column Reference</p>
                 <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
-                  <div><strong className="text-slate-700">title</strong> <span className="text-red-500">*</span> — Task name</div>
-                  <div><strong className="text-slate-700">description</strong> — Details</div>
-                  <div><strong className="text-slate-700">project</strong> — Project name (exact match)</div>
-                  <div><strong className="text-slate-700">priority</strong> — P1, P2, P3, P4 (default: P3)</div>
-                  <div><strong className="text-slate-700">status</strong> — not_started (default)</div>
-                  <div><strong className="text-slate-700">owner</strong> — Full name or email</div>
-                  <div><strong className="text-slate-700">eta</strong> — YYYY-MM-DD</div>
-                  <div><strong className="text-slate-700">tags</strong> — Comma-separated</div>
+                  <div><strong className="text-text">title</strong> <span className="text-red-500">*</span> — Task name</div>
+                  <div><strong className="text-text">description</strong> — Details</div>
+                  <div><strong className="text-text">project</strong> — Project name (exact match)</div>
+                  <div><strong className="text-text">priority</strong> — P1, P2, P3, P4 (default: P3)</div>
+                  <div><strong className="text-text">status</strong> — not_started (default)</div>
+                  <div><strong className="text-text">owner</strong> — Full name or email</div>
+                  <div><strong className="text-text">eta</strong> — YYYY-MM-DD</div>
+                  <div><strong className="text-text">tags</strong> — Comma-separated</div>
                 </div>
               </div>
             </div>
@@ -338,34 +338,34 @@ export function BulkUploadDialog({
                 {errorRows.length > 0 && (
                   <Badge variant="error">{errorRows.length} with errors</Badge>
                 )}
-                <span className="text-xs text-slate-500">{parsedRows.length} rows total</span>
+                <span className="text-xs text-text-muted">{parsedRows.length} rows total</span>
               </div>
 
               {/* Preview table */}
-              <div className="max-h-64 overflow-auto rounded-lg border border-slate-200">
+              <div className="max-h-64 overflow-auto rounded-lg border border-border-color">
                 <table className="w-full text-xs">
-                  <thead className="sticky top-0 bg-slate-50">
-                    <tr className="border-b border-slate-200">
-                      <th className="px-3 py-2 text-left font-semibold text-slate-500 w-8">#</th>
-                      <th className="px-3 py-2 text-left font-semibold text-slate-500">Title</th>
-                      <th className="px-3 py-2 text-left font-semibold text-slate-500">Project</th>
-                      <th className="px-3 py-2 text-left font-semibold text-slate-500">Priority</th>
-                      <th className="px-3 py-2 text-left font-semibold text-slate-500">Owner</th>
-                      <th className="px-3 py-2 text-left font-semibold text-slate-500">ETA</th>
-                      <th className="px-3 py-2 text-left font-semibold text-slate-500 w-8">Status</th>
+                  <thead className="sticky top-0 bg-hover">
+                    <tr className="border-b border-border-color">
+                      <th className="px-3 py-2 text-left font-semibold text-text-muted w-8">#</th>
+                      <th className="px-3 py-2 text-left font-semibold text-text-muted">Title</th>
+                      <th className="px-3 py-2 text-left font-semibold text-text-muted">Project</th>
+                      <th className="px-3 py-2 text-left font-semibold text-text-muted">Priority</th>
+                      <th className="px-3 py-2 text-left font-semibold text-text-muted">Owner</th>
+                      <th className="px-3 py-2 text-left font-semibold text-text-muted">ETA</th>
+                      <th className="px-3 py-2 text-left font-semibold text-text-muted w-8">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {parsedRows.map((row, idx) => {
                       const hasError = row.errors.length > 0;
                       return (
-                        <tr key={idx} className={cn('border-b border-slate-100', hasError && 'bg-red-50/50')}>
-                          <td className="px-3 py-2 text-slate-400">{idx + 1}</td>
-                          <td className="px-3 py-2 text-slate-800 max-w-[200px] truncate">{row.title || '—'}</td>
-                          <td className="px-3 py-2 text-slate-600">{row.project || '—'}</td>
-                          <td className="px-3 py-2 text-slate-600">{row.priority || 'P3'}</td>
-                          <td className="px-3 py-2 text-slate-600 truncate max-w-[100px]">{row.owner || 'You'}</td>
-                          <td className="px-3 py-2 text-slate-600">{row.eta || '—'}</td>
+                        <tr key={idx} className={cn('border-b border-border-color', hasError && 'bg-red-50/50 dark:bg-red-500/12')}>
+                          <td className="px-3 py-2 text-text-faint">{idx + 1}</td>
+                          <td className="px-3 py-2 text-text max-w-[200px] truncate">{row.title || '—'}</td>
+                          <td className="px-3 py-2 text-text-muted">{row.project || '—'}</td>
+                          <td className="px-3 py-2 text-text-muted">{row.priority || 'P3'}</td>
+                          <td className="px-3 py-2 text-text-muted truncate max-w-[100px]">{row.owner || 'You'}</td>
+                          <td className="px-3 py-2 text-text-muted">{row.eta || '—'}</td>
                           <td className="px-3 py-2">
                             {hasError ? (
                               <span className="text-red-500" title={row.errors.join('; ')}>
@@ -384,10 +384,10 @@ export function BulkUploadDialog({
 
               {/* Error details */}
               {errorRows.length > 0 && (
-                <div className="rounded-lg border border-red-200 bg-red-50/50 p-3">
-                  <p className="text-xs font-semibold text-red-700 mb-1">Rows with errors (will be skipped):</p>
+                <div className="rounded-lg border border-red-200 dark:border-red-500/30 bg-red-50/50 dark:bg-red-500/12 p-3">
+                  <p className="text-xs font-semibold text-red-700 dark:text-red-300 mb-1">Rows with errors (will be skipped):</p>
                   {errorRows.map((row, idx) => (
-                    <p key={idx} className="text-xs text-red-600">
+                    <p key={idx} className="text-xs text-red-600 dark:text-red-300">
                       Row {parsedRows.indexOf(row) + 1}: {row.errors.join(', ')}
                     </p>
                   ))}
@@ -414,19 +414,19 @@ export function BulkUploadDialog({
           {/* Step: Done */}
           {step === 'done' && (
             <div className="py-6 text-center">
-              <div className={`mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full ${failedImports.length > 0 ? 'bg-amber-100' : 'bg-green-100'}`}>
-                <Check className={`h-6 w-6 ${failedImports.length > 0 ? 'text-amber-600' : 'text-green-600'}`} />
+              <div className={`mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full ${failedImports.length > 0 ? 'bg-amber-100 dark:bg-amber-500/20' : 'bg-green-100 dark:bg-green-500/20'}`}>
+                <Check className={`h-6 w-6 ${failedImports.length > 0 ? 'text-amber-600 dark:text-amber-300' : 'text-green-600 dark:text-green-300'}`} />
               </div>
-              <p className="text-sm font-semibold text-slate-900">
+              <p className="text-sm font-semibold text-text">
                 {importedCount} task{importedCount !== 1 ? 's' : ''} imported
                 {failedImports.length > 0 && `, ${failedImports.length} failed`}
               </p>
-              <p className="mt-1 text-xs text-slate-500">Tasks are now visible in their respective projects.</p>
+              <p className="mt-1 text-xs text-text-muted">Tasks are now visible in their respective projects.</p>
               {failedImports.length > 0 && (
-                <div className="mt-3 rounded-lg border border-red-200 bg-red-50/50 p-3 text-left">
-                  <p className="text-xs font-semibold text-red-700 mb-1">Failed rows:</p>
+                <div className="mt-3 rounded-lg border border-red-200 dark:border-red-500/30 bg-red-50/50 dark:bg-red-500/12 p-3 text-left">
+                  <p className="text-xs font-semibold text-red-700 dark:text-red-300 mb-1">Failed rows:</p>
                   {failedImports.map((f, i) => (
-                    <p key={i} className="text-xs text-red-600 truncate">{f.title}: {f.error}</p>
+                    <p key={i} className="text-xs text-red-600 dark:text-red-300 truncate">{f.title}: {f.error}</p>
                   ))}
                 </div>
               )}

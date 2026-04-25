@@ -53,9 +53,9 @@ function FilterCheckbox({
       checked={checked}
       onCheckedChange={(v) => onCheckedChange(v === true)}
       className={cn(
-        'flex h-4 w-4 shrink-0 items-center justify-center rounded border border-slate-300 transition-colors',
-        'data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1'
+        'flex h-4 w-4 shrink-0 items-center justify-center rounded border border-border-color transition-colors',
+        'data-[state=checked]:border-[var(--accent)] data-[state=checked]:bg-[var(--accent)]',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1'
       )}
     >
       <CheckboxPrimitive.Indicator>
@@ -101,13 +101,13 @@ function FilterDropdown<T extends string>({
           className={cn(
             'inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors',
             activeCount > 0
-              ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
-              : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+              ? 'border-[var(--accent)]/40 bg-accent-soft text-[var(--accent)] hover:bg-[color:rgba(0,115,234,0.18)]'
+              : 'border-border-color bg-surface text-text hover:bg-hover'
           )}
         >
           {label}
           {activeCount > 0 && (
-            <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-semibold text-white">
+            <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--accent)] px-1 text-[10px] font-semibold text-white">
               {activeCount}
             </span>
           )}
@@ -119,14 +119,14 @@ function FilterDropdown<T extends string>({
             <label
               key={option.value}
               htmlFor={`filter-${label}-${option.value}`}
-              className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-slate-50"
+              className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-hover"
             >
               <FilterCheckbox
                 id={`filter-${label}-${option.value}`}
                 checked={selected.includes(option.value)}
                 onCheckedChange={() => handleToggle(option.value)}
               />
-              {option.render ?? <span className="text-slate-700">{option.label}</span>}
+              {option.render ?? <span className="text-text">{option.label}</span>}
             </label>
           ))}
         </div>
@@ -156,7 +156,7 @@ function SortIndicator({
 
   if (sort.length === 0) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-slate-400">
+      <span className="inline-flex items-center gap-1 text-xs text-text-faint">
         <ArrowUpDown className="h-3.5 w-3.5" />
         No sort
       </span>
@@ -170,7 +170,7 @@ function SortIndicator({
           key={s.field}
           type="button"
           onClick={() => onSortToggle(s.field)}
-          className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
+          className="inline-flex items-center gap-1 rounded-md border border-border-color bg-surface px-2 py-1 text-xs font-medium text-text-muted transition-colors hover:bg-hover"
         >
           {s.direction === 'asc' ? (
             <ArrowUp className="h-3 w-3" />
@@ -228,11 +228,11 @@ function PresetMenu({
       <Popover.Trigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50"
+          className="inline-flex items-center gap-1.5 rounded-md border border-border-color bg-surface px-3 py-1.5 text-xs font-medium text-text transition-colors hover:bg-hover"
         >
           Presets
           {presets.length > 0 && (
-            <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-slate-200 px-1 text-[10px] font-semibold text-slate-600">
+            <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-neutral-200 px-1 text-[10px] font-semibold text-text-muted">
               {presets.length}
             </span>
           )}
@@ -241,25 +241,25 @@ function PresetMenu({
       <Popover.Content align="end" className="w-64 p-2">
         {presets.length > 0 && (
           <div className="space-y-1 pb-2">
-            <div className="px-2 py-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <div className="px-2 py-1 text-xs font-semibold uppercase tracking-wider text-text-faint">
               Saved Presets
             </div>
             {presets.map((preset) => (
               <div
                 key={preset.id}
-                className="flex items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-slate-50"
+                className="flex items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-hover"
               >
                 <button
                   type="button"
                   onClick={() => onLoad(preset)}
-                  className="flex-1 text-left text-slate-700"
+                  className="flex-1 text-left text-text"
                 >
                   {preset.name}
                 </button>
                 <button
                   type="button"
                   onClick={() => onDelete(preset.id)}
-                  className="ml-2 rounded p-0.5 text-slate-400 hover:bg-slate-200 hover:text-slate-600"
+                  className="ml-2 rounded p-0.5 text-text-faint hover:bg-neutral-200 hover:text-text-muted"
                   aria-label={`Delete preset ${preset.name}`}
                 >
                   <X className="h-3 w-3" />
@@ -269,7 +269,7 @@ function PresetMenu({
           </div>
         )}
 
-        {presets.length > 0 && <div className="my-1 h-px bg-slate-100" />}
+        {presets.length > 0 && <div className="my-1 h-px bg-neutral-100" />}
 
         {saving ? (
           <div className="flex items-center gap-2 p-1">
@@ -282,7 +282,7 @@ function PresetMenu({
                 if (e.key === 'Escape') setSaving(false);
               }}
               placeholder="Preset name..."
-              className="flex-1 rounded border border-slate-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
+              className="flex-1 rounded border border-border-color px-2 py-1 text-xs focus:border-[var(--accent)] focus:outline-none"
               autoFocus
             />
             <Button variant="primary" size="sm" className="h-6 px-2 text-xs" onClick={handleSave} disabled={!presetName.trim()}>
@@ -294,7 +294,7 @@ function PresetMenu({
             type="button"
             onClick={() => setSaving(true)}
             disabled={!hasActiveFilters}
-            className="w-full rounded-md px-2 py-1.5 text-left text-xs text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-40"
+            className="w-full rounded-md px-2 py-1.5 text-left text-xs text-text-muted transition-colors hover:bg-hover disabled:opacity-40"
           >
             + Save current filters as preset
           </button>
@@ -408,8 +408,8 @@ export function FilterBar({
           </Button>
         )}
 
-        <div className="mx-1 h-5 w-px bg-slate-200" />
-        <Filter className="h-4 w-4 text-slate-400" />
+        <div className="mx-1 h-5 w-px bg-neutral-200" />
+        <Filter className="h-4 w-4 text-text-faint" />
 
         <FilterDropdown<TaskStatus>
           label="Status"
@@ -430,7 +430,7 @@ export function FilterBar({
             render: (
               <span className="flex items-center gap-1.5">
                 <PriorityDot priority={p} />
-                <span className="text-sm text-slate-700">
+                <span className="text-sm text-text">
                   {p} - {PRIORITY_LABELS[p]}
                 </span>
               </span>
@@ -487,13 +487,13 @@ export function FilterBar({
           {activePills.map((pill) => (
             <span
               key={pill.key}
-              className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-slate-700"
+              className="inline-flex items-center gap-1 rounded-full border border-border-color bg-hover px-2 py-0.5 text-xs text-text"
             >
               {pill.label}
               <button
                 type="button"
                 onClick={pill.onRemove}
-                className="ml-0.5 rounded-full p-0.5 text-slate-400 transition-colors hover:bg-slate-200 hover:text-slate-600"
+                className="ml-0.5 rounded-full p-0.5 text-text-faint transition-colors hover:bg-neutral-200 hover:text-text-muted"
                 aria-label={`Remove ${pill.label} filter`}
               >
                 <X className="h-3 w-3" />
@@ -506,7 +506,7 @@ export function FilterBar({
               variant="ghost"
               size="sm"
               onClick={onClearFilters}
-              className="h-6 px-2 text-xs text-slate-500"
+              className="h-6 px-2 text-xs text-text-muted"
             >
               Clear all
             </Button>

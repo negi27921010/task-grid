@@ -196,12 +196,12 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
 
       {/* Panel */}
       <div
-        className="fixed right-0 top-0 z-50 flex h-full w-full max-w-xl flex-col border-l border-slate-200 bg-white shadow-2xl sm:w-[520px]"
+        className="fixed right-0 top-0 z-50 flex h-full w-full max-w-xl flex-col border-l border-border-color bg-surface shadow-2xl sm:w-[520px]"
       >
         {/* Header */}
-        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-6 py-4">
+        <div className="flex shrink-0 items-center justify-between border-b border-border-color px-6 py-4">
           <div className="flex items-center gap-2">
-            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-slate-500">
+            <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-text-muted">
               {depthLabel}
             </span>
             {task && (
@@ -211,7 +211,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+            className="rounded-md p-1 text-text-faint transition-colors hover:bg-neutral-100 hover:text-text-muted"
           >
             <X className="h-5 w-5" />
           </button>
@@ -219,7 +219,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
 
         {!task ? (
           <div className="flex flex-1 items-center justify-center">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto">
@@ -237,13 +237,13 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                       if (e.key === 'Escape') { setTitleDraft(task.title); setEditingTitle(false); }
                     }}
                     autoFocus
-                    className="w-full rounded-md border border-blue-300 px-3 py-2 text-lg font-semibold text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full rounded-md border border-[var(--accent)]/40 px-3 py-2 text-lg font-semibold text-text focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                   />
                 ) : (
                   <h2
                     className={cn(
-                      'text-lg font-semibold text-slate-900',
-                      canEditAll && 'cursor-pointer hover:text-blue-600'
+                      'text-lg font-semibold text-text',
+                      canEditAll && 'cursor-pointer hover:text-[var(--accent)]'
                     )}
                     onClick={() => { if (canEditAll) { setTitleDraft(task.title); setEditingTitle(true); } }}
                   >
@@ -256,7 +256,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
               <div className="grid grid-cols-2 gap-4">
                 {/* Status */}
                 <div className="space-y-1">
-                  <p className="text-xs font-medium text-slate-500">Status</p>
+                  <p className="text-xs font-medium text-text-muted">Status</p>
                   <StatusSelect
                     currentStatus={task.status}
                     onStatusChange={handleStatusChange}
@@ -266,20 +266,20 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
 
                 {/* Priority */}
                 <div className="space-y-1">
-                  <p className="text-xs font-medium text-slate-500">Priority</p>
+                  <p className="text-xs font-medium text-text-muted">Priority</p>
                   {(canEditAll || canSetPriority) ? (
                     <PrioritySelect
                       currentPriority={task.priority}
                       onPriorityChange={handlePriorityChange}
                     />
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 text-sm text-slate-700">
+                    <span className="inline-flex items-center gap-1.5 text-sm text-text">
                       <span className={cn(
                         'h-2 w-2 rounded-full',
                         task.priority === 'P1' && 'bg-red-500',
                         task.priority === 'P2' && 'bg-pink-500',
                         task.priority === 'P3' && 'bg-blue-500',
-                        task.priority === 'P4' && 'bg-slate-400',
+                        task.priority === 'P4' && 'bg-neutral-200 dark:bg-neutral-700',
                       )} />
                       {PRIORITY_LABELS[task.priority]}
                     </span>
@@ -288,7 +288,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
 
                 {/* Assignees */}
                 <div className="space-y-1">
-                  <p className="text-xs font-medium text-slate-500">Assignees</p>
+                  <p className="text-xs font-medium text-text-muted">Assignees</p>
                   <OwnerSelect
                     currentOwnerId={task.owner_id}
                     assigneeIds={task.assignee_ids}
@@ -305,17 +305,17 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
 
                 {/* ETA */}
                 <div className="space-y-1">
-                  <p className="text-xs font-medium text-slate-500">ETA</p>
+                  <p className="text-xs font-medium text-text-muted">ETA</p>
                   {canEditAll ? (
                     <input
                       type="date"
                       value={task.eta ? task.eta.split('T')[0] : ''}
                       onChange={e => handleEtaChange(e.target.value ? new Date(e.target.value).toISOString() : '')}
-                      className="w-full rounded-md border border-slate-200 px-2 py-1.5 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full rounded-md border border-border-color px-2 py-1.5 text-sm text-text focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
                     />
                   ) : (
-                    <span className="flex items-center gap-1.5 text-sm text-slate-700">
-                      <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                    <span className="flex items-center gap-1.5 text-sm text-text">
+                      <Calendar className="h-3.5 w-3.5 text-text-faint" />
                       {task.eta ? formatDate(task.eta) : 'Not set'}
                     </span>
                   )}
@@ -324,18 +324,18 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
 
               {/* Blocker reason */}
               {task.status === 'blocked' && task.blocker_reason && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-3">
-                  <div className="flex items-center gap-2 text-sm font-medium text-red-700">
+                <div className="rounded-lg border border-red-200 dark:border-red-500/30 bg-red-50 p-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-red-700 dark:text-red-300">
                     <AlertTriangle className="h-4 w-4" />
                     Blocker
                   </div>
-                  <p className="mt-1 text-sm text-red-600">{task.blocker_reason}</p>
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-300">{task.blocker_reason}</p>
                 </div>
               )}
 
               {/* Labels */}
               <div className="space-y-2">
-                <p className="text-xs font-medium text-slate-500">Labels</p>
+                <p className="text-xs font-medium text-text-muted">Labels</p>
                 <LabelPicker
                   taskId={task.id}
                   taskLabels={task.labels ?? []}
@@ -345,14 +345,14 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
 
               {/* Description */}
               <div className="space-y-2">
-                <p className="text-xs font-medium text-slate-500">Description</p>
+                <p className="text-xs font-medium text-text-muted">Description</p>
                 {editingDesc && canEditAll ? (
                   <div>
                     <textarea
                       value={descDraft}
                       onChange={e => setDescDraft(e.target.value)}
                       rows={4}
-                      className="w-full rounded-md border border-blue-300 px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      className="w-full rounded-md border border-[var(--accent)]/40 px-3 py-2 text-sm text-text focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                       autoFocus
                     />
                     <div className="mt-2 flex gap-2">
@@ -363,9 +363,9 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                 ) : (
                   <div
                     className={cn(
-                      'min-h-[60px] rounded-md border border-slate-200 px-3 py-2 text-sm',
-                      task.description ? 'text-slate-700' : 'text-slate-400 italic',
-                      canEditAll && 'cursor-pointer hover:border-slate-300 hover:bg-slate-50'
+                      'min-h-[60px] rounded-md border border-border-color px-3 py-2 text-sm',
+                      task.description ? 'text-text' : 'text-text-faint italic',
+                      canEditAll && 'cursor-pointer hover:border-border-color hover:bg-hover'
                     )}
                     onClick={() => { if (canEditAll) { setDescDraft(task.description); setEditingDesc(true); } }}
                   >
@@ -377,8 +377,8 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
               {/* Remarks */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <FileText className="h-3.5 w-3.5 text-slate-400" />
-                  <p className="text-xs font-medium text-slate-500">Remarks</p>
+                  <FileText className="h-3.5 w-3.5 text-text-faint" />
+                  <p className="text-xs font-medium text-text-muted">Remarks</p>
                 </div>
                 {editingRemarks ? (
                   <div>
@@ -387,7 +387,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                       onChange={e => setRemarksDraft(e.target.value)}
                       rows={3}
                       placeholder="Add internal remarks or notes..."
-                      className="w-full rounded-md border border-blue-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      className="w-full rounded-md border border-[var(--accent)]/40 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                       autoFocus
                     />
                     <div className="mt-2 flex gap-2">
@@ -398,9 +398,9 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                 ) : (
                   <div
                     className={cn(
-                      'min-h-[48px] rounded-md border border-slate-200 px-3 py-2 text-sm',
-                      task.remarks ? 'text-slate-700' : 'text-slate-400 italic',
-                      'cursor-pointer hover:border-slate-300 hover:bg-slate-50'
+                      'min-h-[48px] rounded-md border border-border-color px-3 py-2 text-sm',
+                      task.remarks ? 'text-text' : 'text-text-faint italic',
+                      'cursor-pointer hover:border-border-color hover:bg-hover'
                     )}
                     onClick={() => { setRemarksDraft(task.remarks ?? ''); setEditingRemarks(true); }}
                   >
@@ -412,8 +412,8 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
               {/* Comments */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <MessageSquare className="h-3.5 w-3.5 text-slate-400" />
-                  <p className="text-xs font-medium text-slate-500">
+                  <MessageSquare className="h-3.5 w-3.5 text-text-faint" />
+                  <p className="text-xs font-medium text-text-muted">
                     Comments ({comments.length})
                   </p>
                 </div>
@@ -432,14 +432,14 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                           />
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-slate-900">
+                              <span className="text-sm font-medium text-text">
                                 {author?.full_name ?? 'Unknown'}
                               </span>
-                              <span className="text-xs text-slate-400">
+                              <span className="text-xs text-text-faint">
                                 {formatRelative(comment.created_at)}
                               </span>
                             </div>
-                            <p className="mt-0.5 text-sm text-slate-700 whitespace-pre-wrap">
+                            <p className="mt-0.5 text-sm text-text whitespace-pre-wrap">
                               {comment.content}
                             </p>
                           </div>
@@ -469,7 +469,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                       if (filtered.length === 0) return null;
 
                       return (
-                        <div className="absolute bottom-full left-0 mb-1 w-full rounded-lg border border-slate-200 bg-white shadow-lg z-50 max-h-48 overflow-y-auto">
+                        <div className="absolute bottom-full left-0 mb-1 w-full rounded-lg border border-border-color bg-surface shadow-lg z-50 max-h-48 overflow-y-auto">
                           {filtered.map((u, idx) => (
                             <button
                               key={u.id}
@@ -493,13 +493,13 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                               }}
                               className={cn(
                                 'flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors',
-                                idx === mentionIdx ? 'bg-blue-50 text-blue-700' : 'text-slate-700 hover:bg-slate-50',
+                                idx === mentionIdx ? 'bg-accent-soft text-[var(--accent)]' : 'text-text hover:bg-hover',
                               )}
                             >
                               <Avatar fullName={u.full_name} src={u.avatar_url} size="sm" />
                               <div className="text-left">
                                 <p className="text-sm font-medium">{u.full_name}</p>
-                                <p className="text-[10px] text-slate-400">{u.department}</p>
+                                <p className="text-[10px] text-text-faint">{u.department}</p>
                               </div>
                             </button>
                           ))}
@@ -520,7 +520,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                       }}
                       placeholder="Write a comment... (type @ to mention)"
                       rows={2}
-                      className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full rounded-md border border-border-color px-3 py-2 text-sm text-text placeholder:text-text-faint focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
                       onKeyDown={e => {
                         if (mentionQuery !== null) {
                           const allUsers = users ?? [];
@@ -576,7 +576,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                       }}
                     />
                     <div className="mt-1.5 flex items-center justify-between">
-                      <span className="text-[10px] text-slate-400">
+                      <span className="text-[10px] text-text-faint">
                         @ to mention · {typeof navigator !== 'undefined' && navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}+Enter to post
                       </span>
                       <Button
@@ -595,8 +595,8 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
               </div>
 
               {/* Meta info */}
-              <div className="border-t border-slate-100 pt-4">
-                <div className="grid grid-cols-2 gap-2 text-xs text-slate-400">
+              <div className="border-t border-border-color pt-4">
+                <div className="grid grid-cols-2 gap-2 text-xs text-text-faint">
                   <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
                     Created {formatRelative(task.created_at)}

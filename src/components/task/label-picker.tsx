@@ -25,7 +25,7 @@ export function LabelBadge({ label, onRemove }: LabelBadgeProps) {
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onRemove(); }}
-          className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-white/20"
+          className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-surface/20"
         >
           <X className="h-2.5 w-2.5" />
         </button>
@@ -90,7 +90,7 @@ export function LabelPicker({ taskId, taskLabels, editable = true }: LabelPicker
           <button
             type="button"
             onClick={() => setShowPicker(!showPicker)}
-            className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 px-2 py-0.5 text-xs text-slate-500 transition-colors hover:border-slate-400 hover:text-slate-700"
+            className="inline-flex items-center gap-1 rounded-full border border-dashed border-border-color px-2 py-0.5 text-xs text-text-muted transition-colors hover:border-slate-400 hover:text-text"
           >
             <Tag className="h-3 w-3" />
             Label
@@ -99,10 +99,10 @@ export function LabelPicker({ taskId, taskLabels, editable = true }: LabelPicker
       </div>
 
       {showPicker && editable && (
-        <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+        <div className="rounded-lg border border-border-color bg-surface p-3 shadow-sm">
           {unassignedLabels.length > 0 && (
             <div className="mb-2 space-y-1">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Available</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-text-faint">Available</p>
               <div className="flex flex-wrap gap-1">
                 {unassignedLabels.map(label => (
                   <button
@@ -124,19 +124,19 @@ export function LabelPicker({ taskId, taskLabels, editable = true }: LabelPicker
             <button
               type="button"
               onClick={() => setCreating(true)}
-              className="flex items-center gap-1 text-xs text-blue-600 transition-colors hover:text-blue-800"
+              className="flex items-center gap-1 text-xs text-[var(--accent)] transition-colors hover:text-blue-800"
             >
               <Plus className="h-3 w-3" />
               Create new label
             </button>
           ) : (
-            <div className="space-y-2 border-t border-slate-100 pt-2">
+            <div className="space-y-2 border-t border-border-color pt-2">
               <input
                 type="text"
                 value={newName}
                 onChange={e => setNewName(e.target.value)}
                 placeholder="Label name"
-                className="w-full rounded-md border border-slate-200 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-md border border-border-color px-2 py-1 text-sm focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
                 onKeyDown={e => { if (e.key === 'Enter') handleCreate(); }}
                 autoFocus
               />
@@ -166,7 +166,7 @@ export function LabelPicker({ taskId, taskLabels, editable = true }: LabelPicker
                 <button
                   type="button"
                   onClick={() => { setCreating(false); setNewName(''); }}
-                  className="rounded-md px-3 py-1 text-xs text-slate-500 transition-colors hover:bg-slate-100"
+                  className="rounded-md px-3 py-1 text-xs text-text-muted transition-colors hover:bg-neutral-100"
                 >
                   Cancel
                 </button>

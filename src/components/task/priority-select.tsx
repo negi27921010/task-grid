@@ -11,14 +11,14 @@ const PRIORITY_COLORS: Record<Priority, string> = {
   P1: 'bg-red-500',
   P2: 'bg-pink-500',
   P3: 'bg-blue-500',
-  P4: 'bg-slate-400',
+  P4: 'bg-neutral-200 dark:bg-neutral-700',
 };
 
 const PRIORITY_TEXT_COLORS: Record<Priority, string> = {
-  P1: 'text-red-700',
+  P1: 'text-red-700 dark:text-red-300',
   P2: 'text-pink-700',
-  P3: 'text-blue-700',
-  P4: 'text-slate-600',
+  P3: 'text-[var(--accent)]',
+  P4: 'text-text-muted',
 };
 
 interface PrioritySelectProps {
@@ -32,7 +32,7 @@ export function PrioritySelect({ currentPriority, onPriorityChange }: PrioritySe
       <DropdownMenu.Trigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors hover:bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-1"
           aria-label={`Priority: ${PRIORITY_LABELS[currentPriority]}`}
         >
           <span className={cn('h-2 w-2 shrink-0 rounded-full', PRIORITY_COLORS[currentPriority])} />
@@ -48,12 +48,12 @@ export function PrioritySelect({ currentPriority, onPriorityChange }: PrioritySe
             key={priority}
             className={cn(
               'flex items-center gap-2',
-              priority === currentPriority && 'bg-slate-50 font-medium'
+              priority === currentPriority && 'bg-hover font-medium'
             )}
             onSelect={() => onPriorityChange(priority)}
           >
             <span className={cn('h-2 w-2 shrink-0 rounded-full', PRIORITY_COLORS[priority])} />
-            <span className="text-sm text-slate-700">
+            <span className="text-sm text-text">
               {PRIORITY_LABELS[priority]}
             </span>
           </DropdownMenu.Item>

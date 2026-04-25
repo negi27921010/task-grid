@@ -41,48 +41,48 @@ export function AgingSummaryBar({ tasks, onFilterByAging }: AgingSummaryBarProps
       status: 'overdue',
       label: 'overdue',
       count: counts.overdue,
-      color: 'text-red-600',
+      color: 'text-red-600 dark:text-red-300',
       hoverColor: 'hover:bg-red-50',
     },
     {
       status: 'at_risk',
       label: 'at risk',
       count: counts.at_risk,
-      color: 'text-amber-600',
+      color: 'text-amber-600 dark:text-amber-300',
       hoverColor: 'hover:bg-amber-50',
     },
     {
       status: 'on_track',
       label: 'on track',
       count: counts.on_track,
-      color: 'text-green-600',
+      color: 'text-green-600 dark:text-green-300',
       hoverColor: 'hover:bg-green-50',
     },
     {
       status: 'no_eta',
       label: 'no ETA',
       count: counts.no_eta,
-      color: 'text-slate-500',
-      hoverColor: 'hover:bg-slate-100',
+      color: 'text-text-muted',
+      hoverColor: 'hover:bg-neutral-100',
     },
     {
       status: 'stale',
       label: 'stale',
       count: counts.stale,
-      color: 'text-slate-500',
-      hoverColor: 'hover:bg-slate-100',
+      color: 'text-text-muted',
+      hoverColor: 'hover:bg-neutral-100',
     },
   ];
 
   return (
     <div className="flex flex-wrap items-center gap-1 text-sm">
-      <span className="font-medium text-slate-900">
+      <span className="font-medium text-text">
         {tasks.length} total
       </span>
 
       {items.map((item) => (
         <span key={item.status} className="flex items-center">
-          <span className="mx-1 text-slate-300" aria-hidden="true">|</span>
+          <span className="mx-1 text-text-faint" aria-hidden="true">|</span>
           <button
             type="button"
             onClick={() => onFilterByAging(item.status)}
@@ -94,7 +94,7 @@ export function AgingSummaryBar({ tasks, onFilterByAging }: AgingSummaryBarProps
             <span className={cn('font-semibold', item.color)}>
               {item.count}
             </span>{' '}
-            <span className="text-slate-600">{item.label}</span>
+            <span className="text-text-muted">{item.label}</span>
           </button>
         </span>
       ))}

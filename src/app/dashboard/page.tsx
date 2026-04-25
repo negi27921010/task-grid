@@ -1,5 +1,11 @@
 'use client';
 
+// Unified Dashboard — Main table / Kanban / Analytics view toggle.
+// Wraps the new RefinedTaskTable + RefinedKanban (drag-and-drop, design
+// system pills/avatars) and the existing analytics surface, all driven by
+// the same useTasks data. Logic preserved: data hooks, RBAC scope,
+// filters, AgingSummaryBar, TaskDetailPanel, BulkUpload — all unchanged.
+
 import { Suspense, useMemo, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -8,8 +14,9 @@ import {
   ShieldAlert,
   Clock,
   CheckCircle2,
-  AlertTriangle,
-  Users,
+  Table as TableIcon,
+  Kanban as KanbanIcon,
+  PieChart as PieChartIcon,
 } from 'lucide-react';
 import { RefinedAppShell } from '@/components/shell';
 import { RefinedPageHeader, type PageTab } from '@/components/shell';
@@ -25,22 +32,34 @@ import {
   StatusPill,
   type Tone,
 } from '@/components/design-system';
+import { RefinedTaskTable, RefinedKanban } from '@/components/board';
 import { AgingSummaryBar } from '@/components/task/aging-summary-bar';
 import { FilterBar } from '@/components/task/filter-bar';
-import { TaskViewContainer } from '@/components/task/task-view-container';
 import { BulkUploadDialog } from '@/components/task/bulk-upload-dialog';
 import { TaskDetailPanel } from '@/components/task/task-detail-panel';
-import { useTasks, useTasksByOwner, useTasksByDepartment } from '@/lib/hooks/use-tasks';
+import {
+  useTasks,
+  useTasksByOwner,
+  useTasksByDepartment,
+} from '@/lib/hooks/use-tasks';
 import { useProjects } from '@/lib/hooks/use-projects';
 import { useUsers } from '@/lib/hooks/use-users';
 import { useCurrentUser } from '@/lib/hooks/use-current-user';
 import { useFilters } from '@/lib/hooks/use-filters';
-import { useViewMode } from '@/lib/hooks/use-view-mode';
 import { isAdmin, can } from '@/lib/utils/permissions';
 import { filterTasks } from '@/lib/utils/search';
-import type { AgingStatus, Task, TaskStatus } from '@/lib/types';
+import { cn } from '@/lib/utils/cn';
+import type { AgingStatus, TaskStatus } from '@/lib/types';
 
-// Map app status enum → analytics tone for the donut/pills.
+type View = 'table' | 'kanban' | 'analytics';
+type Scope = 'mine' | 'team';
+
+const VIEW_TABS: PageTab[] = [
+  { id: 'table',     label: 'Main table', icon: TableIcon },
+  { id: 'kanban',    label: 'Kanban',     icon: KanbanIcon },
+  { id: 'analytics', label: 'Dashboard',  icon: PieChartIcon },
+];
+
 const STATUS_TONE: Record<TaskStatus, Tone> = {
   not_started: 'gray',
   in_progress: 'blue',
@@ -56,38 +75,34 @@ const STATUS_LABEL: Record<TaskStatus, string> = {
   cancelled: 'Cancelled',
 };
 
+function parseView(raw: string | null): View {
+  return raw === 'kanban' || raw === 'analytics' ? raw : 'table';
+}
+function parseScope(raw: string | null): Scope {
+  return raw === 'team' ? 'team' : 'mine';
+}
+
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isTeamView = searchParams.get('view') === 'team';
+  const view = parseView(searchParams.get('view'));
+  const scope = parseScope(searchParams.get('scope'));
+
   const { currentUser, isLoading: userLoading } = useCurrentUser();
   const { data: allUsersData } = useUsers();
   const { data: projectsData } = useProjects();
-  const { viewMode } = useViewMode();
 
   const userIsAdmin = !userLoading && isAdmin(currentUser);
   const userReady = !userLoading && !!currentUser.id;
+  const isTeamView = !userIsAdmin && scope === 'team';
 
   const deptUserIds = useMemo(
-    () => (allUsersData ?? []).filter(u => u.department === currentUser.department).map(u => u.id),
+    () => (allUsersData ?? [])
+      .filter(u => u.department === currentUser.department)
+      .map(u => u.id),
     [allUsersData, currentUser.department]
   );
 
-  const projectsMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    for (const p of projectsData ?? []) { map[p.id] = p.name; }
-    return map;
-  }, [projectsData]);
-
-  const usersById = useMemo(() => {
-    const map: Record<string, { name: string; src: string | null }> = {};
-    for (const u of allUsersData ?? []) {
-      map[u.id] = { name: u.full_name, src: u.avatar_url };
-    }
-    return map;
-  }, [allUsersData]);
-
-  // Admin sees ALL tasks; member sees only their own / their department's
   const allTasksQuery = useTasks();
   const myTasks = useTasksByOwner(currentUser.id);
   const teamTasks = useTasksByDepartment(currentUser.department, deptUserIds);
@@ -105,12 +120,14 @@ function DashboardContent() {
   } = useFilters();
 
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const handleSelectTask = useCallback((taskId: string) => setSelectedTaskId(taskId), []);
+  const handleSelectTask = useCallback(
+    (taskId: string) => setSelectedTaskId(taskId), []
+  );
   const handleClosePanel = useCallback(() => setSelectedTaskId(null), []);
 
+  // Add Task flow on the unified Dashboard requires a project context.
   const [showProjectPicker, setShowProjectPicker] = useState(false);
-  const [addTaskProjectId, setAddTaskProjectId] = useState<string | null>(null);
-  const [showCreateRow, setShowCreateRow] = useState(false);
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
 
   const activeProjects = useMemo(
     () => (projectsData ?? []).filter(p => p.status === 'active'),
@@ -118,36 +135,49 @@ function DashboardContent() {
   );
 
   const handleAddTask = useCallback(() => {
+    if (activeProjects.length === 0) return;
     if (activeProjects.length === 1) {
-      setAddTaskProjectId(activeProjects[0].id);
-      setShowCreateRow(true);
-    } else if (activeProjects.length > 1) {
+      router.push(`/project/${activeProjects[0].id}`);
+    } else {
       setShowProjectPicker(true);
     }
-  }, [activeProjects]);
+  }, [activeProjects, router]);
 
-  const handlePickProject = useCallback((projectId: string) => {
-    setAddTaskProjectId(projectId);
-    setShowProjectPicker(false);
-    setShowCreateRow(true);
-  }, []);
-
-  const handleCloseCreateRow = useCallback(() => {
-    setShowCreateRow(false);
-    setAddTaskProjectId(null);
-  }, []);
-
-  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
+  const handlePickProject = useCallback(
+    (projectId: string) => {
+      setShowProjectPicker(false);
+      router.push(`/project/${projectId}`);
+    },
+    [router],
+  );
 
   const allTasks = tasks ?? [];
-  const filteredTasks = useMemo(() => filterTasks(allTasks, filters), [allTasks, filters]);
+  const filteredTasks = useMemo(
+    () => filterTasks(allTasks, filters), [allTasks, filters]
+  );
 
   const handleFilterByAging = (agingStatus: AgingStatus) => {
     const current = filters.aging_status ?? [];
-    setFilter('aging_status', current.includes(agingStatus)
-      ? current.filter(a => a !== agingStatus)
-      : [...current, agingStatus]
+    setFilter(
+      'aging_status',
+      current.includes(agingStatus)
+        ? current.filter(a => a !== agingStatus)
+        : [...current, agingStatus],
     );
+  };
+
+  const updateView = (next: View) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === 'table') params.delete('view'); else params.set('view', next);
+    const qs = params.toString();
+    router.push(`/dashboard${qs ? `?${qs}` : ''}`);
+  };
+
+  const updateScope = (next: Scope) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === 'mine') params.delete('scope'); else params.set('scope', next);
+    const qs = params.toString();
+    router.push(`/dashboard${qs ? `?${qs}` : ''}`);
   };
 
   // Stats reflect the active view (filtered when filters applied, all otherwise)
@@ -166,7 +196,14 @@ function DashboardContent() {
     };
   }, [statsSource]);
 
-  // Donut slices
+  const usersById = useMemo(() => {
+    const map: Record<string, { name: string; src: string | null }> = {};
+    for (const u of allUsersData ?? []) {
+      map[u.id] = { name: u.full_name, src: u.avatar_url };
+    }
+    return map;
+  }, [allUsersData]);
+
   const donutSlices = useMemo<DonutSlice[]>(() => {
     const counts: Record<TaskStatus, number> = {
       not_started: 0, in_progress: 0, blocked: 0, completed: 0, cancelled: 0,
@@ -180,7 +217,6 @@ function DashboardContent() {
     }));
   }, [statsSource]);
 
-  // Owner workload (top 8 by total)
   const workloadRows = useMemo<WorkloadRow[]>(() => {
     const byOwner = new Map<string, { total: number; active: number }>();
     for (const t of statsSource) {
@@ -205,7 +241,6 @@ function DashboardContent() {
       .slice(0, 8);
   }, [statsSource, usersById]);
 
-  // Last-14-days completion sparkline
   const completionDaily = useMemo(() => {
     const days = 14;
     const buckets = new Array(days).fill(0);
@@ -222,7 +257,6 @@ function DashboardContent() {
     return buckets;
   }, [statsSource]);
 
-  // Top overdue tasks (max 5)
   const overdueTasks = useMemo(
     () => statsSource
       .filter(t => t.status !== 'completed' && t.status !== 'cancelled' && t.aging_status === 'overdue')
@@ -234,15 +268,6 @@ function DashboardContent() {
       .slice(0, 5),
     [statsSource]
   );
-
-  // Header tabs (only for non-admin members)
-  const headerTabs: PageTab[] | undefined = !userLoading && !userIsAdmin
-    ? [{ id: 'my', label: 'My Tasks' }, { id: 'team', label: 'Team View' }]
-    : undefined;
-  const activeTab = isTeamView ? 'team' : 'my';
-  const handleTabChange = (id: string) => {
-    router.push(id === 'team' ? '/dashboard?view=team' : '/dashboard');
-  };
 
   const greeting = userIsAdmin
     ? `Welcome, ${currentUser.full_name?.split(' ')[0] ?? ''}`
@@ -260,22 +285,30 @@ function DashboardContent() {
       <RefinedPageHeader
         title={userLoading ? 'Loading…' : greeting}
         subtitle={subtitle}
-        tabs={headerTabs}
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
+        tabs={VIEW_TABS}
+        activeTab={view}
+        onTabChange={(id) => updateView(id as View)}
         rightSlot={
-          userIsAdmin ? (
-            <span
-              className="rounded-md px-3 py-1.5 text-[11.5px] font-semibold"
-              style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
-            >
-              Admin · Full View
-            </span>
-          ) : undefined
+          <div className="flex items-center gap-2">
+            {!userIsAdmin && !userLoading && (
+              <div className="inline-flex items-center rounded-md border border-border-color bg-surface p-0.5 text-[12px]">
+                <ScopeButton active={scope === 'mine'} onClick={() => updateScope('mine')}>My</ScopeButton>
+                <ScopeButton active={scope === 'team'} onClick={() => updateScope('team')}>Team</ScopeButton>
+              </div>
+            )}
+            {userIsAdmin && (
+              <span
+                className="rounded-md px-3 py-1.5 text-[11.5px] font-semibold"
+                style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
+              >
+                Admin · Full View
+              </span>
+            )}
+          </div>
         }
       />
 
-      <div className="mx-auto w-full max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-[1400px] space-y-5 px-4 py-6 sm:px-6 lg:px-8">
         {!isLoading && allTasks.length > 0 && (
           <p className="text-[11.5px] text-text-faint">
             {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''}
@@ -283,117 +316,7 @@ function DashboardContent() {
           </p>
         )}
 
-        {/* KPI tiles */}
-        {isLoading && (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-[100px] animate-pulse rounded-xl border border-border-color bg-surface" />
-            ))}
-          </div>
-        )}
-        {!isLoading && allTasks.length > 0 && (
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-            <KpiTile label="Total" value={stats.total} icon={ListTodo} accent="#64748b" />
-            <KpiTile
-              label="In progress"
-              value={stats.inProgress}
-              icon={PlayCircle}
-              accent="#0073ea"
-              delta={stats.blocked > 0 ? `${stats.blocked} blocked` : 'Steady'}
-              trend={stats.blocked > 0 ? 'warn' : 'neutral'}
-            />
-            <KpiTile
-              label="Blocked"
-              value={stats.blocked}
-              icon={ShieldAlert}
-              accent="#dc2626"
-              delta={stats.blocked > 0 ? 'Needs attention' : 'None'}
-              trend={stats.blocked > 0 ? 'down' : 'neutral'}
-            />
-            <KpiTile
-              label="Overdue"
-              value={stats.overdue}
-              icon={Clock}
-              accent="#f59e0b"
-              delta={stats.overdue > 0 ? 'Past due date' : 'On track'}
-              trend={stats.overdue > 0 ? 'warn' : 'neutral'}
-            />
-            <KpiTile
-              label="Completed"
-              value={stats.completed}
-              icon={CheckCircle2}
-              accent="#16a34a"
-              delta={`${stats.completionRate}% done`}
-              trend="up"
-            />
-          </div>
-        )}
-
-        {/* Analytics row 1 — donut + risk panel */}
-        {!isLoading && allTasks.length > 0 && (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
-            <DSCard title="Tasks by status" subtitle="Distribution across pipeline stages">
-              <StatusDonut slices={donutSlices} />
-            </DSCard>
-            <DSCard title="Risk & overdue" subtitle="Tasks past their due date">
-              {overdueTasks.length === 0 ? (
-                <p className="py-6 text-center text-sm text-text-muted">
-                  No overdue tasks 🎉
-                </p>
-              ) : (
-                <ul className="max-h-[260px] space-y-2 overflow-y-auto">
-                  {overdueTasks.map((t) => {
-                    const owner = usersById[t.owner_id];
-                    const daysLate = t.eta
-                      ? Math.max(0, Math.floor((Date.now() - new Date(t.eta).getTime()) / 86400_000))
-                      : 0;
-                    return (
-                      <li
-                        key={t.id}
-                        onClick={() => handleSelectTask(t.id)}
-                        className="flex cursor-pointer items-center gap-3 rounded-lg border border-border-color bg-neutral-50 px-3 py-2 transition-colors hover:bg-hover"
-                      >
-                        <span aria-hidden="true" className="h-full w-1 self-stretch rounded-sm bg-[#dc2626]" />
-                        {owner && <Avatar fullName={owner.name} src={owner.src} size="sm" />}
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-[13px] font-medium text-text">{t.title}</p>
-                          <p className="text-[11.5px] text-text-muted">
-                            {t.eta ? `Due ${new Date(t.eta).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : 'No ETA'}
-                            {daysLate > 0 && ` · ${daysLate}d late`}
-                          </p>
-                        </div>
-                        <StatusPill
-                          label={STATUS_LABEL[t.status]}
-                          tone={STATUS_TONE[t.status]}
-                          style="soft"
-                          size="sm"
-                        />
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </DSCard>
-          </div>
-        )}
-
-        {/* Analytics row 2 — owner workload + completion sparkline */}
-        {!isLoading && allTasks.length > 0 && (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <DSCard title="Owner workload" subtitle="Active assignments by team member">
-              <OwnerWorkload rows={workloadRows} />
-            </DSCard>
-            <DSCard title="Completion this sprint" subtitle="Done vs. planned, last 14 days">
-              <CompletionSpark daily={completionDaily} total={stats.total} done={stats.completed} />
-            </DSCard>
-          </div>
-        )}
-
-        {/* Aging summary — reflects active filters */}
-        {!isLoading && statsSource.length > 0 && (
-          <AgingSummaryBar tasks={statsSource} onFilterByAging={handleFilterByAging} />
-        )}
-
+        {/* Filter bar — applies to all 3 views */}
         <FilterBar
           filters={filters}
           sort={sort}
@@ -409,10 +332,12 @@ function DashboardContent() {
           onBulkUpload={activeProjects.length > 0 && can(currentUser, 'canCreateTasks') ? () => setBulkUploadOpen(true) : undefined}
         />
 
-        {/* Project picker popover for Add Task on dashboard */}
+        {/* Project picker (Add Task flow on Dashboard) */}
         {showProjectPicker && (
           <div className="rounded-lg border border-border-color bg-surface p-3 shadow-md">
-            <p className="mb-2 text-xs font-medium text-text-muted">Select a project for the new task</p>
+            <p className="mb-2 text-xs font-medium text-text-muted">
+              Pick a project to add the task to
+            </p>
             <div className="flex flex-wrap gap-2">
               {activeProjects.map((p) => (
                 <button
@@ -433,26 +358,194 @@ function DashboardContent() {
           </div>
         )}
 
-        <TaskViewContainer
-          tasks={filteredTasks}
-          isLoading={isLoading}
-          viewMode={viewMode}
-          projectId={addTaskProjectId ?? undefined}
-          sort={sort}
-          onSortToggle={toggleSort}
-          onSelectTask={handleSelectTask}
-          showProject
-          projectsMap={projectsMap}
-          emptyTitle={userIsAdmin ? 'No tasks in the system' : isTeamView ? 'No team tasks found' : 'No tasks assigned to you'}
-          emptyDescription={userIsAdmin ? 'Create a project and add tasks to get started.' : isTeamView ? 'Tasks assigned to team members in your department will appear here.' : 'Tasks assigned to you across projects will appear here. Ask an admin to assign you tasks.'}
-          showCreateRow={showCreateRow}
-          onCloseCreateRow={handleCloseCreateRow}
-        />
+        {/* Loading skeleton */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-16">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
+          </div>
+        )}
+
+        {/* ── Main Table view ──────────────────────────────────── */}
+        {!isLoading && view === 'table' && (
+          allTasks.length === 0 ? (
+            <EmptyState userIsAdmin={userIsAdmin} isTeamView={isTeamView} />
+          ) : (
+            <>
+              {statsSource.length > 0 && (
+                <AgingSummaryBar tasks={statsSource} onFilterByAging={handleFilterByAging} />
+              )}
+              <RefinedTaskTable
+                tasks={filteredTasks}
+                users={allUsersData ?? []}
+                onTaskClick={handleSelectTask}
+                onAddTask={can(currentUser, 'canCreateTasks') ? handleAddTask : undefined}
+              />
+            </>
+          )
+        )}
+
+        {/* ── Kanban view ──────────────────────────────────────── */}
+        {!isLoading && view === 'kanban' && (
+          allTasks.length === 0 ? (
+            <EmptyState userIsAdmin={userIsAdmin} isTeamView={isTeamView} />
+          ) : (
+            <RefinedKanban
+              tasks={filteredTasks}
+              users={allUsersData ?? []}
+              onTaskClick={handleSelectTask}
+              onAddTask={can(currentUser, 'canCreateTasks') ? handleAddTask : undefined}
+            />
+          )
+        )}
+
+        {/* ── Analytics view ───────────────────────────────────── */}
+        {!isLoading && view === 'analytics' && (
+          allTasks.length === 0 ? (
+            <EmptyState userIsAdmin={userIsAdmin} isTeamView={isTeamView} />
+          ) : (
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+                <KpiTile label="Total" value={stats.total} icon={ListTodo} accent="#64748b" />
+                <KpiTile
+                  label="In progress"
+                  value={stats.inProgress}
+                  icon={PlayCircle}
+                  accent="#0073ea"
+                  delta={stats.blocked > 0 ? `${stats.blocked} blocked` : 'Steady'}
+                  trend={stats.blocked > 0 ? 'warn' : 'neutral'}
+                />
+                <KpiTile
+                  label="Blocked"
+                  value={stats.blocked}
+                  icon={ShieldAlert}
+                  accent="#dc2626"
+                  delta={stats.blocked > 0 ? 'Needs attention' : 'None'}
+                  trend={stats.blocked > 0 ? 'down' : 'neutral'}
+                />
+                <KpiTile
+                  label="Overdue"
+                  value={stats.overdue}
+                  icon={Clock}
+                  accent="#f59e0b"
+                  delta={stats.overdue > 0 ? 'Past due date' : 'On track'}
+                  trend={stats.overdue > 0 ? 'warn' : 'neutral'}
+                />
+                <KpiTile
+                  label="Completed"
+                  value={stats.completed}
+                  icon={CheckCircle2}
+                  accent="#16a34a"
+                  delta={`${stats.completionRate}% done`}
+                  trend="up"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
+                <DSCard title="Tasks by status" subtitle="Distribution across pipeline stages">
+                  <StatusDonut slices={donutSlices} />
+                </DSCard>
+                <DSCard title="Risk & overdue" subtitle="Tasks past their due date">
+                  {overdueTasks.length === 0 ? (
+                    <p className="py-6 text-center text-sm text-text-muted">
+                      No overdue tasks 🎉
+                    </p>
+                  ) : (
+                    <ul className="max-h-[260px] space-y-2 overflow-y-auto">
+                      {overdueTasks.map((t) => {
+                        const owner = usersById[t.owner_id];
+                        const daysLate = t.eta
+                          ? Math.max(0, Math.floor((Date.now() - new Date(t.eta).getTime()) / 86400_000))
+                          : 0;
+                        return (
+                          <li
+                            key={t.id}
+                            onClick={() => handleSelectTask(t.id)}
+                            className="flex cursor-pointer items-center gap-3 rounded-lg border border-border-color bg-neutral-50 px-3 py-2 transition-colors hover:bg-hover"
+                          >
+                            <span aria-hidden="true" className="h-full w-1 self-stretch rounded-sm bg-[#dc2626]" />
+                            {owner && <Avatar fullName={owner.name} src={owner.src} size="sm" />}
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-[13px] font-medium text-text">{t.title}</p>
+                              <p className="text-[11.5px] text-text-muted">
+                                {t.eta ? `Due ${new Date(t.eta).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : 'No ETA'}
+                                {daysLate > 0 && ` · ${daysLate}d late`}
+                              </p>
+                            </div>
+                            <StatusPill
+                              label={STATUS_LABEL[t.status]}
+                              tone={STATUS_TONE[t.status]}
+                              style="soft"
+                              size="sm"
+                            />
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </DSCard>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <DSCard title="Owner workload" subtitle="Active assignments by team member">
+                  <OwnerWorkload rows={workloadRows} />
+                </DSCard>
+                <DSCard title="Completion this sprint" subtitle="Done vs. planned, last 14 days">
+                  <CompletionSpark daily={completionDaily} total={stats.total} done={stats.completed} />
+                </DSCard>
+              </div>
+            </div>
+          )
+        )}
       </div>
 
       <TaskDetailPanel taskId={selectedTaskId} onClose={handleClosePanel} />
       <BulkUploadDialog open={bulkUploadOpen} onOpenChange={setBulkUploadOpen} />
     </RefinedAppShell>
+  );
+}
+
+function ScopeButton({
+  active, onClick, children,
+}: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'rounded px-2.5 py-1 font-medium transition-colors',
+        active
+          ? 'bg-hover text-text shadow-sm'
+          : 'text-text-muted hover:text-text',
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+function EmptyState({
+  userIsAdmin, isTeamView,
+}: { userIsAdmin: boolean; isTeamView: boolean }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border-color bg-surface px-6 py-16 text-center">
+      <p
+        className="text-base font-semibold text-text"
+        style={{ fontFamily: 'var(--font-display)' }}
+      >
+        {userIsAdmin
+          ? 'No tasks in the system'
+          : isTeamView
+            ? 'No team tasks found'
+            : 'No tasks assigned to you'}
+      </p>
+      <p className="mt-1 max-w-md text-sm text-text-muted">
+        {userIsAdmin
+          ? 'Create a project and add tasks to get started.'
+          : isTeamView
+            ? 'Tasks assigned to team members in your department will appear here.'
+            : 'Tasks assigned to you across projects will appear here. Ask an admin to assign you tasks.'}
+      </p>
+    </div>
   );
 }
 

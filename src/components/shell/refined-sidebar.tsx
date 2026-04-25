@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  CheckSquare,
   ClipboardCheck,
   Users,
   BookOpen,
@@ -15,7 +14,6 @@ import {
   PanelLeftClose,
   PanelLeft,
   Inbox,
-  Star,
   Zap,
 } from 'lucide-react';
 import { useCurrentUser } from '@/lib/hooks/use-current-user';
@@ -40,14 +38,12 @@ interface NavLink {
 
 const QUICK_NAV: NavLink[] = [
   { href: '/dashboard', icon: Inbox, label: 'Inbox' },
-  { href: '/', icon: CheckSquare, label: 'My work' },
 ];
 
 const BOARDS: NavLink[] = [
-  { href: '/', icon: CheckSquare, label: 'Tasks' },
+  { href: '/dashboard', icon: FolderKanban, label: 'Dashboard' },
   { href: '/standups', icon: ClipboardCheck, label: 'Daily Standup' },
   { href: '/registry', icon: BookOpen, label: 'Registry' },
-  { href: '/dashboard', icon: FolderKanban, label: 'Dashboard' },
 ];
 
 const PROJECT_COLORS = ['#0073ea', '#9333ea', '#16a34a', '#f59e0b', '#ec4899', '#06b6d4'];
@@ -60,8 +56,12 @@ export function RefinedSidebar({ width = 240, onToggle }: RefinedSidebarProps) {
   const collapsed = width < 80;
 
   const isActive = (href: string) => {
-    if (href === '/') return pathname === '/' || pathname.startsWith('/project/');
-    return pathname.startsWith(href);
+    // Dashboard is also active when viewing an individual project (projects
+    // are scoped task lists, conceptually part of the dashboard surface).
+    if (href === '/dashboard') {
+      return pathname === '/dashboard' || pathname === '/' || pathname.startsWith('/project/');
+    }
+    return pathname === href || pathname.startsWith(href + '/');
   };
 
   return (

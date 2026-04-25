@@ -3,7 +3,7 @@
 import { use, useMemo, useState, useCallback, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Pencil, Check, X, FolderOpen } from 'lucide-react';
-import { AppShell } from '@/components/layout/app-shell';
+import { RefinedAppShell } from '@/components/shell';
 import { AgingSummaryBar } from '@/components/task/aging-summary-bar';
 import { FilterBar } from '@/components/task/filter-bar';
 import { TaskViewContainer } from '@/components/task/task-view-container';
@@ -24,7 +24,7 @@ function ProjectContent({ id }: { id: string }) {
   const { data: project, isLoading: projectLoading } = useProject(id);
   const { data: tasks, isLoading: tasksLoading } = useTasks(id);
   const { currentUser } = useCurrentUser();
-  const { viewMode, setViewMode } = useViewMode();
+  const { viewMode } = useViewMode();
   const {
     filters,
     sort,
@@ -144,7 +144,7 @@ function ProjectContent({ id }: { id: string }) {
   };
 
   return (
-    <AppShell viewMode={viewMode} onViewModeChange={setViewMode}>
+    <RefinedAppShell>
       <div className="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
         {/* Project header */}
         <div>
@@ -166,24 +166,24 @@ function ProjectContent({ id }: { id: string }) {
                       if (e.key === 'Enter') { e.preventDefault(); handleNameSave(); }
                       if (e.key === 'Escape') { e.preventDefault(); setEditingName(false); }
                     }}
-                    className="rounded-md border border-blue-300 bg-white px-2 py-1 text-xl font-bold tracking-tight text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="rounded-md border border-[var(--accent)]/40 bg-surface px-2 py-1 text-xl font-bold tracking-tight text-text focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                   />
                   <button type="button" onClick={handleNameSave} className="rounded-md p-1 text-green-600 hover:bg-green-50">
                     <Check className="h-4 w-4" />
                   </button>
-                  <button type="button" onClick={() => setEditingName(false)} className="rounded-md p-1 text-slate-400 hover:bg-slate-100">
+                  <button type="button" onClick={() => setEditingName(false)} className="rounded-md p-1 text-text-faint hover:bg-neutral-100">
                     <X className="h-4 w-4" />
                   </button>
                 </div>
               ) : (
                 <div className="group/title flex items-center gap-2">
-                  <h1 className="text-xl font-bold tracking-tight text-slate-900">
+                  <h1 className="text-xl font-bold tracking-tight text-text">
                     {project.name}
                   </h1>
                   <button
                     type="button"
                     onClick={startEditName}
-                    className="rounded p-1 text-slate-400 opacity-40 transition-opacity hover:bg-slate-100 hover:text-slate-600 group-hover/title:opacity-100"
+                    className="rounded p-1 text-text-faint opacity-40 transition-opacity hover:bg-neutral-100 hover:text-text-muted group-hover/title:opacity-100"
                     title="Edit project name"
                   >
                     <Pencil className="h-3.5 w-3.5" />
@@ -202,12 +202,12 @@ function ProjectContent({ id }: { id: string }) {
                     }}
                     rows={2}
                     placeholder="Project description..."
-                    className="flex-1 rounded-md border border-blue-300 bg-white px-2 py-1 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none"
+                    className="flex-1 rounded-md border border-[var(--accent)]/40 bg-surface px-2 py-1 text-sm text-text focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20 resize-none"
                   />
                   <button type="button" onClick={handleDescSave} className="rounded-md p-1 text-green-600 hover:bg-green-50" title="Save (Ctrl+Enter)">
                     <Check className="h-4 w-4" />
                   </button>
-                  <button type="button" onClick={() => setEditingDesc(false)} className="rounded-md p-1 text-slate-400 hover:bg-slate-100">
+                  <button type="button" onClick={() => setEditingDesc(false)} className="rounded-md p-1 text-text-faint hover:bg-neutral-100">
                     <X className="h-4 w-4" />
                   </button>
                 </div>
@@ -215,14 +215,14 @@ function ProjectContent({ id }: { id: string }) {
                 <div className="group/desc mt-1 flex items-center gap-2">
                   {project.description ? (
                     <p
-                      className="text-sm text-slate-500 cursor-pointer hover:text-slate-700 transition-colors"
+                      className="text-sm text-text-muted cursor-pointer hover:text-text transition-colors"
                       onClick={startEditDesc}
                     >
                       {project.description}
                     </p>
                   ) : (
                     <p
-                      className="text-sm text-slate-400 italic cursor-pointer hover:text-slate-500 transition-colors"
+                      className="text-sm text-text-faint italic cursor-pointer hover:text-text-muted transition-colors"
                       onClick={startEditDesc}
                     >
                       Add a description...
@@ -231,7 +231,7 @@ function ProjectContent({ id }: { id: string }) {
                   <button
                     type="button"
                     onClick={startEditDesc}
-                    className="rounded p-1 text-slate-400 opacity-40 transition-opacity hover:bg-slate-100 hover:text-slate-600 group-hover/desc:opacity-100"
+                    className="rounded p-1 text-text-faint opacity-40 transition-opacity hover:bg-neutral-100 hover:text-text-muted group-hover/desc:opacity-100"
                     title="Edit description"
                   >
                     <Pencil className="h-3 w-3" />
@@ -241,9 +241,9 @@ function ProjectContent({ id }: { id: string }) {
             </>
           ) : (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <FolderOpen className="h-12 w-12 text-slate-300" />
-              <h2 className="mt-4 text-lg font-semibold text-slate-900">Project not found</h2>
-              <p className="mt-1 text-sm text-slate-500">This project may have been deleted or you don&apos;t have access.</p>
+              <FolderOpen className="h-12 w-12 text-text-faint" />
+              <h2 className="mt-4 text-lg font-semibold text-text">Project not found</h2>
+              <p className="mt-1 text-sm text-text-muted">This project may have been deleted or you don&apos;t have access.</p>
             </div>
           )}
 
@@ -252,7 +252,7 @@ function ProjectContent({ id }: { id: string }) {
             <div className="mt-3 space-y-2">
               {/* Stacked progress bar */}
               <div className="flex items-center gap-3">
-                <div className="flex h-2.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                <div className="flex h-2.5 flex-1 overflow-hidden rounded-full bg-neutral-100">
                   {projectStats.completed > 0 && (
                     <div
                       className="bg-emerald-500 transition-all duration-500"
@@ -279,24 +279,24 @@ function ProjectContent({ id }: { id: string }) {
               </div>
               {/* Legend */}
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-                <span className="text-slate-500">{projectStats.total} tasks</span>
+                <span className="text-text-muted">{projectStats.total} tasks</span>
                 {projectStats.completed > 0 && (
-                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500" /><span className="text-slate-600">{projectStats.completed} done</span></span>
+                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500" /><span className="text-text-muted">{projectStats.completed} done</span></span>
                 )}
                 {projectStats.inProgress > 0 && (
-                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-500" /><span className="text-slate-600">{projectStats.inProgress} in progress</span></span>
+                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-500" /><span className="text-text-muted">{projectStats.inProgress} in progress</span></span>
                 )}
                 {projectStats.blocked > 0 && (
-                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500" /><span className="text-slate-600">{projectStats.blocked} blocked</span></span>
+                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500" /><span className="text-text-muted">{projectStats.blocked} blocked</span></span>
                 )}
                 {projectStats.notStarted > 0 && (
-                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-slate-300" /><span className="text-slate-600">{projectStats.notStarted} not started</span></span>
+                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-neutral-200" /><span className="text-text-muted">{projectStats.notStarted} not started</span></span>
                 )}
                 {projectStats.overdue > 0 && (
                   <span className="text-amber-600">{projectStats.overdue} overdue</span>
                 )}
                 {hasActiveFilters && (
-                  <span className="text-slate-400">(showing {filteredTasks.length} filtered)</span>
+                  <span className="text-text-faint">(showing {filteredTasks.length} filtered)</span>
                 )}
               </div>
             </div>
@@ -344,14 +344,14 @@ function ProjectContent({ id }: { id: string }) {
       {/* Task Detail Panel */}
       <TaskDetailPanel taskId={selectedTaskId} onClose={handleClosePanel} />
       <BulkUploadDialog open={bulkUploadOpen} onOpenChange={setBulkUploadOpen} defaultProjectId={id} />
-    </AppShell>
+    </RefinedAppShell>
   );
 }
 
 function ProjectSkeleton() {
   return (
     <div className="flex h-full items-center justify-center">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
     </div>
   );
 }

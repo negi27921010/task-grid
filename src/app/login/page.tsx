@@ -95,25 +95,30 @@ export default function LoginPage() {
       </div>
 
       {/* Right Panel — Login Form */}
-      <div className="flex flex-1 flex-col items-center justify-center bg-white px-6 py-12 lg:px-16">
+      <div className="flex flex-1 flex-col items-center justify-center bg-surface px-6 py-12 lg:px-16">
         <div className="w-full max-w-[380px]">
           {/* Mobile logo */}
           <div className="mb-10 flex items-center gap-3 lg:hidden">
             <Image src="/logo.png" alt="PW Academy" width={40} height={40} className="rounded-xl" />
             <div>
-              <h1 className="text-lg font-bold text-slate-900">Task Grid</h1>
-              <p className="text-xs text-slate-500">by PW Academy</p>
+              <h1 className="text-lg font-bold text-text">Task Grid</h1>
+              <p className="text-xs text-text-muted">by PW Academy</p>
             </div>
           </div>
 
           <div className="mb-8">
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900">Welcome back</h2>
-            <p className="mt-2 text-sm text-slate-500">Sign in to your account to continue</p>
+            <h2
+              className="text-2xl font-bold tracking-tight text-text"
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
+              Welcome back
+            </h2>
+            <p className="mt-2 text-sm text-text-muted">Sign in to your account to continue</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-700">
+              <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-text">
                 Email address
               </label>
               <input
@@ -124,13 +129,13 @@ export default function LoginPage() {
                 required
                 autoComplete="email"
                 autoFocus
-                className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
+                className="h-11 w-full rounded-lg border border-border-color bg-surface px-3.5 text-sm text-text shadow-sm transition-all placeholder:text-text-faint hover:border-text-faint focus:border-[var(--accent)] focus:outline-none focus:ring-4 focus:ring-[var(--accent)]/10"
                 placeholder="you@pw.live"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">
+              <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-text">
                 Password
               </label>
               <div className="relative">
@@ -141,13 +146,13 @@ export default function LoginPage() {
                   onChange={e => setPassword(e.target.value)}
                   required
                   autoComplete="current-password"
-                  className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 pr-10 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
+                  className="h-11 w-full rounded-lg border border-border-color bg-surface px-3.5 pr-10 text-sm text-text shadow-sm transition-all placeholder:text-text-faint hover:border-text-faint focus:border-[var(--accent)] focus:outline-none focus:ring-4 focus:ring-[var(--accent)]/10"
                   placeholder="Enter your password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-faint transition-colors hover:text-text-muted"
                   tabIndex={-1}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -165,7 +170,13 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 text-sm font-semibold text-white shadow-sm transition-all hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-lg text-sm font-semibold text-white shadow-sm transition-all focus:outline-none focus:ring-4 disabled:cursor-not-allowed disabled:opacity-50"
+              style={{
+                background: 'var(--accent)',
+                ['--tw-ring-color' as string]: 'rgb(0 115 234 / 0.2)',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--accent-hover)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--accent)')}
             >
               {loading ? (
                 <>
@@ -181,7 +192,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="mt-8 text-center text-xs text-slate-400">
+          <p className="mt-8 text-center text-xs text-text-faint">
             Contact your administrator for account access
           </p>
         </div>

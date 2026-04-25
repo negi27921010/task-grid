@@ -5,15 +5,14 @@ import {
   BookOpen, Search, X, Plus, ExternalLink, FileText, User,
   ChevronRight, Pencil, Trash2, Shield, Zap, Cog,
 } from 'lucide-react';
-import { AppShell } from '@/components/layout/app-shell';
+import { RefinedAppShell, RefinedPageHeader } from '@/components/shell';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar } from '@/components/ui/avatar';
+import { Avatar } from '@/components/design-system/avatar';
 import * as Dialog from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/toast';
 import { useCurrentUser } from '@/lib/hooks/use-current-user';
 import { useUsers } from '@/lib/hooks/use-users';
-import { useViewMode } from '@/lib/hooks/use-view-mode';
 import { isAdmin } from '@/lib/utils/permissions';
 import { useRegistries, useCreateRegistry, useUpdateRegistry, useDeleteRegistry } from '@/lib/hooks/use-registry';
 import { cn } from '@/lib/utils/cn';
@@ -31,7 +30,7 @@ const STATUS_COLORS: Record<RegistryStatus, string> = {
   Active: 'bg-green-100 text-green-700',
   'On Hold': 'bg-amber-100 text-amber-700',
   Completed: 'bg-blue-100 text-blue-700',
-  Deprecated: 'bg-slate-100 text-slate-500',
+  Deprecated: 'bg-neutral-100 text-text-muted',
 };
 
 const PRIORITY_ICONS: Record<RegistryPriorityTag, typeof Shield> = {
@@ -43,7 +42,7 @@ const PRIORITY_ICONS: Record<RegistryPriorityTag, typeof Shield> = {
 const PRIORITY_COLORS: Record<RegistryPriorityTag, string> = {
   Core: 'text-red-600',
   Strategic: 'text-blue-600',
-  Support: 'text-slate-500',
+  Support: 'text-text-muted',
 };
 
 /* ---- Create/Edit Form ---- */
@@ -95,82 +94,82 @@ function RegistryForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
       <div>
-        <label className="block text-xs font-medium text-slate-700 mb-1">Workstream Name *</label>
+        <label className="block text-xs font-medium text-text mb-1">Workstream Name *</label>
         <input type="text" value={name} onChange={e => setName(e.target.value)} required maxLength={200}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-[#066fd1] focus:outline-none focus:ring-2 focus:ring-[#066fd1]/20" />
+          className="w-full rounded-md border border-border-color px-3 py-2 text-sm focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20" />
       </div>
       <div>
-        <label className="block text-xs font-medium text-slate-700 mb-1">Description</label>
+        <label className="block text-xs font-medium text-text mb-1">Description</label>
         <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} maxLength={500}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm resize-none focus:border-[#066fd1] focus:outline-none focus:ring-2 focus:ring-[#066fd1]/20" />
+          className="w-full rounded-md border border-border-color px-3 py-2 text-sm resize-none focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20" />
       </div>
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1">Category</label>
+          <label className="block text-xs font-medium text-text mb-1">Category</label>
           <select value={category} onChange={e => setCategory(e.target.value as RegistryCategory)}
-            className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm focus:border-[#066fd1] focus:outline-none">
+            className="w-full rounded-md border border-border-color px-2 py-2 text-sm focus:border-[var(--accent)] focus:outline-none">
             {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1">Priority</label>
+          <label className="block text-xs font-medium text-text mb-1">Priority</label>
           <select value={priorityTag} onChange={e => setPriorityTag(e.target.value as RegistryPriorityTag)}
-            className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm focus:border-[#066fd1] focus:outline-none">
+            className="w-full rounded-md border border-border-color px-2 py-2 text-sm focus:border-[var(--accent)] focus:outline-none">
             {PRIORITY_TAGS.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1">Status</label>
+          <label className="block text-xs font-medium text-text mb-1">Status</label>
           <select value={status} onChange={e => setStatus(e.target.value as RegistryStatus)}
-            className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm focus:border-[#066fd1] focus:outline-none">
+            className="w-full rounded-md border border-border-color px-2 py-2 text-sm focus:border-[var(--accent)] focus:outline-none">
             {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1">Primary Owner (SPOC) *</label>
+          <label className="block text-xs font-medium text-text mb-1">Primary Owner (SPOC) *</label>
           <select value={primaryOwnerId} onChange={e => setPrimaryOwnerId(e.target.value)} required
-            className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm focus:border-[#066fd1] focus:outline-none">
+            className="w-full rounded-md border border-border-color px-2 py-2 text-sm focus:border-[var(--accent)] focus:outline-none">
             <option value="">Select owner</option>
             {(users ?? []).map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1">Secondary Owner</label>
+          <label className="block text-xs font-medium text-text mb-1">Secondary Owner</label>
           <select value={secondaryOwnerId} onChange={e => setSecondaryOwnerId(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm focus:border-[#066fd1] focus:outline-none">
+            className="w-full rounded-md border border-border-color px-2 py-2 text-sm focus:border-[var(--accent)] focus:outline-none">
             <option value="">None</option>
             {(users ?? []).map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
           </select>
         </div>
       </div>
       <div>
-        <label className="block text-xs font-medium text-slate-700 mb-1">Team / Function</label>
+        <label className="block text-xs font-medium text-text mb-1">Team / Function</label>
         <input type="text" value={team} onChange={e => setTeam(e.target.value)} maxLength={100}
           placeholder="e.g. Finance, Product & Analytics"
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-[#066fd1] focus:outline-none focus:ring-2 focus:ring-[#066fd1]/20" />
+          className="w-full rounded-md border border-border-color px-3 py-2 text-sm focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20" />
       </div>
       <div>
-        <label className="block text-xs font-medium text-slate-700 mb-1">SOP Links (one per line)</label>
+        <label className="block text-xs font-medium text-text mb-1">SOP Links (one per line)</label>
         <textarea value={sopLinks} onChange={e => setSopLinks(e.target.value)} rows={2}
-          placeholder="https://docs.google.com/..." className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm resize-none focus:border-[#066fd1] focus:outline-none" />
+          placeholder="https://docs.google.com/..." className="w-full rounded-md border border-border-color px-3 py-2 text-sm resize-none focus:border-[var(--accent)] focus:outline-none" />
       </div>
       <div>
-        <label className="block text-xs font-medium text-slate-700 mb-1">Important Links (one per line)</label>
+        <label className="block text-xs font-medium text-text mb-1">Important Links (one per line)</label>
         <textarea value={importantLinks} onChange={e => setImportantLinks(e.target.value)} rows={2}
-          placeholder="Dashboards, sheets, trackers..." className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm resize-none focus:border-[#066fd1] focus:outline-none" />
+          placeholder="Dashboards, sheets, trackers..." className="w-full rounded-md border border-border-color px-3 py-2 text-sm resize-none focus:border-[var(--accent)] focus:outline-none" />
       </div>
       <div>
-        <label className="block text-xs font-medium text-slate-700 mb-1">Dependencies</label>
+        <label className="block text-xs font-medium text-text mb-1">Dependencies</label>
         <input type="text" value={dependencies} onChange={e => setDependencies(e.target.value)} maxLength={300}
           placeholder="Other teams or projects this depends on"
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-[#066fd1] focus:outline-none" />
+          className="w-full rounded-md border border-border-color px-3 py-2 text-sm focus:border-[var(--accent)] focus:outline-none" />
       </div>
       <div>
-        <label className="block text-xs font-medium text-slate-700 mb-1">Notes / Context</label>
+        <label className="block text-xs font-medium text-text mb-1">Notes / Context</label>
         <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} maxLength={500}
-          placeholder="High-signal info only" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm resize-none focus:border-[#066fd1] focus:outline-none" />
+          placeholder="High-signal info only" className="w-full rounded-md border border-border-color px-3 py-2 text-sm resize-none focus:border-[var(--accent)] focus:outline-none" />
       </div>
       <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
@@ -201,16 +200,16 @@ function DetailPanel({
   const PriorityIcon = PRIORITY_ICONS[entry.priority_tag];
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full max-w-lg bg-white shadow-2xl border-l border-[#e5e7eb] overflow-y-auto">
-      <div className="sticky top-0 bg-white border-b border-[#e5e7eb] px-6 py-4 flex items-center justify-between z-10">
-        <h2 className="text-base font-semibold text-[#1f2937] truncate pr-4">{entry.name}</h2>
+    <div className="fixed inset-y-0 right-0 z-50 w-full max-w-lg bg-surface shadow-2xl border-l border-[var(--border-color)] overflow-y-auto">
+      <div className="sticky top-0 bg-surface border-b border-[var(--border-color)] px-6 py-4 flex items-center justify-between z-10">
+        <h2 className="text-base font-semibold text-[var(--text)] truncate pr-4">{entry.name}</h2>
         <div className="flex items-center gap-2">
           {userIsAdmin && (
-            <button onClick={onEdit} className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+            <button onClick={onEdit} className="rounded-md p-1.5 text-text-faint hover:bg-hover hover:text-text-muted">
               <Pencil className="h-4 w-4" />
             </button>
           )}
-          <button onClick={onClose} className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+          <button onClick={onClose} className="rounded-md p-1.5 text-text-faint hover:bg-hover hover:text-text-muted">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -224,49 +223,49 @@ function DetailPanel({
             <PriorityIcon className={cn('h-3.5 w-3.5', PRIORITY_COLORS[entry.priority_tag])} />
             <span className={PRIORITY_COLORS[entry.priority_tag]}>{entry.priority_tag}</span>
           </span>
-          <span className="rounded-md bg-[#f3f4f6] px-2 py-0.5 text-xs font-medium text-[#4b5563]">{entry.category}</span>
+          <span className="rounded-md bg-[var(--neutral-100)] px-2 py-0.5 text-xs font-medium text-[var(--text-muted)]">{entry.category}</span>
         </div>
 
         {/* Description */}
         {entry.description && (
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#6b7280] mb-1">Description</p>
-            <p className="text-sm text-[#374151] whitespace-pre-wrap">{entry.description}</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Description</p>
+            <p className="text-sm text-[var(--text)] whitespace-pre-wrap">{entry.description}</p>
           </div>
         )}
 
         {/* Ownership */}
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-[#6b7280] mb-2">Ownership</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-2">Ownership</p>
           <div className="space-y-2">
             <div className="flex items-center gap-3">
               <Avatar fullName={owner?.full_name ?? '?'} src={owner?.avatar_url ?? null} size="sm" />
               <div>
-                <p className="text-sm font-medium text-[#1f2937]">{owner?.full_name ?? 'Unknown'}</p>
-                <p className="text-[10px] text-[#6b7280]">Primary Owner (SPOC)</p>
+                <p className="text-sm font-medium text-[var(--text)]">{owner?.full_name ?? 'Unknown'}</p>
+                <p className="text-[10px] text-[var(--text-muted)]">Primary Owner (SPOC)</p>
               </div>
             </div>
             {secondaryOwner && (
               <div className="flex items-center gap-3">
                 <Avatar fullName={secondaryOwner.full_name} src={secondaryOwner.avatar_url} size="sm" />
                 <div>
-                  <p className="text-sm font-medium text-[#1f2937]">{secondaryOwner.full_name}</p>
-                  <p className="text-[10px] text-[#6b7280]">Secondary Owner</p>
+                  <p className="text-sm font-medium text-[var(--text)]">{secondaryOwner.full_name}</p>
+                  <p className="text-[10px] text-[var(--text-muted)]">Secondary Owner</p>
                 </div>
               </div>
             )}
-            {entry.team && <p className="text-xs text-[#6b7280]">Team: {entry.team}</p>}
+            {entry.team && <p className="text-xs text-[var(--text-muted)]">Team: {entry.team}</p>}
           </div>
         </div>
 
         {/* SOP Links */}
         {entry.sop_links.length > 0 && (
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#6b7280] mb-2">SOP / Documentation</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-2">SOP / Documentation</p>
             <div className="space-y-1.5">
               {entry.sop_links.map((link, i) => (
                 <a key={i} href={link} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-2 rounded-md border border-[#e5e7eb] px-3 py-2 text-xs text-[#066fd1] hover:bg-[#f9fafb] transition-colors">
+                  className="flex items-center gap-2 rounded-md border border-[var(--border-color)] px-3 py-2 text-xs text-[var(--accent)] hover:bg-[var(--canvas)] transition-colors">
                   <FileText className="h-3.5 w-3.5 shrink-0" />
                   <span className="truncate">{link}</span>
                   <ExternalLink className="h-3 w-3 shrink-0 ml-auto" />
@@ -279,11 +278,11 @@ function DetailPanel({
         {/* Important Links */}
         {entry.important_links.length > 0 && (
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#6b7280] mb-2">Important Links</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-2">Important Links</p>
             <div className="space-y-1.5">
               {entry.important_links.map((link, i) => (
                 <a key={i} href={link} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-2 rounded-md border border-[#e5e7eb] px-3 py-2 text-xs text-[#066fd1] hover:bg-[#f9fafb] transition-colors">
+                  className="flex items-center gap-2 rounded-md border border-[var(--border-color)] px-3 py-2 text-xs text-[var(--accent)] hover:bg-[var(--canvas)] transition-colors">
                   <ExternalLink className="h-3.5 w-3.5 shrink-0" />
                   <span className="truncate">{link}</span>
                 </a>
@@ -295,21 +294,21 @@ function DetailPanel({
         {/* Dependencies */}
         {entry.dependencies && (
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#6b7280] mb-1">Dependencies</p>
-            <p className="text-sm text-[#374151]">{entry.dependencies}</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Dependencies</p>
+            <p className="text-sm text-[var(--text)]">{entry.dependencies}</p>
           </div>
         )}
 
         {/* Notes */}
         {entry.notes && (
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#6b7280] mb-1">Notes / Context</p>
-            <p className="text-sm text-[#374151] whitespace-pre-wrap">{entry.notes}</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">Notes / Context</p>
+            <p className="text-sm text-[var(--text)] whitespace-pre-wrap">{entry.notes}</p>
           </div>
         )}
 
         {/* Meta */}
-        <div className="border-t border-[#e5e7eb] pt-4 text-xs text-[#9ca3af]">
+        <div className="border-t border-[var(--border-color)] pt-4 text-xs text-[var(--text-faint)]">
           <p>Updated {formatDistanceToNow(new Date(entry.updated_at), { addSuffix: true })}</p>
         </div>
       </div>
@@ -321,7 +320,6 @@ function DetailPanel({
 
 function RegistryContent() {
   const { currentUser, isLoading: userLoading } = useCurrentUser();
-  const { viewMode, setViewMode } = useViewMode();
   const { data: registries, isLoading } = useRegistries();
   const { data: users } = useUsers();
   const createRegistry = useCreateRegistry();
@@ -373,50 +371,46 @@ function RegistryContent() {
   };
 
   return (
-    <AppShell viewMode={viewMode} onViewModeChange={setViewMode}>
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-5">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <BookOpen className="h-6 w-6 text-[#066fd1]" />
-            <div>
-              <h1 className="text-xl font-semibold text-[#1f2937]">Function Ownership / Workstream Repo</h1>
-              <p className="text-xs text-[#6b7280]">Who owns what, SOPs, knowledge base — your operating system for critical workstreams</p>
-            </div>
-          </div>
-          {userIsAdmin && (
+    <RefinedAppShell>
+      <RefinedPageHeader
+        title="Function Ownership / Workstream Repo"
+        subtitle="Who owns what, SOPs, knowledge base — your operating system for critical workstreams"
+        rightSlot={
+          userIsAdmin ? (
             <Button variant="primary" size="sm" onClick={() => setAddOpen(true)}>
               <Plus className="h-3.5 w-3.5" /> Add Workstream
             </Button>
-          )}
-        </div>
+          ) : undefined
+        }
+      />
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-5">
 
         {/* Search + Filters */}
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-1.5 rounded-lg border border-[#e5e7eb] bg-white px-3 py-1.5 flex-1 min-w-[200px] max-w-sm">
-            <Search className="h-3.5 w-3.5 text-[#9ca3af]" />
+          <div className="flex items-center gap-1.5 rounded-lg border border-[var(--border-color)] bg-surface px-3 py-1.5 flex-1 min-w-[200px] max-w-sm">
+            <Search className="h-3.5 w-3.5 text-[var(--text-faint)]" />
             <input type="text" value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Search workstreams..."
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-[#9ca3af]" />
-            {search && <button onClick={() => setSearch('')} className="text-[#9ca3af] hover:text-[#4b5563]"><X className="h-3 w-3" /></button>}
+              className="flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--text-faint)]" />
+            {search && <button onClick={() => setSearch('')} className="text-[var(--text-faint)] hover:text-[var(--text-muted)]"><X className="h-3 w-3" /></button>}
           </div>
           <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}
-            className="rounded-lg border border-[#e5e7eb] bg-white px-3 py-1.5 text-sm text-[#4b5563] focus:border-[#066fd1] focus:outline-none">
+            className="rounded-lg border border-[var(--border-color)] bg-surface px-3 py-1.5 text-sm text-[var(--text-muted)] focus:border-[var(--accent)] focus:outline-none">
             <option value="all">All Categories</option>
             {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-            className="rounded-lg border border-[#e5e7eb] bg-white px-3 py-1.5 text-sm text-[#4b5563] focus:border-[#066fd1] focus:outline-none">
+            className="rounded-lg border border-[var(--border-color)] bg-surface px-3 py-1.5 text-sm text-[var(--text-muted)] focus:border-[var(--accent)] focus:outline-none">
             <option value="all">All Statuses</option>
             {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
           <select value={ownerFilter} onChange={e => setOwnerFilter(e.target.value)}
-            className="rounded-lg border border-[#e5e7eb] bg-white px-3 py-1.5 text-sm text-[#4b5563] focus:border-[#066fd1] focus:outline-none">
+            className="rounded-lg border border-[var(--border-color)] bg-surface px-3 py-1.5 text-sm text-[var(--text-muted)] focus:border-[var(--accent)] focus:outline-none">
             <option value="all">All Owners</option>
             {(users ?? []).map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
           </select>
           {(search || categoryFilter !== 'all' || statusFilter !== 'all' || ownerFilter !== 'all') && (
-            <span className="text-xs text-[#6b7280]">{filtered.length} of {(registries ?? []).length}</span>
+            <span className="text-xs text-[var(--text-muted)]">{filtered.length} of {(registries ?? []).length}</span>
           )}
         </div>
 
@@ -424,25 +418,25 @@ function RegistryContent() {
         <div className="card-tabler overflow-hidden">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#066fd1] border-t-transparent" />
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
             </div>
           ) : filtered.length === 0 ? (
             <div className="py-12 text-center">
-              <BookOpen className="mx-auto h-8 w-8 text-[#d1d5db]" />
-              <p className="mt-2 text-sm text-[#6b7280]">{(registries ?? []).length === 0 ? 'No workstreams yet' : 'No matches found'}</p>
+              <BookOpen className="mx-auto h-8 w-8 text-[var(--neutral-200)]" />
+              <p className="mt-2 text-sm text-[var(--text-muted)]">{(registries ?? []).length === 0 ? 'No workstreams yet' : 'No matches found'}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-[#e5e7eb] bg-[#f9fafb]">
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">Workstream</th>
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">Owner</th>
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">Category</th>
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">Priority</th>
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">Status</th>
-                    <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">SOP</th>
-                    <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">Links</th>
+                  <tr className="border-b border-[var(--border-color)] bg-[var(--canvas)]">
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Workstream</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Owner</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Category</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Priority</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Status</th>
+                    <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">SOP</th>
+                    <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Links</th>
                     <th className="w-10 px-2 py-3" />
                   </tr>
                 </thead>
@@ -453,19 +447,19 @@ function RegistryContent() {
                     return (
                       <tr key={r.id}
                         onClick={() => setSelectedId(r.id)}
-                        className="border-b border-[#f3f4f6] cursor-pointer transition-colors hover:bg-[#f9fafb]">
+                        className="border-b border-[var(--neutral-100)] cursor-pointer transition-colors hover:bg-[var(--canvas)]">
                         <td className="px-4 py-3">
-                          <p className="text-sm font-medium text-[#1f2937] truncate max-w-[280px]">{r.name}</p>
-                          {r.description && <p className="text-xs text-[#6b7280] truncate max-w-[280px]">{r.description.split('\n')[0]}</p>}
+                          <p className="text-sm font-medium text-[var(--text)] truncate max-w-[280px]">{r.name}</p>
+                          {r.description && <p className="text-xs text-[var(--text-muted)] truncate max-w-[280px]">{r.description.split('\n')[0]}</p>}
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <Avatar fullName={owner?.full_name ?? '?'} src={owner?.avatar_url ?? null} size="sm" />
-                            <span className="text-sm text-[#374151]">{owner?.full_name ?? 'Unknown'}</span>
+                            <span className="text-sm text-[var(--text)]">{owner?.full_name ?? 'Unknown'}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="rounded-md bg-[#f3f4f6] px-2 py-0.5 text-xs font-medium text-[#4b5563]">{r.category}</span>
+                          <span className="rounded-md bg-[var(--neutral-100)] px-2 py-0.5 text-xs font-medium text-[var(--text-muted)]">{r.category}</span>
                         </td>
                         <td className="px-4 py-3">
                           <span className="inline-flex items-center gap-1 text-xs font-medium">
@@ -478,20 +472,20 @@ function RegistryContent() {
                         </td>
                         <td className="px-4 py-3 text-center">
                           {r.sop_links.length > 0 ? (
-                            <span className="inline-flex items-center gap-0.5 text-xs text-[#066fd1]">
+                            <span className="inline-flex items-center gap-0.5 text-xs text-[var(--accent)]">
                               <FileText className="h-3.5 w-3.5" />{r.sop_links.length}
                             </span>
-                          ) : <span className="text-xs text-[#d1d5db]">—</span>}
+                          ) : <span className="text-xs text-[var(--neutral-200)]">—</span>}
                         </td>
                         <td className="px-4 py-3 text-center">
                           {r.important_links.length > 0 ? (
-                            <span className="inline-flex items-center gap-0.5 text-xs text-[#066fd1]">
+                            <span className="inline-flex items-center gap-0.5 text-xs text-[var(--accent)]">
                               <ExternalLink className="h-3.5 w-3.5" />{r.important_links.length}
                             </span>
-                          ) : <span className="text-xs text-[#d1d5db]">—</span>}
+                          ) : <span className="text-xs text-[var(--neutral-200)]">—</span>}
                         </td>
                         <td className="px-2 py-3">
-                          <ChevronRight className="h-4 w-4 text-[#d1d5db]" />
+                          <ChevronRight className="h-4 w-4 text-[var(--neutral-200)]" />
                         </td>
                       </tr>
                     );
@@ -554,13 +548,13 @@ function RegistryContent() {
           </div>
         </Dialog.Content>
       </Dialog.Root>
-    </AppShell>
+    </RefinedAppShell>
   );
 }
 
 export default function RegistryPage() {
   return (
-    <Suspense fallback={<div className="flex h-full items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[#066fd1] border-t-transparent" /></div>}>
+    <Suspense fallback={<div className="flex h-full items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" /></div>}>
       <RegistryContent />
     </Suspense>
   );

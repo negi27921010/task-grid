@@ -3,7 +3,6 @@
 import { Suspense, useState, useMemo, useCallback } from 'react';
 import { format } from 'date-fns';
 import {
-  ClipboardCheck,
   Sun,
   Moon,
   RefreshCw,
@@ -15,20 +14,17 @@ import {
   Flame,
   Users,
   Plus,
-  Send,
-  MessageSquare,
   Search,
 } from 'lucide-react';
-import { AppShell } from '@/components/layout/app-shell';
+import { RefinedAppShell, RefinedPageHeader, type PageTab } from '@/components/shell';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar } from '@/components/ui/avatar';
+import { Avatar } from '@/components/design-system/avatar';
 import { Tooltip } from '@/components/ui/tooltip';
 import * as Dialog from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/toast';
 import { useCurrentUser } from '@/lib/hooks/use-current-user';
 import { useUsers } from '@/lib/hooks/use-users';
-import { useViewMode } from '@/lib/hooks/use-view-mode';
 import { isAdmin } from '@/lib/utils/permissions';
 import {
   useStandupByDate,
@@ -238,15 +234,15 @@ function MorningSection({
       outcomes.some((o, i) => o.trim() && validateEffortHours(effortHours[i]) !== null));
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+    <div className="rounded-xl border border-border-color bg-surface shadow-sm">
+      <div className="flex items-center justify-between border-b border-border-color px-6 py-4">
         <div className="flex items-center gap-3">
           <div className="rounded-lg bg-amber-50 p-2">
             <Sun className="h-5 w-5 text-amber-600" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-slate-900">Morning Standup</h2>
-            <p className="text-xs text-slate-500">
+            <h2 className="text-sm font-semibold text-text">Morning Standup</h2>
+            <p className="text-xs text-text-muted">
               {isSubmitted
                 ? `Submitted ${standup?.morning_is_late ? '(late) ' : ''}at ${standup?.morning_submitted_at ? format(new Date(standup.morning_submitted_at), 'h:mm a') : ''}`
                 : 'Commit to 1-3 measurable outcomes'}
@@ -281,7 +277,7 @@ function MorningSection({
               >
                 <RefreshCw className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
                 <div className="flex-1">
-                  <p className="text-sm text-slate-800">{o.outcome_text}</p>
+                  <p className="text-sm text-text">{o.outcome_text}</p>
                   <div className="mt-1 flex items-center gap-2">
                     {o.carry_streak >= 3 && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
@@ -292,7 +288,7 @@ function MorningSection({
                       <span className="text-[10px] text-red-400">Carried {o.carry_streak} day{o.carry_streak > 1 ? 's' : ''}</span>
                     )}
                     {o.reason_not_done && (
-                      <span className="text-[10px] text-slate-400 italic">Prev reason: {o.reason_not_done}</span>
+                      <span className="text-[10px] text-text-faint italic">Prev reason: {o.reason_not_done}</span>
                     )}
                   </div>
                 </div>
@@ -305,14 +301,14 @@ function MorningSection({
         {showForm ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
                 Today&apos;s Outcomes (at least 1 required)
               </p>
               <button
                 type="button"
                 onClick={handleAddOutcome}
                 disabled={isPending}
-                className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-200 disabled:opacity-50"
+                className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-2 py-1 text-xs font-medium text-text-muted transition-colors hover:bg-neutral-200 disabled:opacity-50"
               >
                 <Plus className="h-3 w-3" /> Add Outcome
               </button>
@@ -320,15 +316,15 @@ function MorningSection({
             {/* Column labels — single source of truth for the required marker */}
             <div className="flex items-center gap-2 px-1 pb-1">
               <span className="w-4 shrink-0" />
-              <span className="flex-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              <span className="flex-1 text-[10px] font-semibold uppercase tracking-wider text-text-faint">
                 Outcome
               </span>
-              <span className="w-16 shrink-0 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              <span className="w-16 shrink-0 text-center text-[10px] font-semibold uppercase tracking-wider text-text-faint">
                 Hrs
                 {effortRequired ? (
                   <span className="ml-0.5 text-red-500">*</span>
                 ) : (
-                  <span className="ml-0.5 text-slate-300">(opt)</span>
+                  <span className="ml-0.5 text-text-faint">(opt)</span>
                 )}
               </span>
               {outcomes.length > 1 && <span className="w-6 shrink-0" />}
@@ -336,7 +332,7 @@ function MorningSection({
             {outcomes.map((text, idx) => (
               <div key={idx}>
                 <div className="flex items-center gap-2">
-                  <span className="shrink-0 text-xs font-semibold text-slate-400 w-4">{idx + 1}.</span>
+                  <span className="shrink-0 text-xs font-semibold text-text-faint w-4">{idx + 1}.</span>
                   <input
                     type="text"
                     value={text}
@@ -344,8 +340,8 @@ function MorningSection({
                     maxLength={500}
                     placeholder={idx === 0 ? 'e.g. Complete 10 school registrations for Gujarat' : 'Next measurable outcome...'}
                     className={cn(
-                      'flex-1 rounded-lg border px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20',
-                      errors[idx] ? 'border-red-300 bg-red-50/50 focus:border-red-400' : 'border-slate-300 focus:border-blue-500'
+                      'flex-1 rounded-lg border px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20',
+                      errors[idx] ? 'border-red-300 bg-red-50/50 focus:border-red-400' : 'border-border-color focus:border-[var(--accent)]'
                     )}
                     disabled={isPending}
                   />
@@ -364,7 +360,7 @@ function MorningSection({
                       'w-16 shrink-0 rounded-lg border px-2 py-2 text-xs text-center focus:outline-none focus:ring-2',
                       hourErrors[idx]
                         ? 'border-red-300 bg-red-50/50 focus:border-red-400 focus:ring-red-500/20'
-                        : 'border-slate-300 focus:border-blue-500 focus:ring-blue-500/20',
+                        : 'border-border-color focus:border-[var(--accent)] focus:ring-[var(--accent)]/20',
                     )}
                     disabled={isPending}
                   />
@@ -372,7 +368,7 @@ function MorningSection({
                     <button
                       type="button"
                       onClick={() => handleRemoveOutcome(idx)}
-                      className="shrink-0 rounded p-1 text-slate-300 transition-colors hover:bg-red-50 hover:text-red-500"
+                      className="shrink-0 rounded p-1 text-text-faint transition-colors hover:bg-red-50 hover:text-red-500"
                       disabled={isPending}
                     >
                       <X className="h-3.5 w-3.5" />
@@ -387,17 +383,17 @@ function MorningSection({
                 )}
               </div>
             ))}
-            <p className="text-[11px] text-slate-400 ml-6">
+            <p className="text-[11px] text-text-faint ml-6">
               Tip: Write an outcome, not a task. Example: &quot;Submit 5 verified order forms to ops team&quot; instead of &quot;Work on order forms&quot;.{' '}
               {effortRequired ? (
-                <span className="text-slate-500">Effort hours are required.</span>
+                <span className="text-text-muted">Effort hours are required.</span>
               ) : (
-                <span className="text-slate-500">Effort hours optional for this date — left blank entries default to 1h.</span>
+                <span className="text-text-muted">Effort hours optional for this date — left blank entries default to 1h.</span>
               )}
             </p>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
                 Dependencies / Risks (optional)
               </label>
               <textarea
@@ -405,7 +401,7 @@ function MorningSection({
                 onChange={e => setDeps(e.target.value)}
                 placeholder="Any blockers, dependencies, or risks for today..."
                 rows={2}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm resize-none focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="w-full rounded-lg border border-border-color px-3 py-2 text-sm resize-none focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
                 disabled={isPending}
               />
             </div>
@@ -423,15 +419,15 @@ function MorningSection({
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
               Today&apos;s Outcomes
             </p>
             {standup?.outcomes.filter(o => !o.is_carried).map((o, idx) => (
-              <div key={o.id} className="flex items-start gap-3 rounded-lg border border-slate-100 px-4 py-3">
-                <span className="mt-0.5 shrink-0 text-xs font-semibold text-slate-400">{idx + 1}.</span>
-                <p className="flex-1 text-sm text-slate-800">{o.outcome_text}</p>
+              <div key={o.id} className="flex items-start gap-3 rounded-lg border border-border-color px-4 py-3">
+                <span className="mt-0.5 shrink-0 text-xs font-semibold text-text-faint">{idx + 1}.</span>
+                <p className="flex-1 text-sm text-text">{o.outcome_text}</p>
                 {o.effort_hours != null && (
-                  <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                  <span className="shrink-0 rounded-md bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-text-muted">
                     {o.effort_hours}h
                   </span>
                 )}
@@ -439,8 +435,8 @@ function MorningSection({
             ))}
             {standup?.dependencies_risks && (
               <div className="mt-2">
-                <p className="text-xs font-medium text-slate-500 mb-1">Dependencies / Risks</p>
-                <p className="text-sm text-slate-600 bg-amber-50/50 rounded-lg px-4 py-2 border border-amber-100">
+                <p className="text-xs font-medium text-text-muted mb-1">Dependencies / Risks</p>
+                <p className="text-sm text-text-muted bg-amber-50/50 rounded-lg px-4 py-2 border border-amber-100">
                   {standup.dependencies_risks}
                 </p>
               </div>
@@ -515,7 +511,7 @@ function OutcomeComments({
   if (outcome.comments.length === 0) return null;
 
   return (
-    <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+    <div className="mt-3 space-y-2 border-t border-border-color pt-3">
       {outcome.comments.length > 0 && (
         <div className="space-y-2">
           {outcome.comments.map((c) => {
@@ -525,10 +521,10 @@ function OutcomeComments({
                 <Avatar fullName={author?.full_name ?? '?'} src={author?.avatar_url ?? null} size="sm" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-slate-700">{author?.full_name ?? 'Unknown'}</span>
-                    <span className="text-[10px] text-slate-400">{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}</span>
+                    <span className="text-xs font-medium text-text">{author?.full_name ?? 'Unknown'}</span>
+                    <span className="text-[10px] text-text-faint">{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}</span>
                   </div>
-                  <p className="text-xs text-slate-600 whitespace-pre-wrap">{c.content}</p>
+                  <p className="text-xs text-text-muted whitespace-pre-wrap">{c.content}</p>
                 </div>
               </div>
             );
@@ -586,16 +582,16 @@ function OutcomeCard({
       'rounded-lg border px-4 py-3 transition-colors',
       isClosed && outcome.evening_status === 'done' && 'border-green-200 bg-green-50/30',
       isClosed && outcome.evening_status === 'not_done' && 'border-red-200 bg-red-50/30',
-      !isClosed && 'border-slate-200',
+      !isClosed && 'border-border-color',
     )}>
       {/* Outcome text + status controls */}
       <div className="flex items-start gap-3">
         {outcome.is_carried && <RefreshCw className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />}
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-2">
-            <p className="flex-1 text-sm text-slate-800">{outcome.outcome_text}</p>
+            <p className="flex-1 text-sm text-text">{outcome.outcome_text}</p>
             {outcome.effort_hours != null && (
-              <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+              <span className="shrink-0 rounded-md bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-text-muted">
                 {outcome.effort_hours}h
               </span>
             )}
@@ -618,7 +614,7 @@ function OutcomeCard({
               {outcome.evening_status === 'done' ? 'Done' : 'Not Done'}
             </span>
             {outcome.closed_at && (
-              <span className="text-[10px] text-slate-400">
+              <span className="text-[10px] text-text-faint">
                 {format(new Date(outcome.closed_at), 'h:mm a')}
               </span>
             )}
@@ -637,7 +633,7 @@ function OutcomeCard({
               type="button"
               onClick={handleNotDone}
               disabled={updateStatus.isPending || showReasonForm}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-500 transition-all hover:border-red-300 hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
+              className="rounded-lg border border-border-color px-3 py-1.5 text-xs font-medium text-text-muted transition-all hover:border-red-300 hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
             >
               <X className="inline h-3.5 w-3.5 mr-1" />Not Done
             </button>
@@ -655,13 +651,13 @@ function OutcomeCard({
             rows={2}
             maxLength={500}
             autoFocus
-            className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm resize-none focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+            className="w-full rounded-lg border border-red-200 bg-surface px-3 py-2 text-sm resize-none focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/20"
           />
           <div className="flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={() => { setShowReasonForm(false); setReason(''); }}
-              className="rounded-md px-3 py-1 text-xs text-slate-500 hover:text-slate-700"
+              className="rounded-md px-3 py-1 text-xs text-text-muted hover:text-text"
             >
               Cancel
             </button>
@@ -707,15 +703,15 @@ function EveningSection({
   const totalCount = allOutcomes.length;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+    <div className="rounded-xl border border-border-color bg-surface shadow-sm">
+      <div className="flex items-center justify-between border-b border-border-color px-6 py-4">
         <div className="flex items-center gap-3">
           <div className="rounded-lg bg-indigo-50 p-2">
             <Moon className="h-5 w-5 text-indigo-600" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-slate-900">Evening Closure</h2>
-            <p className="text-xs text-slate-500">
+            <h2 className="text-sm font-semibold text-text">Evening Closure</h2>
+            <p className="text-xs text-text-muted">
               {allClosed
                 ? `All ${totalCount} outcomes resolved`
                 : `${closedCount}/${totalCount} outcomes resolved — mark each individually`}
@@ -737,13 +733,13 @@ function EveningSection({
         {standup.dependencies_risks && (
           <div className="rounded-lg border border-amber-100 bg-amber-50/50 px-4 py-3">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 mb-1">Dependencies / Risks</p>
-            <p className="text-sm text-slate-700 whitespace-pre-wrap">{standup.dependencies_risks}</p>
+            <p className="text-sm text-text whitespace-pre-wrap">{standup.dependencies_risks}</p>
           </div>
         )}
         {standup.evening_notes && (
           <div className="rounded-lg border border-indigo-100 bg-indigo-50/50 px-4 py-3">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-600 mb-1">Evening Remarks</p>
-            <p className="text-sm text-slate-700 whitespace-pre-wrap">{standup.evening_notes}</p>
+            <p className="text-sm text-text whitespace-pre-wrap">{standup.evening_notes}</p>
           </div>
         )}
       </div>
@@ -782,7 +778,7 @@ function CarriedOutcomeCard({
         <div className="flex items-start gap-2 flex-1">
           <RefreshCw className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-400" />
           <div className="flex-1 min-w-0">
-            <span className="text-slate-800">{o.outcome_text}</span>
+            <span className="text-text">{o.outcome_text}</span>
             {o.carry_streak >= 3 && (
               <span className="ml-2 inline-flex items-center gap-0.5 rounded-full bg-red-100 px-1.5 py-0.5 text-[9px] font-semibold text-red-700">
                 <Flame className="h-2.5 w-2.5" /> STUCK {o.carry_streak}d
@@ -795,7 +791,7 @@ function CarriedOutcomeCard({
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {o.effort_hours != null && (
-            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
+            <span className="rounded-md bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-text-muted">
               {o.effort_hours}h
             </span>
           )}
@@ -812,7 +808,7 @@ function CarriedOutcomeCard({
             <button
               type="button"
               onClick={() => setExpanded(v => !v)}
-              className="rounded px-1.5 py-0.5 text-[10px] text-slate-500 border border-slate-200 hover:bg-slate-50"
+              className="rounded px-1.5 py-0.5 text-[10px] text-text-muted border border-border-color hover:bg-hover"
             >
               {expanded ? 'Hide' : 'Details'}
             </button>
@@ -844,10 +840,10 @@ function CarriedOutcomeCard({
             placeholder="Why are you pushing this back?"
             rows={2}
             autoFocus
-            className="w-full rounded border border-amber-200 bg-white px-2 py-1.5 text-xs resize-none focus:border-amber-400 focus:outline-none"
+            className="w-full rounded border border-amber-200 bg-surface px-2 py-1.5 text-xs resize-none focus:border-amber-400 focus:outline-none"
           />
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setPushBackId(null)} className="text-xs text-slate-500 hover:text-slate-700">Cancel</button>
+            <button type="button" onClick={() => setPushBackId(null)} className="text-xs text-text-muted hover:text-text">Cancel</button>
             <button
               type="button"
               disabled={!pushBackReason.trim() || pushBack.isPending}
@@ -878,14 +874,14 @@ function MemberStandupDetail({ userId, date }: { userId: string; date: string })
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-6">
-        <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
       </div>
     );
   }
 
   if (!standup || !standup.morning_submitted_at) {
     return (
-      <p className="py-4 text-center text-sm text-slate-400 italic">No standup submitted for this day.</p>
+      <p className="py-4 text-center text-sm text-text-faint italic">No standup submitted for this day.</p>
     );
   }
 
@@ -900,7 +896,7 @@ function MemberStandupDetail({ userId, date }: { userId: string; date: string })
   return (
     <div className="space-y-4">
       {/* Morning submission info */}
-      <div className="flex items-center gap-4 text-xs text-slate-500">
+      <div className="flex items-center gap-4 text-xs text-text-muted">
         <span className="flex items-center gap-1">
           <Sun className="h-3.5 w-3.5 text-amber-500" />
           Morning: {standup.morning_submitted_at ? format(new Date(standup.morning_submitted_at), 'h:mm a') : '—'}
@@ -914,7 +910,10 @@ function MemberStandupDetail({ userId, date }: { userId: string; date: string })
           </span>
         )}
         {totalCommittedHours > 0 && (
-          <span className="ml-auto rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">
+          <span
+            className="ml-auto rounded-md px-2 py-0.5 text-[11px] font-semibold"
+            style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
+          >
             Committed: {totalCommittedHours}h
           </span>
         )}
@@ -934,7 +933,7 @@ function MemberStandupDetail({ userId, date }: { userId: string; date: string })
 
       {/* New outcomes */}
       <div className="space-y-2">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
           Outcomes ({newOutcomes.length})
         </p>
         {newOutcomes.map((o, idx) => (
@@ -942,16 +941,16 @@ function MemberStandupDetail({ userId, date }: { userId: string; date: string })
             'rounded-lg border px-3 py-2 text-sm',
             hasClosed && o.evening_status === 'done' && 'border-green-200 bg-green-50/50',
             hasClosed && o.evening_status === 'not_done' && 'border-red-200 bg-red-50/50',
-            !hasClosed && 'border-slate-100',
+            !hasClosed && 'border-border-color',
           )}>
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-start gap-2 flex-1">
-                <span className="mt-0.5 shrink-0 text-xs font-semibold text-slate-400">{idx + 1}.</span>
-                <span className="text-slate-800">{o.outcome_text}</span>
+                <span className="mt-0.5 shrink-0 text-xs font-semibold text-text-faint">{idx + 1}.</span>
+                <span className="text-text">{o.outcome_text}</span>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 {o.effort_hours != null && (
-                  <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
+                  <span className="rounded-md bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-text-muted">
                     {o.effort_hours}h
                   </span>
                 )}
@@ -984,10 +983,10 @@ function MemberStandupDetail({ userId, date }: { userId: string; date: string })
                   placeholder="Why are you pushing this back? (e.g. 'Too generic — add specific numbers')"
                   rows={2}
                   autoFocus
-                  className="w-full rounded border border-amber-200 bg-white px-2 py-1.5 text-xs resize-none focus:border-amber-400 focus:outline-none"
+                  className="w-full rounded border border-amber-200 bg-surface px-2 py-1.5 text-xs resize-none focus:border-amber-400 focus:outline-none"
                 />
                 <div className="flex justify-end gap-2">
-                  <button type="button" onClick={() => setPushBackId(null)} className="text-xs text-slate-500 hover:text-slate-700">Cancel</button>
+                  <button type="button" onClick={() => setPushBackId(null)} className="text-xs text-text-muted hover:text-text">Cancel</button>
                   <button
                     type="button"
                     disabled={!pushBackReason.trim() || pushBack.isPending}
@@ -1011,7 +1010,7 @@ function MemberStandupDetail({ userId, date }: { userId: string; date: string })
       {standup.dependencies_risks && (
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-600 mb-1">Dependencies / Risks</p>
-          <p className="text-sm text-slate-600 rounded-lg bg-amber-50/50 border border-amber-100 px-3 py-2">
+          <p className="text-sm text-text-muted rounded-lg bg-amber-50/50 border border-amber-100 px-3 py-2">
             {standup.dependencies_risks}
           </p>
         </div>
@@ -1021,7 +1020,7 @@ function MemberStandupDetail({ userId, date }: { userId: string; date: string })
       {standup.evening_notes && (
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-wider text-indigo-600 mb-1">Evening Notes</p>
-          <p className="text-sm text-slate-600 rounded-lg bg-indigo-50/50 border border-indigo-100 px-3 py-2">
+          <p className="text-sm text-text-muted rounded-lg bg-indigo-50/50 border border-indigo-100 px-3 py-2">
             {standup.evening_notes}
           </p>
         </div>
@@ -1042,7 +1041,7 @@ function TeamOverviewSection({ date }: { date: string }) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
       </div>
     );
   }
@@ -1074,17 +1073,17 @@ function TeamOverviewSection({ date }: { date: string }) {
     <div className="space-y-4">
       {/* Search + Department Filter */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 flex-1 min-w-[200px] max-w-xs">
-          <Search className="h-3.5 w-3.5 text-slate-400" />
+        <div className="flex items-center gap-1.5 rounded-lg border border-border-color bg-surface px-3 py-1.5 flex-1 min-w-[200px] max-w-xs">
+          <Search className="h-3.5 w-3.5 text-text-faint" />
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Search by name or department..."
-            className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
+            className="flex-1 bg-transparent text-sm outline-none placeholder:text-text-faint"
           />
           {searchQuery && (
-            <button type="button" onClick={() => setSearchQuery('')} className="text-slate-400 hover:text-slate-600">
+            <button type="button" onClick={() => setSearchQuery('')} className="text-text-faint hover:text-text-muted">
               <X className="h-3 w-3" />
             </button>
           )}
@@ -1092,7 +1091,7 @@ function TeamOverviewSection({ date }: { date: string }) {
         <select
           value={deptFilter}
           onChange={e => setDeptFilter(e.target.value)}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:border-blue-500 focus:outline-none"
+          className="rounded-lg border border-border-color bg-surface px-3 py-1.5 text-sm text-text focus:border-[var(--accent)] focus:outline-none"
         >
           <option value="all">All Departments</option>
           {departments.map(d => (
@@ -1100,44 +1099,44 @@ function TeamOverviewSection({ date }: { date: string }) {
           ))}
         </select>
         {(searchQuery || deptFilter !== 'all') && (
-          <span className="text-xs text-slate-500">{summaries.length} of {allSummaries.length} members</span>
+          <span className="text-xs text-text-muted">{summaries.length} of {allSummaries.length} members</span>
         )}
       </div>
 
       {/* Team stats bar */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-3">
-          <p className="text-2xl font-bold text-slate-900">{morningDone}/{summaries.length}</p>
-          <p className="text-xs text-slate-500">Morning Done</p>
+        <div className="rounded-xl border border-border-color bg-surface p-3">
+          <p className="text-2xl font-bold text-text">{morningDone}/{summaries.length}</p>
+          <p className="text-xs text-text-muted">Morning Done</p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-3">
-          <p className="text-2xl font-bold text-slate-900">{eveningDone}/{summaries.length}</p>
-          <p className="text-xs text-slate-500">Evening Closed</p>
+        <div className="rounded-xl border border-border-color bg-surface p-3">
+          <p className="text-2xl font-bold text-text">{eveningDone}/{summaries.length}</p>
+          <p className="text-xs text-text-muted">Evening Closed</p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-3">
+        <div className="rounded-xl border border-border-color bg-surface p-3">
           <p className={cn('text-2xl font-bold', teamRate >= 70 ? 'text-green-600' : teamRate >= 40 ? 'text-amber-600' : 'text-red-600')}>{teamRate}%</p>
-          <p className="text-xs text-slate-500">Completion Rate</p>
+          <p className="text-xs text-text-muted">Completion Rate</p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-3">
-          <p className={cn('text-2xl font-bold', totalStuck > 0 ? 'text-red-600' : 'text-slate-900')}>{totalStuck}</p>
-          <p className="text-xs text-slate-500">Stuck Items</p>
+        <div className="rounded-xl border border-border-color bg-surface p-3">
+          <p className={cn('text-2xl font-bold', totalStuck > 0 ? 'text-red-600' : 'text-text')}>{totalStuck}</p>
+          <p className="text-xs text-text-muted">Stuck Items</p>
         </div>
       </div>
 
       {/* Team table with expandable rows */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center gap-3 border-b border-slate-100 px-6 py-4">
-          <div className="rounded-lg bg-blue-50 p-2">
-            <Users className="h-5 w-5 text-blue-600" />
+      <div className="rounded-xl border border-border-color bg-surface shadow-sm">
+        <div className="flex items-center gap-3 border-b border-border-color px-6 py-4">
+          <div className="rounded-lg p-2" style={{ background: 'var(--accent-soft)' }}>
+            <Users className="h-5 w-5" style={{ color: 'var(--accent)' }} />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-slate-900">Team Standups</h2>
-            <p className="text-xs text-slate-500">Click a row to see full details</p>
+            <h2 className="text-sm font-semibold text-text">Team Standups</h2>
+            <p className="text-xs text-text-muted">Click a row to see full details</p>
           </div>
         </div>
 
         {/* Column headers (aligned with row widths below — same grid template) */}
-        <div className={cn(TEAM_TABLE_GRID, 'border-b border-slate-200 bg-slate-50/60 px-6 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500')}>
+        <div className={cn(TEAM_TABLE_GRID, 'border-b border-border-color bg-hover px-6 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-text-muted')}>
           <div className="truncate">Member</div>
           <Tooltip content="Morning standup status. Submissions after 11:00 AM IST are marked Late.">
             <div className="cursor-help">Morning</div>
@@ -1160,9 +1159,9 @@ function TeamOverviewSection({ date }: { date: string }) {
           <div aria-hidden="true" />
         </div>
 
-        <div className="divide-y divide-slate-100">
+        <div className="divide-y divide-border-color">
           {summaries.length === 0 && (
-            <div className="px-6 py-10 text-center text-sm text-slate-400">
+            <div className="px-6 py-10 text-center text-sm text-text-faint">
               No team members match the current filter.
             </div>
           )}
@@ -1180,7 +1179,7 @@ function TeamOverviewSection({ date }: { date: string }) {
                   className={cn(
                     TEAM_TABLE_GRID,
                     'w-full px-6 py-3.5 text-left transition-colors',
-                    isExpanded ? 'bg-blue-50/50' : 'hover:bg-slate-50/50',
+                    isExpanded ? 'bg-accent-soft' : 'hover:bg-hover',
                     !hasSubmitted && 'opacity-60',
                   )}
                 >
@@ -1189,9 +1188,9 @@ function TeamOverviewSection({ date }: { date: string }) {
                     <Avatar fullName={s.user_name} src={user?.avatar_url ?? null} size="sm" />
                     <div className="min-w-0 flex-1">
                       <Tooltip content={s.user_name}>
-                        <p className="truncate text-sm font-medium text-slate-900">{s.user_name}</p>
+                        <p className="truncate text-sm font-medium text-text">{s.user_name}</p>
                       </Tooltip>
-                      <p className="truncate text-[10px] text-slate-400">{s.department || '—'}</p>
+                      <p className="truncate text-[10px] text-text-faint">{s.department || '—'}</p>
                     </div>
                   </div>
 
@@ -1214,10 +1213,10 @@ function TeamOverviewSection({ date }: { date: string }) {
                     {s.total_outcomes > 0 ? (
                       <span className="text-sm">
                         <span className="font-semibold text-green-600">{s.done_count}</span>
-                        <span className="text-slate-400">/{s.total_outcomes}</span>
+                        <span className="text-text-faint">/{s.total_outcomes}</span>
                       </span>
                     ) : (
-                      <span className="text-xs text-slate-300">—</span>
+                      <span className="text-xs text-text-faint">—</span>
                     )}
                   </div>
 
@@ -1226,7 +1225,7 @@ function TeamOverviewSection({ date }: { date: string }) {
                     {s.carried_count > 0 ? (
                       <span className="text-sm font-medium text-amber-600">{s.carried_count}</span>
                     ) : (
-                      <span className="text-xs text-slate-300">0</span>
+                      <span className="text-xs text-text-faint">0</span>
                     )}
                   </div>
 
@@ -1237,7 +1236,7 @@ function TeamOverviewSection({ date }: { date: string }) {
                         <Flame className="h-3.5 w-3.5" />{s.stuck_count}
                       </span>
                     ) : (
-                      <span className="text-xs text-slate-300">0</span>
+                      <span className="text-xs text-text-faint">0</span>
                     )}
                   </div>
 
@@ -1253,14 +1252,14 @@ function TeamOverviewSection({ date }: { date: string }) {
                         {s.completion_rate}%
                       </span>
                     ) : (
-                      <span className="text-xs text-slate-300">—</span>
+                      <span className="text-xs text-text-faint">—</span>
                     )}
                   </div>
 
                   {/* Expand indicator */}
                   <div className="flex items-center justify-end">
                     <ChevronRight className={cn(
-                      'h-4 w-4 text-slate-400 transition-transform',
+                      'h-4 w-4 text-text-faint transition-transform',
                       isExpanded && 'rotate-90',
                     )} />
                   </div>
@@ -1268,7 +1267,7 @@ function TeamOverviewSection({ date }: { date: string }) {
 
                 {/* Expanded detail */}
                 {isExpanded && (
-                  <div className="border-t border-slate-100 bg-slate-50/30 px-6 py-4">
+                  <div className="border-t border-border-color bg-canvas px-6 py-4">
                     <MemberStandupDetail userId={s.user_id} date={date} />
                   </div>
                 )}
@@ -1285,7 +1284,6 @@ function TeamOverviewSection({ date }: { date: string }) {
 
 function StandupsContent() {
   const { currentUser, isLoading: userLoading } = useCurrentUser();
-  const { viewMode, setViewMode } = useViewMode();
   const userIsAdmin = !userLoading && isAdmin(currentUser);
 
   const [tab, setTab] = useState<'my' | 'team'>('my');
@@ -1322,81 +1320,69 @@ function StandupsContent() {
 
   if (userLoading) {
     return (
-      <AppShell viewMode={viewMode} onViewModeChange={setViewMode}>
-        <div className="flex h-full items-center justify-center">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+      <RefinedAppShell>
+        <div className="flex h-full items-center justify-center bg-canvas">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
         </div>
-      </AppShell>
+      </RefinedAppShell>
     );
   }
 
+  const adminTabs: PageTab[] | undefined = userIsAdmin
+    ? [{ id: 'my', label: 'My Standup' }, { id: 'team', label: 'Team Overview' }]
+    : undefined;
+
+  // Date navigator + Today chip rendered inside the page header right slot
+  // so the title/subtitle live in their canonical zone.
+  const headerRight = (
+    <div className="flex items-center gap-1.5">
+      <button
+        type="button"
+        onClick={() => setDateOffset(d => d - 1)}
+        disabled={dateOffset <= -30}
+        aria-label="Previous day"
+        className="rounded-md p-1 text-text-faint transition-colors hover:bg-hover hover:text-text disabled:opacity-40"
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+      <p className="min-w-[170px] text-center text-[12.5px] text-text-muted">{formattedDate}</p>
+      <button
+        type="button"
+        onClick={() => setDateOffset(d => d + 1)}
+        disabled={dateOffset >= 0}
+        aria-label="Next day"
+        className="rounded-md p-1 text-text-faint transition-colors hover:bg-hover hover:text-text disabled:opacity-40"
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
+      {!isToday && (
+        <button
+          type="button"
+          onClick={() => setDateOffset(0)}
+          className="ml-1 rounded-md bg-accent-soft px-2 py-0.5 text-[11.5px] font-semibold text-[var(--accent)] transition-colors hover:bg-[color:rgba(0,115,234,0.18)]"
+        >
+          Today
+        </button>
+      )}
+    </div>
+  );
+
   return (
-    <AppShell viewMode={viewMode} onViewModeChange={setViewMode}>
+    <RefinedAppShell>
+      <RefinedPageHeader
+        title="Daily Standup"
+        subtitle="Commit each morning, close each evening"
+        tabs={adminTabs}
+        activeTab={tab}
+        onTabChange={(id) => setTab(id as 'my' | 'team')}
+        rightSlot={headerRight}
+      />
+
       <div className="mx-auto max-w-4xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <ClipboardCheck className="h-6 w-6 text-blue-600" />
-            <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900">Daily Standup</h1>
-              <div className="flex items-center gap-2 mt-0.5">
-                <button
-                  onClick={() => setDateOffset(d => d - 1)}
-                  className="rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                  disabled={dateOffset <= -30}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <p className="text-sm text-slate-500">{formattedDate}</p>
-                <button
-                  onClick={() => setDateOffset(d => d + 1)}
-                  className="rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                  disabled={dateOffset >= 0}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-                {!isToday && (
-                  <button
-                    onClick={() => setDateOffset(0)}
-                    className="rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600 hover:bg-blue-100"
-                  >
-                    Today
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Admin tab toggle */}
-          {userIsAdmin && (
-            <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-1">
-              <button
-                onClick={() => setTab('my')}
-                className={cn(
-                  'rounded-md px-4 py-1.5 text-sm font-medium transition-all',
-                  tab === 'my' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                )}
-              >
-                My Standup
-              </button>
-              <button
-                onClick={() => setTab('team')}
-                className={cn(
-                  'rounded-md px-4 py-1.5 text-sm font-medium transition-all',
-                  tab === 'team' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                )}
-              >
-                Team Overview
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Content */}
         {tab === 'my' ? (
           standupLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
             </div>
           ) : (
             <div className="space-y-6">
@@ -1423,7 +1409,7 @@ function StandupsContent() {
           <TeamOverviewSection date={viewDate} />
         )}
       </div>
-    </AppShell>
+    </RefinedAppShell>
   );
 }
 
@@ -1432,7 +1418,7 @@ export default function StandupsPage() {
     <Suspense
       fallback={
         <div className="flex h-full items-center justify-center">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
         </div>
       }
     >

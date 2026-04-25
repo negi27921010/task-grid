@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { AppShell } from '@/components/layout/app-shell';
+import { RefinedAppShell, RefinedPageHeader, type PageTab } from '@/components/shell';
 import { useCurrentUser } from '@/lib/hooks/use-current-user';
-import { useViewMode } from '@/lib/hooks/use-view-mode';
 import { useUsers } from '@/lib/hooks/use-users';
 import {
   isAdmin,
@@ -57,13 +56,13 @@ function PasswordInput({
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-slate-300 px-3 py-2 pr-10 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+        className="w-full rounded-lg border border-border-color px-3 py-2 pr-10 text-sm focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
         autoFocus={autoFocus}
       />
       <button
         type="button"
         onClick={() => setShow(v => !v)}
-        className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-slate-400 hover:text-slate-600"
+        className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-text-faint hover:text-text-muted"
         tabIndex={-1}
       >
         {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -109,18 +108,18 @@ function UserForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Full Name *</label>
+        <label className="block text-sm font-medium text-text mb-1">Full Name *</label>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          className="w-full rounded-lg border border-border-color px-3 py-2 text-sm focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
           required
           autoFocus
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">
+        <label className="block text-sm font-medium text-text mb-1">
           Email {isNew ? '(required for login)' : '(optional)'}
         </label>
         <input
@@ -128,12 +127,12 @@ function UserForm({
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="user@pw.live"
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          className="w-full rounded-lg border border-border-color px-3 py-2 text-sm focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
         />
       </div>
       {isNew && (
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Password (min 8 chars, for login)</label>
+          <label className="block text-sm font-medium text-text mb-1">Password (min 8 chars, for login)</label>
           <PasswordInput
             value={password}
             onChange={setPassword}
@@ -145,24 +144,24 @@ function UserForm({
         </div>
       )}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
+        <label className="block text-sm font-medium text-text mb-1">Role</label>
         <select
           value={role}
           onChange={(e) => setRole(e.target.value as UserRole)}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          className="w-full rounded-lg border border-border-color px-3 py-2 text-sm focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
         >
           <option value="admin">Admin</option>
           <option value="member">Member</option>
         </select>
       </div>
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Department</label>
+        <label className="block text-sm font-medium text-text mb-1">Department</label>
         <input
           type="text"
           value={department}
           onChange={(e) => setDepartment(e.target.value)}
           placeholder="e.g. Product & Analytics"
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          className="w-full rounded-lg border border-border-color px-3 py-2 text-sm focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
         />
       </div>
       <div className="flex justify-end gap-2 pt-2">
@@ -201,12 +200,12 @@ function PermissionsTab() {
   return (
     <div className="space-y-6">
       {/* Admin — read-only */}
-      <div className="rounded-lg border border-slate-200 bg-white">
-        <div className="flex items-center gap-3 border-b border-slate-100 px-6 py-4">
+      <div className="rounded-lg border border-border-color bg-surface">
+        <div className="flex items-center gap-3 border-b border-border-color px-6 py-4">
           <ShieldCheck className="h-5 w-5 text-blue-500" />
           <div>
-            <h3 className="text-sm font-semibold text-slate-900">{ROLE_DESCRIPTIONS.admin.label}</h3>
-            <p className="text-xs text-slate-500">{ROLE_DESCRIPTIONS.admin.description}</p>
+            <h3 className="text-sm font-semibold text-text">{ROLE_DESCRIPTIONS.admin.label}</h3>
+            <p className="text-xs text-text-muted">{ROLE_DESCRIPTIONS.admin.description}</p>
           </div>
         </div>
         <div className="px-6 py-4">
@@ -214,7 +213,7 @@ function PermissionsTab() {
             {adminEntries.map(([key, label]) => (
               <div key={key} className="flex items-center gap-2 text-sm">
                 <Check className="h-4 w-4 text-green-500" />
-                <span className="text-slate-700">{label}</span>
+                <span className="text-text">{label}</span>
               </div>
             ))}
           </div>
@@ -222,13 +221,13 @@ function PermissionsTab() {
       </div>
 
       {/* Member — interactive toggles */}
-      <div className="rounded-lg border border-slate-200 bg-white">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+      <div className="rounded-lg border border-border-color bg-surface">
+        <div className="flex items-center justify-between border-b border-border-color px-6 py-4">
           <div className="flex items-center gap-3">
-            <ShieldCheck className="h-5 w-5 text-slate-400" />
+            <ShieldCheck className="h-5 w-5 text-text-faint" />
             <div>
-              <h3 className="text-sm font-semibold text-slate-900">{ROLE_DESCRIPTIONS.member.label}</h3>
-              <p className="text-xs text-slate-500">{ROLE_DESCRIPTIONS.member.description}</p>
+              <h3 className="text-sm font-semibold text-text">{ROLE_DESCRIPTIONS.member.label}</h3>
+              <p className="text-xs text-text-muted">{ROLE_DESCRIPTIONS.member.description}</p>
             </div>
           </div>
           {isSaving && (
@@ -247,7 +246,7 @@ function PermissionsTab() {
                   className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                     locked
                       ? 'opacity-40 cursor-not-allowed'
-                      : 'cursor-pointer hover:bg-slate-50'
+                      : 'cursor-pointer hover:bg-hover'
                   }`}
                 >
                   <button
@@ -256,21 +255,21 @@ function PermissionsTab() {
                     aria-checked={allowed}
                     disabled={locked || isSaving}
                     onClick={() => handleToggle(key)}
-                    className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-1 ${
-                      allowed ? 'bg-blue-600' : 'bg-slate-200'
+                    className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20 focus:ring-offset-1 ${
+                      allowed ? 'bg-[var(--accent)]' : 'bg-neutral-200'
                     } ${locked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                   >
                     <span
-                      className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${
+                      className={`inline-block h-3.5 w-3.5 rounded-full bg-surface shadow-sm transition-transform ${
                         allowed ? 'translate-x-[18px]' : 'translate-x-[3px]'
                       }`}
                     />
                   </button>
-                  <span className={allowed ? 'text-slate-700' : 'text-slate-400'}>
+                  <span className={allowed ? 'text-text' : 'text-text-faint'}>
                     {label}
                   </span>
                   {locked && (
-                    <span className="text-[10px] text-slate-400">(locked)</span>
+                    <span className="text-[10px] text-text-faint">(locked)</span>
                   )}
                 </label>
               );
@@ -284,7 +283,6 @@ function PermissionsTab() {
 
 export default function SettingsPage() {
   const { currentUser, isLoading: userLoading, refreshUsers } = useCurrentUser();
-  const { viewMode, setViewMode } = useViewMode();
   const { data: users, isLoading } = useUsers();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -305,25 +303,25 @@ export default function SettingsPage() {
 
   if (userLoading) {
     return (
-      <AppShell viewMode={viewMode} onViewModeChange={setViewMode}>
-        <div className="flex h-full items-center justify-center">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+      <RefinedAppShell>
+        <div className="flex h-full items-center justify-center bg-canvas">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
         </div>
-      </AppShell>
+      </RefinedAppShell>
     );
   }
 
   if (!userIsAdmin) {
     return (
-      <AppShell viewMode={viewMode} onViewModeChange={setViewMode}>
-        <div className="flex h-full items-center justify-center">
+      <RefinedAppShell>
+        <div className="flex h-full items-center justify-center bg-canvas">
           <div className="text-center">
-            <ShieldAlert className="mx-auto h-12 w-12 text-slate-300" />
-            <h2 className="mt-4 text-lg font-semibold text-slate-900">Access Denied</h2>
-            <p className="mt-1 text-sm text-slate-500">Only admins can access the Settings panel.</p>
+            <ShieldAlert className="mx-auto h-12 w-12 text-text-faint" />
+            <h2 className="mt-4 text-lg font-semibold text-text">Access Denied</h2>
+            <p className="mt-1 text-sm text-text-muted">Only admins can access the Settings panel.</p>
           </div>
         </div>
-      </AppShell>
+      </RefinedAppShell>
     );
   }
 
@@ -454,49 +452,28 @@ export default function SettingsPage() {
   const adminCount = allUsers.filter(u => u.role === 'admin').length;
   const memberCount = allUsers.filter(u => u.role === 'member').length;
 
-  return (
-    <AppShell viewMode={viewMode} onViewModeChange={setViewMode}>
-      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <h1 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-            <Settings className="h-5 w-5 text-slate-400" />
-            Settings
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">Manage users, roles, and permissions.</p>
-        </div>
+  const settingsTabs: PageTab[] = [
+    { id: 'users', label: 'User Management', icon: Users },
+    { id: 'permissions', label: 'Permissions Overview', icon: Shield },
+  ];
 
-        {/* Tabs */}
-        <div className="mb-6 flex gap-1 border-b border-slate-200">
-          <button
-            onClick={() => setTab('users')}
-            className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
-              tab === 'users'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <Users className="h-4 w-4" />
-            User Management
-          </button>
-          <button
-            onClick={() => setTab('permissions')}
-            className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
-              tab === 'permissions'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <Shield className="h-4 w-4" />
-            Permissions Overview
-          </button>
-        </div>
+  return (
+    <RefinedAppShell>
+      <RefinedPageHeader
+        title="Settings"
+        subtitle="Manage users, roles, and permissions."
+        tabs={settingsTabs}
+        activeTab={tab}
+        onTabChange={(id) => setTab(id as SettingsTab)}
+      />
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
 
         {/* User Management Tab */}
         {tab === 'users' && (
           <div className="space-y-4">
             {/* Stats + Add */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4 text-sm text-slate-500">
+              <div className="flex items-center gap-4 text-sm text-text-muted">
                 <span>{allUsers.length} users total</span>
                 <Badge variant="info">{adminCount} Admin{adminCount !== 1 ? 's' : ''}</Badge>
                 <Badge variant="default">{memberCount} Member{memberCount !== 1 ? 's' : ''}</Badge>
@@ -508,49 +485,49 @@ export default function SettingsPage() {
             </div>
 
             {/* User list */}
-            <div className="rounded-lg border border-slate-200 bg-white">
+            <div className="rounded-lg border border-border-color bg-surface">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50/80">
-                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-slate-500">User</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Department</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Role</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Email</th>
-                    <th className="w-24 px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-slate-500">Actions</th>
+                  <tr className="border-b border-border-color bg-hover/80">
+                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-text-muted">User</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-text-muted">Department</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-text-muted">Role</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-text-muted">Email</th>
+                    <th className="w-24 px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-text-muted">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {isLoading ? (
-                    <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-slate-400">Loading...</td></tr>
+                    <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-text-faint">Loading...</td></tr>
                   ) : allUsers.length === 0 ? (
-                    <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-slate-400">No users found</td></tr>
+                    <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-text-faint">No users found</td></tr>
                   ) : (
                     allUsers.map((user) => (
-                      <tr key={user.id} className="border-b border-slate-100 transition-colors hover:bg-slate-50/50">
+                      <tr key={user.id} className="border-b border-border-color transition-colors hover:bg-hover/50">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <Avatar fullName={user.full_name} src={user.avatar_url} size="sm" />
                             <div>
-                              <p className="text-sm font-medium text-slate-900">{user.full_name}</p>
+                              <p className="text-sm font-medium text-text">{user.full_name}</p>
                               {user.id === currentUser.id && (
-                                <span className="text-[10px] text-blue-600 font-medium">(You)</span>
+                                <span className="text-[10px] text-[var(--accent)] font-medium">(You)</span>
                               )}
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-sm text-slate-600">{user.department || '—'}</td>
+                        <td className="px-4 py-3 text-sm text-text-muted">{user.department || '—'}</td>
                         <td className="px-4 py-3">
                           <Badge variant={user.role === 'admin' ? 'info' : 'default'}>
                             {user.role === 'admin' ? 'Admin' : 'Member'}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3 text-sm text-slate-500">{user.email || '—'}</td>
+                        <td className="px-4 py-3 text-sm text-text-muted">{user.email || '—'}</td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
                             {user.email && (
                               <button
                                 onClick={() => { setResetPwUser(user); setNewPassword(''); }}
-                                className="rounded p-1.5 text-slate-400 transition-colors hover:bg-amber-50 hover:text-amber-600"
+                                className="rounded p-1.5 text-text-faint transition-colors hover:bg-amber-50 hover:text-amber-600"
                                 aria-label={`Reset password for ${user.full_name}`}
                                 title="Reset Password"
                               >
@@ -559,7 +536,7 @@ export default function SettingsPage() {
                             )}
                             <button
                               onClick={() => setEditingUser(user)}
-                              className="rounded p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                              className="rounded p-1.5 text-text-faint transition-colors hover:bg-neutral-100 hover:text-text-muted"
                               aria-label={`Edit ${user.full_name}`}
                             >
                               <Pencil className="h-3.5 w-3.5" />
@@ -567,7 +544,7 @@ export default function SettingsPage() {
                             <button
                               onClick={() => setDeleteConfirmUser(user)}
                               disabled={user.id === currentUser.id}
-                              className="rounded p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-30 disabled:pointer-events-none"
+                              className="rounded p-1.5 text-text-faint transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-30 disabled:pointer-events-none"
                               aria-label={`Delete ${user.full_name}`}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -647,7 +624,7 @@ export default function SettingsPage() {
             </Dialog.Description>
             <div className="mt-4 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">New Password</label>
+                <label className="block text-sm font-medium text-text mb-1">New Password</label>
                 <PasswordInput
                   value={newPassword}
                   onChange={setNewPassword}
@@ -668,6 +645,6 @@ export default function SettingsPage() {
           </Dialog.Content>
         </Dialog.Root>
       </div>
-    </AppShell>
+    </RefinedAppShell>
   );
 }

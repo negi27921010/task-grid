@@ -27,9 +27,9 @@ const PRIORITY_TAGS: RegistryPriorityTag[] = ['Core', 'Strategic', 'Support'];
 const STATUSES: RegistryStatus[] = ['Active', 'On Hold', 'Completed', 'Deprecated'];
 
 const STATUS_COLORS: Record<RegistryStatus, string> = {
-  Active: 'bg-green-100 text-green-700',
-  'On Hold': 'bg-amber-100 text-amber-700',
-  Completed: 'bg-blue-100 text-blue-700',
+  Active:     'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300',
+  'On Hold':  'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300',
+  Completed:  'bg-accent-soft text-[var(--accent)]',
   Deprecated: 'bg-neutral-100 text-text-muted',
 };
 
@@ -40,9 +40,9 @@ const PRIORITY_ICONS: Record<RegistryPriorityTag, typeof Shield> = {
 };
 
 const PRIORITY_COLORS: Record<RegistryPriorityTag, string> = {
-  Core: 'text-red-600',
-  Strategic: 'text-blue-600',
-  Support: 'text-text-muted',
+  Core:      'text-red-600 dark:text-red-300',
+  Strategic: 'text-[var(--accent)]',
+  Support:   'text-text-muted',
 };
 
 /* ---- Create/Edit Form ---- */
@@ -422,21 +422,21 @@ function RegistryContent() {
             </div>
           ) : filtered.length === 0 ? (
             <div className="py-12 text-center">
-              <BookOpen className="mx-auto h-8 w-8 text-[var(--neutral-200)]" />
-              <p className="mt-2 text-sm text-[var(--text-muted)]">{(registries ?? []).length === 0 ? 'No workstreams yet' : 'No matches found'}</p>
+              <BookOpen className="mx-auto h-8 w-8 text-text-faint" />
+              <p className="mt-2 text-sm text-text-muted">{(registries ?? []).length === 0 ? 'No workstreams yet' : 'No matches found'}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-[var(--border-color)] bg-[var(--canvas)]">
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Workstream</th>
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Owner</th>
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Category</th>
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Priority</th>
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Status</th>
-                    <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">SOP</th>
-                    <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Links</th>
+                  <tr className="border-b border-border-color bg-table-head">
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-text-faint">Workstream</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-text-faint">Owner</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-text-faint">Category</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-text-faint">Priority</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-text-faint">Status</th>
+                    <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-text-faint">SOP</th>
+                    <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-text-faint">Links</th>
                     <th className="w-10 px-2 py-3" />
                   </tr>
                 </thead>
@@ -447,19 +447,19 @@ function RegistryContent() {
                     return (
                       <tr key={r.id}
                         onClick={() => setSelectedId(r.id)}
-                        className="border-b border-[var(--neutral-100)] cursor-pointer transition-colors hover:bg-[var(--canvas)]">
+                        className="cursor-pointer border-b border-border-color transition-colors hover:bg-hover">
                         <td className="px-4 py-3">
-                          <p className="text-sm font-medium text-[var(--text)] truncate max-w-[280px]">{r.name}</p>
-                          {r.description && <p className="text-xs text-[var(--text-muted)] truncate max-w-[280px]">{r.description.split('\n')[0]}</p>}
+                          <p className="max-w-[280px] truncate text-sm font-medium text-text">{r.name}</p>
+                          {r.description && <p className="max-w-[280px] truncate text-xs text-text-muted">{r.description.split('\n')[0]}</p>}
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <Avatar fullName={owner?.full_name ?? '?'} src={owner?.avatar_url ?? null} size="sm" />
-                            <span className="text-sm text-[var(--text)]">{owner?.full_name ?? 'Unknown'}</span>
+                            <span className="text-sm text-text">{owner?.full_name ?? 'Unknown'}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="rounded-md bg-[var(--neutral-100)] px-2 py-0.5 text-xs font-medium text-[var(--text-muted)]">{r.category}</span>
+                          <span className="rounded-md bg-neutral-100 px-2 py-0.5 text-xs font-medium text-text-muted">{r.category}</span>
                         </td>
                         <td className="px-4 py-3">
                           <span className="inline-flex items-center gap-1 text-xs font-medium">
@@ -475,17 +475,17 @@ function RegistryContent() {
                             <span className="inline-flex items-center gap-0.5 text-xs text-[var(--accent)]">
                               <FileText className="h-3.5 w-3.5" />{r.sop_links.length}
                             </span>
-                          ) : <span className="text-xs text-[var(--neutral-200)]">—</span>}
+                          ) : <span className="text-xs text-text-faint">—</span>}
                         </td>
                         <td className="px-4 py-3 text-center">
                           {r.important_links.length > 0 ? (
                             <span className="inline-flex items-center gap-0.5 text-xs text-[var(--accent)]">
                               <ExternalLink className="h-3.5 w-3.5" />{r.important_links.length}
                             </span>
-                          ) : <span className="text-xs text-[var(--neutral-200)]">—</span>}
+                          ) : <span className="text-xs text-text-faint">—</span>}
                         </td>
                         <td className="px-2 py-3">
-                          <ChevronRight className="h-4 w-4 text-[var(--neutral-200)]" />
+                          <ChevronRight className="h-4 w-4 text-text-faint" />
                         </td>
                       </tr>
                     );

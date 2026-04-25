@@ -51,13 +51,16 @@ import { filterTasks } from '@/lib/utils/search';
 import { cn } from '@/lib/utils/cn';
 import type { AgingStatus, TaskStatus } from '@/lib/types';
 
-type View = 'table' | 'kanban' | 'analytics';
+type View = 'analytics' | 'kanban' | 'table';
 type Scope = 'mine' | 'team';
 
+// Dashboard first by default; Kanban next; Main table last. The default
+// view (parseView fallback) is also 'analytics' so the page lands on the
+// summary instead of a possibly-empty task list.
 const VIEW_TABS: PageTab[] = [
-  { id: 'table',     label: 'Main table', icon: TableIcon },
-  { id: 'kanban',    label: 'Kanban',     icon: KanbanIcon },
   { id: 'analytics', label: 'Dashboard',  icon: PieChartIcon },
+  { id: 'kanban',    label: 'Kanban',     icon: KanbanIcon },
+  { id: 'table',     label: 'Main table', icon: TableIcon },
 ];
 
 const STATUS_TONE: Record<TaskStatus, Tone> = {
@@ -76,7 +79,7 @@ const STATUS_LABEL: Record<TaskStatus, string> = {
 };
 
 function parseView(raw: string | null): View {
-  return raw === 'kanban' || raw === 'analytics' ? raw : 'table';
+  return raw === 'kanban' || raw === 'table' ? raw : 'analytics';
 }
 function parseScope(raw: string | null): Scope {
   return raw === 'team' ? 'team' : 'mine';
@@ -168,7 +171,8 @@ function DashboardContent() {
 
   const updateView = (next: View) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (next === 'table') params.delete('view'); else params.set('view', next);
+    // Default ('analytics') drops the param; others persist.
+    if (next === 'analytics') params.delete('view'); else params.set('view', next);
     const qs = params.toString();
     router.push(`/dashboard${qs ? `?${qs}` : ''}`);
   };

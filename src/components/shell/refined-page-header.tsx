@@ -1,6 +1,7 @@
 'use client';
 
 import { ChevronDown, Star, Sparkles, Workflow, UserPlus } from 'lucide-react';
+import { NotificationBell } from '@/components/layout/notification-bell';
 import { cn } from '@/lib/utils/cn';
 
 export interface PageTab {
@@ -68,19 +69,24 @@ export function RefinedPageHeader({
 
         <div className="flex-1" />
 
-        {rightSlot ?? (
-          <div className="flex items-center gap-1">
-            {onSidekick && (
-              <HeaderAction icon={Sparkles} label="Sidekick" onClick={onSidekick} accent />
-            )}
-            {onAutomate && (
-              <HeaderAction icon={Workflow} label="Automate" onClick={onAutomate} />
-            )}
-            {onInvite && (
-              <HeaderAction icon={UserPlus} label="Invite" onClick={onInvite} />
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Page-specific right slot rendered first so it's adjacent to the
+              persistent notification bell on the right edge. */}
+          {rightSlot ?? (
+            <div className="flex items-center gap-1">
+              {onSidekick && (
+                <HeaderAction icon={Sparkles} label="Sidekick" onClick={onSidekick} accent />
+              )}
+              {onAutomate && (
+                <HeaderAction icon={Workflow} label="Automate" onClick={onAutomate} />
+              )}
+              {onInvite && (
+                <HeaderAction icon={UserPlus} label="Invite" onClick={onInvite} />
+              )}
+            </div>
+          )}
+          <NotificationBell />
+        </div>
       </div>
 
       {subtitle && (

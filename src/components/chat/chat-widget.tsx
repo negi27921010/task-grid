@@ -133,7 +133,7 @@ export function ChatWidget() {
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-[45] flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-all hover:bg-blue-700 hover:shadow-xl hover:scale-105 active:scale-95"
+          className="fixed bottom-6 right-6 z-[45] flex h-12 w-12 items-center justify-center rounded-full bg-[var(--accent)] text-white shadow-lg transition-all hover:bg-[var(--accent-hover)] hover:shadow-xl hover:scale-105 active:scale-95"
           aria-label="Open AI chat"
         >
           <MessageSquare className="h-5 w-5" />
@@ -142,16 +142,16 @@ export function ChatWidget() {
 
       {/* Chat panel */}
       {isOpen && (
-        <div className="fixed bottom-4 right-4 z-[45] flex w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl sm:bottom-6 sm:right-6 sm:w-96 sm:h-[32rem] h-[calc(100vh-6rem)]">
+        <div className="fixed bottom-4 right-4 z-[45] flex w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-border-color bg-surface shadow-2xl sm:bottom-6 sm:right-6 sm:w-96 sm:h-[32rem] h-[calc(100vh-6rem)]">
           {/* Header */}
-          <div className="flex h-12 shrink-0 items-center justify-between border-b border-slate-100 px-4">
+          <div className="flex h-12 shrink-0 items-center justify-between border-b border-border-color px-4">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100">
-                <Bot className="h-4 w-4 text-blue-700" />
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent-soft">
+                <Bot className="h-4 w-4 text-[var(--accent)]" />
               </div>
               <div>
-                <span className="text-sm font-semibold text-slate-900">Task Grid AI</span>
-                <span className="ml-1.5 rounded-full bg-green-100 px-1.5 py-0.5 text-[9px] font-medium text-green-700">Online</span>
+                <span className="text-sm font-semibold text-text">Task Grid AI</span>
+                <span className="ml-1.5 rounded-full bg-green-100 px-1.5 py-0.5 text-[9px] font-medium text-green-700 dark:bg-green-500/20 dark:text-green-300">Online</span>
               </div>
             </div>
             <div className="flex items-center gap-1">
@@ -159,7 +159,7 @@ export function ChatWidget() {
                 <button
                   type="button"
                   onClick={handleClear}
-                  className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                  className="rounded-md p-1.5 text-text-faint transition-colors hover:bg-neutral-100 hover:text-text-muted"
                   aria-label="Clear chat"
                   title="Clear chat"
                 >
@@ -169,7 +169,7 @@ export function ChatWidget() {
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                className="rounded-md p-1.5 text-text-faint transition-colors hover:bg-neutral-100 hover:text-text-muted"
                 aria-label="Close chat"
               >
                 <X className="h-4 w-4" />
@@ -187,8 +187,8 @@ export function ChatWidget() {
           />
 
           {/* Input */}
-          <div className="shrink-0 border-t border-slate-100 px-3 py-2.5">
-            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 focus-within:border-blue-400 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
+          <div className="shrink-0 border-t border-border-color px-3 py-2.5">
+            <div className="flex items-center gap-2 rounded-xl border border-border-color bg-hover px-3 py-1.5 focus-within:border-[var(--accent)] focus-within:bg-surface focus-within:ring-2 focus-within:ring-[var(--accent)]/20 transition-all">
               <input
                 ref={inputRef}
                 type="text"
@@ -196,7 +196,7 @@ export function ChatWidget() {
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Ask about tasks, projects..."
-                className="flex-1 bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
+                className="flex-1 bg-transparent text-sm text-text outline-none placeholder:text-text-faint"
                 disabled={isStreaming}
               />
               <button
@@ -206,8 +206,8 @@ export function ChatWidget() {
                 className={cn(
                   'flex h-7 w-7 items-center justify-center rounded-lg transition-all',
                   input.trim() && !isStreaming
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'text-slate-300'
+                    ? 'bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)]'
+                    : 'text-text-faint'
                 )}
                 aria-label="Send message"
               >
@@ -218,7 +218,7 @@ export function ChatWidget() {
                 )}
               </button>
             </div>
-            <p className="mt-1 text-center text-[10px] text-slate-400">
+            <p className="mt-1 text-center text-[10px] text-text-faint">
               Powered by Llama 3.3 via Groq
             </p>
           </div>

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Menu } from 'lucide-react';
 import { RefinedSidebar } from './refined-sidebar';
 import { CommandPalette } from './command-palette';
+import { ChatWidget } from '@/components/chat/chat-widget';
 import { cn } from '@/lib/utils/cn';
 
 const SIDEBAR_STORAGE_KEY = 'taskflow-refined-sidebar-width';
@@ -114,6 +115,10 @@ export function RefinedAppShell({ children, className }: RefinedAppShellProps) {
       </div>
 
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+
+      {/* Bolt — global chat assistant. Renders its own fixed-position
+          floating button in the bottom-right corner. */}
+      <ChatWidget />
     </div>
   );
 }

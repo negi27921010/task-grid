@@ -376,7 +376,11 @@ function DashboardContent() {
           ) : (
             <>
               {statsSource.length > 0 && (
-                <AgingSummaryBar tasks={statsSource} onFilterByAging={handleFilterByAging} />
+                <AgingSummaryBar
+                  tasks={statsSource}
+                  onFilterByAging={handleFilterByAging}
+                  activeStatuses={filters.aging_status}
+                />
               )}
               <RefinedTaskTable
                 tasks={filteredTasks}

@@ -17,10 +17,13 @@ name: Scheduled standup nudges
 on:
   schedule:
     # GitHub Actions cron is UTC. IST is UTC+5:30.
-    - cron: '0 5 * * *'    # 10:30 AM IST → morning_standup_nudge
-    - cron: '30 5 * * *'   # 11:00 AM IST → eta_nudge + admin_defaulter_digest
-    - cron: '30 12 * * *'  # 06:00 PM IST → evening_closure_nudge
-    - cron: '0 13 * * *'   # 06:30 PM IST → admin_evening_digest
+    # Day-of-week field `1-6` = Mon–Sat (cron Sunday = 0). All 4 slots
+    # land mid-day in IST so the IST weekday matches the UTC weekday;
+    # no day-boundary edge cases.
+    - cron: '0 5 * * 1-6'    # 10:30 AM IST Mon–Sat → morning_standup_nudge
+    - cron: '30 5 * * 1-6'   # 11:00 AM IST Mon–Sat → eta_nudge + admin_defaulter_digest
+    - cron: '30 12 * * 1-6'  # 06:00 PM IST Mon–Sat → evening_closure_nudge
+    - cron: '0 13 * * 1-6'   # 06:30 PM IST Mon–Sat → admin_evening_digest
   workflow_dispatch:        # also allow manual trigger from the Actions tab
     inputs:
       job:

@@ -47,9 +47,10 @@ export default function RootLayout({
     <html
       lang="en"
       // ThemeScript runs before paint to set data-theme from localStorage,
-      // preventing a flash of the wrong theme. SSR default is "light" and
-      // suppressHydrationWarning quiets the expected mismatch on dark.
-      data-theme="light"
+      // preventing a flash of the wrong theme. SSR default is "dark"
+      // (matches the new default for unrecognised visitors) and
+      // suppressHydrationWarning quiets the expected mismatch on light.
+      data-theme="dark"
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${figtree.variable} ${inter.variable} h-full antialiased`}
     >

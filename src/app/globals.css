@@ -194,21 +194,35 @@ body {
 }
 
 /* ── Tabler Card Shadows ── */
+/* `.card-tabler` was a hardcoded white card from the legacy theme. Now
+   bound to the Refined surface token so it themes light/dark cleanly.
+   Used by registry table + task-table containers. */
 .card-tabler {
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.047);
+  background: var(--surface);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   box-shadow: 0 1px 2px 0 rgba(18, 18, 23, 0.05);
   transition: box-shadow 0.2s ease-in-out;
 }
+[data-theme="dark"] .card-tabler {
+  /* In dark mode rely on the border alone — the box-shadow is invisible
+     against the canvas, and an extra glow around every card looks busy. */
+  box-shadow: none;
+}
 .card-tabler:hover {
-  box-shadow: 0px 4px 6px -2px rgba(18, 18, 23, 0.05), 0px 10px 15px -3px rgba(18, 18, 23, 0.08);
+  box-shadow: 0px 4px 6px -2px rgba(18, 18, 23, 0.05),
+              0px 10px 15px -3px rgba(18, 18, 23, 0.08);
+}
+[data-theme="dark"] .card-tabler:hover {
+  box-shadow: none;
 }
 
-/* ── Tabler Focus Ring ── */
+/* Focus ring uses the accent token at fixed alpha — direct rgba() since
+   not every target browser supports the CSS Color 5 relative-color
+   syntax (`rgb(from var(--accent) ...)`). */
 *:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 0.25rem rgba(6, 111, 209, 0.25);
+  box-shadow: 0 0 0 0.25rem rgba(0, 115, 234, 0.25);
 }
 input:focus-visible,
 textarea:focus-visible,

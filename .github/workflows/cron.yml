@@ -1,0 +1,62 @@
+# Scheduled jobs for Task Grid — runs on GitHub-hosted runners and hits
+# /api/cron/dispatch on the production deployment.
+#
+# Why GitHub Actions instead of Vercel Cron:
+#   Vercel Hobby plan now allows max 1 cron job per project, running at
+#   most once per day. Our schedule needs 4 distinct IST time slots
+#   (10:30 AM, 11:00 AM, 6:00 PM, 6:30 PM) — that's a Pro-plan-only
+#   pattern on Vercel. GitHub Actions cron is free, per-minute granular,
+#   and just calls our HTTP endpoint with the shared secret.
+#
+# Required GitHub repo secrets (Settings → Secrets and variables → Actions):
+#   PROD_URL      — e.g. https://taskflow-puce-nine.vercel.app
+#   CRON_SECRET   — same value as the Vercel env var of the same name
+
+name: Scheduled standup nudges
+
+on:
+  schedule:
+    # GitHub Actions cron is UTC. IST is UTC+5:30.
+    - cron: '0 5 * * *'    # 10:30 AM IST → morning_standup_nudge
+    - cron: '30 5 * * *'   # 11:00 AM IST → eta_nudge + admin_defaulter_digest
+    - cron: '30 12 * * *'  # 06:00 PM IST → evening_closure_nudge
+    - cron: '0 13 * * *'   # 06:30 PM IST → admin_evening_digest
+  workflow_dispatch:        # also allow manual trigger from the Actions tab
+    inputs:
+      job:
+        description: 'Force a specific job (morning|evening|eta|defaulter|evening-digest). Leave empty for time-of-day match.'
+        required: false
+        default: ''
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Hit the cron dispatcher
+        env:
+          PROD_URL:    ${{ secrets.PROD_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          FORCE_JOB:   ${{ inputs.job }}
+        run: |
+          if [ -z "$PROD_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "::error::Missing PROD_URL or CRON_SECRET in repo secrets"
+            exit 1
+          fi
+          QS="secret=$CRON_SECRET"
+          if [ -n "$FORCE_JOB" ]; then
+            QS="$QS&job=$FORCE_JOB"
+          fi
+          echo "Calling $PROD_URL/api/cron/dispatch (job=${FORCE_JOB:-time-matched})"
+          # Capture body + status; exit non-zero if HTTP >= 400.
+          STATUS=$(curl -s -o /tmp/body.txt -w '%{http_code}' \
+            --max-time 60 \
+            "$PROD_URL/api/cron/dispatch?$QS")
+          echo "HTTP $STATUS"
+          echo "─── Response body ───"
+          cat /tmp/body.txt
+          echo
+          if [ "$STATUS" -ge 400 ]; then
+            echo "::error::Dispatcher returned HTTP $STATUS"
+            exit 1
+          fi

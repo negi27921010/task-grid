@@ -519,6 +519,7 @@ export async function getTeamStandups(
         carried_count: 0,
         stuck_count: 0,
         completion_rate: 0,
+        total_effort_hours: 0,
       };
     }
 
@@ -528,6 +529,10 @@ export async function getTeamStandups(
     const carriedCount = outcomes.filter(o => o.is_carried).length;
     const stuckCount = outcomes.filter(o => o.carry_streak >= 3).length;
     const total = outcomes.length;
+    const totalEffortHours = outcomes.reduce(
+      (acc, o) => acc + (o.effort_hours ?? 0),
+      0,
+    );
 
     const morningStatus: 'not_submitted' | 'submitted' | 'late' =
       !standup.morning_submitted_at
@@ -556,6 +561,7 @@ export async function getTeamStandups(
       carried_count: carriedCount,
       stuck_count: stuckCount,
       completion_rate: total > 0 ? Math.round((doneCount / total) * 100) : 0,
+      total_effort_hours: totalEffortHours,
     };
   });
 }

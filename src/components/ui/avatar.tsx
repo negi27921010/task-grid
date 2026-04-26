@@ -34,7 +34,7 @@ export function Avatar({ src, fullName, size = 'md', className }: AvatarProps) {
   return (
     <AvatarPrimitive.Root
       className={cn(
-        'relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200',
+        'relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-neutral-200',
         sizeClasses[size],
         className
       )}
@@ -47,7 +47,7 @@ export function Avatar({ src, fullName, size = 'md', className }: AvatarProps) {
         />
       )}
       <AvatarPrimitive.Fallback
-        className="flex h-full w-full items-center justify-center bg-blue-100 font-medium text-blue-700"
+        className="flex h-full w-full items-center justify-center bg-blue-100 font-medium text-[var(--accent)]"
         delayMs={src ? 600 : 0}
       >
         {initials}

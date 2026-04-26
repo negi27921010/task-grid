@@ -70,4 +70,9 @@ export interface TeamStandupSummary {
   carried_count: number;
   stuck_count: number;
   completion_rate: number;
+  // Sum of effort_hours across all outcomes the member committed to
+  // today (carried + new). Falls back to 0 when no outcomes have hours
+  // recorded — older standups with NULL hours backfilled to 1 by
+  // migration 007 still aggregate cleanly.
+  total_effort_hours: number;
 }

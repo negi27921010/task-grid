@@ -89,10 +89,10 @@ function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
 /* ─── Individual Toast ─── */
 
 const variantStyles: Record<ToastVariant, string> = {
-  success: 'border-green-200 bg-green-50 text-green-800',
-  error: 'border-red-200 bg-red-50 text-red-800',
-  warning: 'border-amber-200 bg-amber-50 text-amber-800',
-  info: 'border-blue-200 bg-blue-50 text-blue-800',
+  success: 'border-green-200 bg-green-50 text-green-800 dark:border-green-500/30 dark:bg-green-500/15 dark:text-green-200',
+  error:   'border-red-200 bg-red-50 text-red-800 dark:border-red-500/30 dark:bg-red-500/15 dark:text-red-200',
+  warning: 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-200',
+  info:    'border-[var(--accent)]/30 bg-accent-soft text-[var(--accent)]',
 };
 
 const variantIcons: Record<ToastVariant, typeof CheckCircle> = {

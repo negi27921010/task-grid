@@ -16,7 +16,7 @@ export function Content({
       <DropdownMenuPrimitive.Content
         sideOffset={sideOffset}
         className={cn(
-          'z-50 min-w-[8rem] overflow-hidden rounded-md border border-slate-200 bg-white p-1 shadow-lg',
+          'z-50 min-w-[8rem] overflow-hidden rounded-md border border-border-color bg-surface p-1 shadow-lg',
           'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
           'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
           'data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2',
@@ -35,8 +35,8 @@ export function Item({
   return (
     <DropdownMenuPrimitive.Item
       className={cn(
-        'relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm text-slate-700 outline-none transition-colors',
-        'hover:bg-slate-100 hover:text-slate-900 focus:bg-slate-100 focus:text-slate-900',
+        'relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm text-text outline-none transition-colors',
+        'hover:bg-neutral-100 hover:text-text focus:bg-neutral-100 focus:text-text',
         'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         className
       )}
@@ -51,7 +51,7 @@ export function Separator({
 }: DropdownMenuPrimitive.DropdownMenuSeparatorProps) {
   return (
     <DropdownMenuPrimitive.Separator
-      className={cn('-mx-1 my-1 h-px bg-slate-200', className)}
+      className={cn('-mx-1 my-1 h-px bg-neutral-200', className)}
       {...props}
     />
   );
@@ -63,7 +63,7 @@ export function Label({
 }: DropdownMenuPrimitive.DropdownMenuLabelProps) {
   return (
     <DropdownMenuPrimitive.Label
-      className={cn('px-2 py-1.5 text-xs font-semibold text-slate-500', className)}
+      className={cn('px-2 py-1.5 text-xs font-semibold text-text-muted', className)}
       {...props}
     />
   );

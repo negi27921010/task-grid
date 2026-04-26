@@ -13,7 +13,6 @@ import {
   ChevronDown,
   PanelLeftClose,
   PanelLeft,
-  Inbox,
   Zap,
 } from 'lucide-react';
 import { useCurrentUser } from '@/lib/hooks/use-current-user';
@@ -35,10 +34,6 @@ interface NavLink {
   label: string;
   adminOnly?: boolean;
 }
-
-const QUICK_NAV: NavLink[] = [
-  { href: '/dashboard', icon: Inbox, label: 'Inbox' },
-];
 
 const BOARDS: NavLink[] = [
   { href: '/dashboard', icon: FolderKanban, label: 'Dashboard' },
@@ -107,18 +102,6 @@ export function RefinedSidebar({ width = 240, onToggle }: RefinedSidebarProps) {
           </button>
         </div>
       )}
-
-      {/* Quick nav */}
-      <nav className="px-2 pb-2">
-        {QUICK_NAV.map((item) => (
-          <SidebarLink
-            key={item.label}
-            item={item}
-            collapsed={collapsed}
-            active={isActive(item.href)}
-          />
-        ))}
-      </nav>
 
       {/* Workspace section */}
       {!collapsed && (

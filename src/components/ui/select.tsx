@@ -16,8 +16,8 @@ export function Trigger({
   return (
     <SelectPrimitive.Trigger
       className={cn(
-        'flex h-9 w-full items-center justify-between rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 transition-colors',
-        'focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20',
+        'flex h-9 w-full items-center justify-between rounded-md border border-border-color bg-surface px-3 text-sm text-text placeholder:text-text-faint transition-colors',
+        'focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20',
         'disabled:cursor-not-allowed disabled:opacity-50',
         className
       )}
@@ -25,7 +25,7 @@ export function Trigger({
     >
       {children}
       <SelectPrimitive.Icon asChild>
-        <ChevronDown className="h-4 w-4 text-slate-400" />
+        <ChevronDown className="h-4 w-4 text-text-faint" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   );
@@ -42,7 +42,7 @@ export function Content({
       <SelectPrimitive.Content
         position={position}
         className={cn(
-          'relative z-50 max-h-72 min-w-[8rem] overflow-hidden rounded-md border border-slate-200 bg-white shadow-lg',
+          'relative z-50 max-h-72 min-w-[8rem] overflow-hidden rounded-md border border-border-color bg-surface shadow-lg',
           'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
           'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
           'data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2',
@@ -53,7 +53,7 @@ export function Content({
         {...props}
       >
         <SelectPrimitive.ScrollUpButton className="flex items-center justify-center py-1">
-          <ChevronUp className="h-4 w-4 text-slate-400" />
+          <ChevronUp className="h-4 w-4 text-text-faint" />
         </SelectPrimitive.ScrollUpButton>
         <SelectPrimitive.Viewport
           className={cn(
@@ -65,7 +65,7 @@ export function Content({
           {children}
         </SelectPrimitive.Viewport>
         <SelectPrimitive.ScrollDownButton className="flex items-center justify-center py-1">
-          <ChevronDown className="h-4 w-4 text-slate-400" />
+          <ChevronDown className="h-4 w-4 text-text-faint" />
         </SelectPrimitive.ScrollDownButton>
       </SelectPrimitive.Content>
     </SelectPrimitive.Portal>
@@ -80,8 +80,8 @@ export function Item({
   return (
     <SelectPrimitive.Item
       className={cn(
-        'relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm text-slate-700 outline-none',
-        'hover:bg-slate-100 focus:bg-slate-100 focus:text-slate-900',
+        'relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm text-text outline-none',
+        'hover:bg-neutral-100 focus:bg-neutral-100 focus:text-text',
         'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         className
       )}
@@ -103,7 +103,7 @@ export function Label({
 }: SelectPrimitive.SelectLabelProps) {
   return (
     <SelectPrimitive.Label
-      className={cn('px-2 py-1.5 text-xs font-semibold text-slate-500', className)}
+      className={cn('px-2 py-1.5 text-xs font-semibold text-text-muted', className)}
       {...props}
     />
   );

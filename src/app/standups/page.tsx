@@ -45,8 +45,9 @@ import type { StandupOutcome, OutcomeEveningStatus, CreateMorningStandupInput } 
 /* ---- Layout constants ---- */
 
 // One source of truth so the team table header and rows stay in lockstep.
+// Columns: Member · Morning · Evening · Outcomes · Effort · Carried · Stuck · Rate · chevron
 const TEAM_TABLE_GRID =
-  'grid items-center gap-3 grid-cols-[minmax(180px,1fr)_84px_84px_72px_60px_60px_60px_24px]';
+  'grid items-center gap-3 grid-cols-[minmax(180px,1fr)_80px_80px_72px_64px_60px_60px_60px_24px]';
 
 /* ---- Outcome validation ---- */
 
@@ -1147,6 +1148,9 @@ function TeamOverviewSection({ date }: { date: string }) {
           <Tooltip content="Outcomes completed today vs. total committed (done / total).">
             <div className="cursor-help text-center">Outcomes</div>
           </Tooltip>
+          <Tooltip content="Sum of effort hours committed across all outcomes the member submitted today (carried + new).">
+            <div className="cursor-help text-center">Effort</div>
+          </Tooltip>
           <Tooltip content="Outcomes carried over from previous days.">
             <div className="cursor-help text-center">Carried</div>
           </Tooltip>
@@ -1214,6 +1218,20 @@ function TeamOverviewSection({ date }: { date: string }) {
                       <span className="text-sm">
                         <span className="font-semibold text-green-600 dark:text-green-300">{s.done_count}</span>
                         <span className="text-text-faint">/{s.total_outcomes}</span>
+                      </span>
+                    ) : (
+                      <span className="text-xs text-text-faint">—</span>
+                    )}
+                  </div>
+
+                  {/* Effort (sum of hours) */}
+                  <div className="flex items-center justify-center">
+                    {s.total_effort_hours > 0 ? (
+                      <span
+                        className="rounded-md bg-accent-soft px-2 py-0.5 text-[12px] font-semibold tabular-nums text-[var(--accent)]"
+                        title={`${s.total_effort_hours}h committed across ${s.total_outcomes} outcome${s.total_outcomes === 1 ? '' : 's'}`}
+                      >
+                        {s.total_effort_hours}h
                       </span>
                     ) : (
                       <span className="text-xs text-text-faint">—</span>

@@ -13,11 +13,11 @@ interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 }
 
 const badgeVariants: Record<BadgeVariant, string> = {
-  default: 'bg-slate-100 text-slate-700',
-  success: 'bg-green-50 text-green-700 border-green-200',
-  warning: 'bg-amber-50 text-amber-700 border-amber-200',
-  error: 'bg-red-50 text-red-700 border-red-200',
-  info: 'bg-blue-50 text-blue-700 border-blue-200',
+  default: 'bg-neutral-100 text-text',
+  success: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-500/15 dark:text-green-300 dark:border-green-500/30',
+  warning: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30',
+  error:   'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/15 dark:text-red-300 dark:border-red-500/30',
+  info:    'bg-accent-soft text-[var(--accent)] border-[var(--accent)]/30',
 };
 
 export function Badge({ className, variant = 'default', ...props }: BadgeProps) {
@@ -36,11 +36,11 @@ export function Badge({ className, variant = 'default', ...props }: BadgeProps) 
 /* ─── Status Badge ─── */
 
 const statusStyles: Record<TaskStatus, { className: string; label: string }> = {
-  not_started: { className: 'bg-slate-100 text-slate-600', label: 'Not Started' },
-  in_progress: { className: 'bg-blue-50 text-blue-700 border-blue-200', label: 'In Progress' },
-  blocked: { className: 'bg-red-50 text-red-700 border-red-200', label: 'Blocked' },
-  completed: { className: 'bg-green-50 text-green-700 border-green-200', label: 'Completed' },
-  cancelled: { className: 'bg-slate-100 text-slate-500 line-through', label: 'Cancelled' },
+  not_started: { className: 'bg-neutral-100 text-text-muted', label: 'Not Started' },
+  in_progress: { className: 'bg-accent-soft text-[var(--accent)] border-[var(--accent)]/30', label: 'In Progress' },
+  blocked: { className: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/15 dark:text-red-300 dark:border-red-500/30', label: 'Blocked' },
+  completed: { className: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-500/15 dark:text-green-300 dark:border-green-500/30', label: 'Completed' },
+  cancelled: { className: 'bg-neutral-100 text-text-muted line-through', label: 'Cancelled' },
 };
 
 interface StatusBadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
@@ -69,7 +69,7 @@ const priorityColors: Record<Priority, string> = {
   P1: 'bg-red-500',
   P2: 'bg-pink-500',
   P3: 'bg-blue-500',
-  P4: 'bg-slate-400',
+  P4: 'bg-neutral-200 dark:bg-neutral-700',
 };
 
 interface PriorityDotProps extends React.HTMLAttributes<HTMLSpanElement> {
@@ -92,7 +92,7 @@ export function PriorityDot({ priority, showLabel = false, className, ...props }
         aria-hidden="true"
       />
       {showLabel && (
-        <span className="text-xs font-medium text-slate-600">
+        <span className="text-xs font-medium text-text-muted">
           {PRIORITY_LABEL_MAP[priority]}
         </span>
       )}
@@ -103,11 +103,11 @@ export function PriorityDot({ priority, showLabel = false, className, ...props }
 /* ─── Aging Badge ─── */
 
 const agingStyles: Record<AgingStatus, { className: string; label: string }> = {
-  overdue: { className: 'bg-red-50 text-red-700 border-red-200', label: 'Overdue' },
-  at_risk: { className: 'bg-amber-50 text-amber-700 border-amber-200', label: 'At Risk' },
-  on_track: { className: 'bg-green-50 text-green-700 border-green-200', label: 'On Track' },
-  no_eta: { className: 'bg-slate-100 text-slate-500', label: 'No ETA' },
-  stale: { className: 'bg-slate-100 text-slate-500', label: 'Stale' },
+  overdue: { className: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/15 dark:text-red-300 dark:border-red-500/30', label: 'Overdue' },
+  at_risk: { className: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30', label: 'At Risk' },
+  on_track: { className: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-500/15 dark:text-green-300 dark:border-green-500/30', label: 'On Track' },
+  no_eta: { className: 'bg-neutral-100 text-text-muted', label: 'No ETA' },
+  stale: { className: 'bg-neutral-100 text-text-muted', label: 'Stale' },
 };
 
 interface AgingBadgeProps extends React.HTMLAttributes<HTMLSpanElement> {

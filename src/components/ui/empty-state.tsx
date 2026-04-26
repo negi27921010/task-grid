@@ -27,13 +27,13 @@ export function EmptyState({
       )}
     >
       {Icon && (
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
-          <Icon className="h-6 w-6 text-slate-400" aria-hidden="true" />
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100">
+          <Icon className="h-6 w-6 text-text-faint" aria-hidden="true" />
         </div>
       )}
-      <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+      <h3 className="text-sm font-semibold text-text">{title}</h3>
       {description && (
-        <p className="mt-1 max-w-sm text-sm text-slate-500">{description}</p>
+        <p className="mt-1 max-w-sm text-sm text-text-muted">{description}</p>
       )}
       {actionLabel && onAction && (
         <Button className="mt-4" size="sm" onClick={onAction}>

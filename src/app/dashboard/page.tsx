@@ -387,6 +387,7 @@ function DashboardContent() {
                 users={allUsersData ?? []}
                 onTaskClick={handleSelectTask}
                 onAddTask={can(currentUser, 'canCreateTasks') ? handleAddTask : undefined}
+                canCreate={can(currentUser, 'canCreateTasks')}
               />
             </>
           )

@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarDays, MessageSquare, GripVertical } from 'lucide-react';
+import { CalendarDays, MessageSquare, GripVertical, GitBranch } from 'lucide-react';
 import { Avatar, PriorityTag } from '@/components/design-system';
 import { cn } from '@/lib/utils/cn';
 import type { Task, User } from '@/lib/types';
@@ -94,6 +94,15 @@ export function RefinedTaskCard({
             <span className="flex items-center gap-1 text-[11px] text-text-muted">
               <MessageSquare className="h-3 w-3" />
               {task.comments_count}
+            </span>
+          )}
+          {task.children_count != null && task.children_count > 0 && (
+            <span
+              className="flex items-center gap-1 text-[11px] text-text-muted"
+              title={`${task.children_count} subtask${task.children_count === 1 ? '' : 's'} — open task to see them`}
+            >
+              <GitBranch className="h-3 w-3" />
+              {task.children_count}
             </span>
           )}
           {owner && <Avatar fullName={owner.full_name} src={owner.avatar_url} size="sm" />}

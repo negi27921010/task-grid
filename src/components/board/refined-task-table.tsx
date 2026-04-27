@@ -5,7 +5,7 @@
 // primitives (StatusPill, PriorityTag, Avatar, TimelineBar) and the same
 // data hooks (useChangeTaskStatus, useUpdateTask) so logic is preserved.
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, Fragment } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -43,6 +43,7 @@ import {
   STATUS_ORDER,
   PRIORITY_META,
 } from './board-meta';
+import { RefinedTaskChildren } from './task-hierarchy-children';
 
 interface RefinedTaskTableProps {
   tasks: Task[];
@@ -52,6 +53,9 @@ interface RefinedTaskTableProps {
   // Multi-select integration with the floating BulkBar
   selected?: Record<string, boolean>;
   onSelectChange?: (selected: Record<string, boolean>) => void;
+  // Whether the current user can create new tasks (RBAC). Drives whether
+  // the "+ Add subtask" affordance appears in expanded subtask groups.
+  canCreate?: boolean;
   className?: string;
 }
 
@@ -82,8 +86,20 @@ export function RefinedTaskTable({
   onAddTask,
   selected = {},
   onSelectChange,
+  canCreate = false,
   className,
 }: RefinedTaskTableProps) {
+  // Track which parents are expanded → mounts <RefinedTaskChildren>
+  // for those rows, which lazy-loads via useChildTasks. Survives
+  // status changes / re-renders since it's keyed by task id.
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const toggleExpanded = useCallback((id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
   const usersById = useMemo(() => {
     const m: Record<string, User> = {};
     for (const u of users) m[u.id] = u;
@@ -227,22 +243,42 @@ export function RefinedTaskTable({
                         </div>
                       ) : (
                         groupTasks.map((task, idx) => (
-                          <TaskRow
-                            key={task.id}
-                            task={task}
-                            owner={usersById[task.owner_id]}
-                            rowIndex={idx}
-                            isLast={idx === groupTasks.length - 1}
-                            isSelected={!!selected[task.id]}
-                            onSelectChange={
-                              onSelectChange
-                                ? (v) => onSelectChange({ ...selected, [task.id]: v || undefined as unknown as boolean })
-                                : undefined
-                            }
-                            onClick={() => onTaskClick?.(task.id)}
-                            onChangeStatus={(s) => changeStatus.mutate({ id: task.id, status: s })}
-                            axis={axis}
-                          />
+                          <Fragment key={task.id}>
+                            <TaskRow
+                              task={task}
+                              owner={usersById[task.owner_id]}
+                              rowIndex={idx}
+                              isLast={idx === groupTasks.length - 1 && !expandedIds.has(task.id)}
+                              isSelected={!!selected[task.id]}
+                              expanded={expandedIds.has(task.id)}
+                              onToggleExpand={
+                                (task.children_count ?? 0) > 0 ? toggleExpanded : undefined
+                              }
+                              onSelectChange={
+                                onSelectChange
+                                  ? (v) => onSelectChange({ ...selected, [task.id]: v || undefined as unknown as boolean })
+                                  : undefined
+                              }
+                              onClick={() => onTaskClick?.(task.id)}
+                              onChangeStatus={(s) => changeStatus.mutate({ id: task.id, status: s })}
+                              axis={axis}
+                            />
+                            {expandedIds.has(task.id) && (
+                              <RefinedTaskChildren
+                                parentId={task.id}
+                                projectId={task.project_id}
+                                depth={1}
+                                expandedIds={expandedIds}
+                                onToggleExpanded={toggleExpanded}
+                                onTaskClick={onTaskClick}
+                                usersById={usersById}
+                                axis={axis}
+                                cols={COLS}
+                                totalWidth={TOTAL_WIDTH}
+                                canCreate={canCreate}
+                              />
+                            )}
+                          </Fragment>
                         ))
                       )}
 
@@ -290,6 +326,12 @@ interface TaskRowProps {
   rowIndex: number;
   isLast: boolean;
   isSelected: boolean;
+  // When the task has children, the expand chevron is shown in the
+  // title cell. `expanded` reflects parent-level expanded state;
+  // `onToggleExpand` is undefined when the task has no children
+  // (children_count === 0) — used to gate the chevron + a11y.
+  expanded?: boolean;
+  onToggleExpand?: (id: string) => void;
   onSelectChange?: (v: boolean) => void;
   onClick: () => void;
   onChangeStatus: (s: TaskStatus) => void;
@@ -302,6 +344,8 @@ function TaskRow({
   rowIndex,
   isLast,
   isSelected,
+  expanded = false,
+  onToggleExpand,
   onSelectChange,
   onClick,
   onChangeStatus,
@@ -365,8 +409,9 @@ function TaskRow({
           );
         }
         if (c.id === 'task') {
+          const childCount = task.children_count ?? 0;
           return (
-            <div key={c.id} className={cn(cellClass, 'gap-2 justify-start')} style={cellStyle}>
+            <div key={c.id} className={cn(cellClass, 'gap-1.5 justify-start')} style={cellStyle}>
               <button
                 type="button"
                 {...attributes}
@@ -377,6 +422,21 @@ function TaskRow({
               >
                 <GripVertical className="h-4 w-4" />
               </button>
+              {onToggleExpand ? (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onToggleExpand(task.id); }}
+                  aria-label={expanded ? 'Collapse subtasks' : 'Expand subtasks'}
+                  aria-expanded={expanded}
+                  className="shrink-0 rounded p-0.5 text-text-faint transition-colors hover:bg-hover hover:text-text"
+                >
+                  {expanded
+                    ? <ChevronDown className="h-3.5 w-3.5" />
+                    : <ChevronRightIcon className="h-3.5 w-3.5" />}
+                </button>
+              ) : (
+                <span aria-hidden="true" className="inline-block w-[18px]" />
+              )}
               <span
                 className={cn(
                   'flex-1 truncate font-medium',
@@ -385,6 +445,14 @@ function TaskRow({
               >
                 {task.title}
               </span>
+              {childCount > 0 && (
+                <span
+                  className="shrink-0 rounded-full bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold text-text-muted"
+                  title={`${childCount} subtask${childCount === 1 ? '' : 's'}`}
+                >
+                  {childCount}
+                </span>
+              )}
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onClick(); }}

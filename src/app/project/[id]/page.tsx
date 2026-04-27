@@ -446,6 +446,7 @@ function ProjectContent({ id }: { id: string }) {
               users={users ?? []}
               onTaskClick={handleSelectTask}
               onAddTask={can(currentUser, 'canCreateTasks') ? handleAddTask : undefined}
+              canCreate={can(currentUser, 'canCreateTasks')}
             />
           )
         )}

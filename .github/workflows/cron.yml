@@ -41,25 +41,59 @@ jobs:
           PROD_URL:    ${{ secrets.PROD_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           FORCE_JOB:   ${{ inputs.job }}
+          # The cron expression that fired this run (empty for
+          # workflow_dispatch). Used to map schedule → job(s) so a
+          # delayed firing still runs the right job — the dispatcher's
+          # time-bucket fallback can't catch a 2h+ GH Actions delay.
+          SCHEDULE:    ${{ github.event.schedule }}
         run: |
+          set -euo pipefail
           if [ -z "$PROD_URL" ] || [ -z "$CRON_SECRET" ]; then
             echo "::error::Missing PROD_URL or CRON_SECRET in repo secrets"
             exit 1
           fi
-          QS="secret=$CRON_SECRET"
+
+          # Schedule → list of job names (space-separated). The 11:00 AM IST
+          # slot fires TWO jobs back-to-back; the dispatcher endpoint runs
+          # one job per call so we loop.
           if [ -n "$FORCE_JOB" ]; then
-            QS="$QS&job=$FORCE_JOB"
+            JOBS="$FORCE_JOB"
+          else
+            case "$SCHEDULE" in
+              "0 5 * * 1-6")    JOBS="morning" ;;
+              "30 5 * * 1-6")   JOBS="eta defaulter" ;;
+              "30 12 * * 1-6")  JOBS="evening" ;;
+              "0 13 * * 1-6")   JOBS="evening-digest" ;;
+              *)                JOBS="" ;;
+            esac
           fi
-          echo "Calling $PROD_URL/api/cron/dispatch (job=${FORCE_JOB:-time-matched})"
-          # Capture body + status; exit non-zero if HTTP >= 400.
-          STATUS=$(curl -s -o /tmp/body.txt -w '%{http_code}' \
-            --max-time 60 \
-            "$PROD_URL/api/cron/dispatch?$QS")
-          echo "HTTP $STATUS"
-          echo "─── Response body ───"
-          cat /tmp/body.txt
-          echo
-          if [ "$STATUS" -ge 400 ]; then
-            echo "::error::Dispatcher returned HTTP $STATUS"
+
+          if [ -z "$JOBS" ]; then
+            # No mapping (e.g. workflow_dispatch with empty input) — fall
+            # back to the dispatcher's time-of-day matcher.
+            echo "Calling $PROD_URL/api/cron/dispatch (time-matched)"
+            STATUS=$(curl -s -o /tmp/body.txt -w '%{http_code}' \
+              --max-time 60 "$PROD_URL/api/cron/dispatch?secret=$CRON_SECRET")
+            echo "HTTP $STATUS"
+            cat /tmp/body.txt; echo
+            [ "$STATUS" -lt 400 ] || { echo "::error::HTTP $STATUS"; exit 1; }
+            exit 0
+          fi
+
+          FAILED=0
+          for job in $JOBS; do
+            echo "─── job=$job ───"
+            STATUS=$(curl -s -o /tmp/body.txt -w '%{http_code}' \
+              --max-time 60 \
+              "$PROD_URL/api/cron/dispatch?secret=$CRON_SECRET&job=$job")
+            echo "HTTP $STATUS"
+            cat /tmp/body.txt; echo
+            if [ "$STATUS" -ge 400 ]; then
+              echo "::warning::job=$job returned HTTP $STATUS"
+              FAILED=$((FAILED + 1))
+            fi
+          done
+          if [ "$FAILED" -gt 0 ]; then
+            echo "::error::$FAILED job(s) failed"
             exit 1
           fi

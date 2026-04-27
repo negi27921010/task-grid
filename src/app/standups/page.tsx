@@ -45,9 +45,9 @@ import type { StandupOutcome, OutcomeEveningStatus, CreateMorningStandupInput } 
 /* ---- Layout constants ---- */
 
 // One source of truth so the team table header and rows stay in lockstep.
-// Columns: Member · Morning · Evening · Outcomes · Effort · Carried · Stuck · Rate · chevron
+// Columns: Member · Morning · Evening · Outcomes · Effort · Carried · Stuck · Rate · Details
 const TEAM_TABLE_GRID =
-  'grid items-center gap-3 grid-cols-[minmax(180px,1fr)_80px_80px_72px_64px_60px_60px_60px_24px]';
+  'grid items-center gap-3 grid-cols-[minmax(180px,1fr)_80px_80px_72px_64px_60px_60px_60px_84px]';
 
 /* ---- Outcome validation ---- */
 
@@ -495,25 +495,24 @@ function OutcomeComments({
   currentUserId: string;
 }) {
   const [text, setText] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
   const addComment = useAddStandupComment();
   const { data: allUsers } = useUsers();
 
   const handlePost = () => {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed || addComment.isPending) return;
     addComment.mutate(
       { outcomeId: outcome.id, authorId: currentUserId, content: trimmed },
-      { onSuccess: () => setText('') },
+      { onSuccess: () => { setText(''); setIsFocused(false); } },
     );
   };
 
-  // Don't show comments section if no comments exist and outcome is pending
-  // Comments only shown for resolved outcomes that have existing comments
-  if (outcome.comments.length === 0) return null;
+  const hasComments = outcome.comments.length > 0;
 
   return (
     <div className="mt-3 space-y-2 border-t border-border-color pt-3">
-      {outcome.comments.length > 0 && (
+      {hasComments && (
         <div className="space-y-2">
           {outcome.comments.map((c) => {
             const author = (allUsers ?? []).find(u => u.id === c.author_id);
@@ -532,7 +531,73 @@ function OutcomeComments({
           })}
         </div>
       )}
-      {/* Comment input — only shown when standup_comments table exists */}
+
+      {/* Composer — always visible. Tap-to-expand pattern keeps the
+          outcome card compact when there's nothing to say. */}
+      <div className="flex items-start gap-2">
+        <Avatar
+          fullName={
+            (allUsers ?? []).find(u => u.id === currentUserId)?.full_name ?? 'You'
+          }
+          src={
+            (allUsers ?? []).find(u => u.id === currentUserId)?.avatar_url ?? null
+          }
+          size="sm"
+        />
+        <div className="flex-1">
+          {isFocused || text ? (
+            <>
+              <textarea
+                autoFocus
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault();
+                    handlePost();
+                  }
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setText('');
+                    setIsFocused(false);
+                  }
+                }}
+                placeholder="Write a comment…"
+                rows={2}
+                maxLength={500}
+                disabled={addComment.isPending}
+                className="w-full resize-none rounded-md border border-border-color bg-surface px-2.5 py-1.5 text-xs text-text placeholder:text-text-faint focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
+              />
+              <div className="mt-1.5 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setText(''); setIsFocused(false); }}
+                  className="rounded-md px-2 py-1 text-[11px] text-text-muted hover:text-text"
+                  disabled={addComment.isPending}
+                >
+                  Cancel
+                </button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handlePost}
+                  disabled={!text.trim() || addComment.isPending}
+                >
+                  {addComment.isPending ? 'Posting…' : 'Post (⌘⏎)'}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsFocused(true)}
+              className="w-full rounded-md border border-border-color bg-surface px-2.5 py-1.5 text-left text-xs text-text-faint transition-colors hover:border-[var(--accent)]/40 hover:text-text-muted"
+            >
+              {hasComments ? 'Add another comment…' : 'Write a comment…'}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -869,6 +934,8 @@ function CarriedOutcomeCard({
 function MemberStandupDetail({ userId, date }: { userId: string; date: string }) {
   const { data: standup, isLoading } = useStandupByDate(userId, date);
   const pushBack = usePushBackOutcome();
+  const { currentUser } = useCurrentUser();
+  const currentUserId = currentUser.id;
   const [pushBackId, setPushBackId] = useState<string | null>(null);
   const [pushBackReason, setPushBackReason] = useState('');
 
@@ -975,6 +1042,8 @@ function MemberStandupDetail({ userId, date }: { userId: string; date: string })
             {o.evening_status === 'not_done' && o.reason_not_done && (
               <p className="ml-5 mt-1 text-xs text-red-600 dark:text-red-300 italic">Reason: {o.reason_not_done}</p>
             )}
+            {/* Inline comment thread + composer (admin team-overview view) */}
+            <OutcomeComments outcome={o} currentUserId={currentUserId} />
             {/* Push back form */}
             {pushBackId === o.id && (
               <div className="mt-2 space-y-2 rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50/50 dark:bg-amber-500/12 p-2">
@@ -1182,11 +1251,21 @@ function TeamOverviewSection({ date }: { date: string }) {
                   onClick={() => setExpandedUserId(isExpanded ? null : s.user_id)}
                   className={cn(
                     TEAM_TABLE_GRID,
-                    'w-full px-6 py-3.5 text-left transition-colors',
-                    isExpanded ? 'bg-accent-soft' : 'hover:bg-hover',
+                    'group relative w-full cursor-pointer px-6 py-3.5 text-left transition-colors',
+                    isExpanded
+                      ? 'bg-accent-soft ring-1 ring-inset ring-[var(--accent)]/40'
+                      : 'hover:bg-hover',
                     !hasSubmitted && 'opacity-60',
                   )}
+                  aria-expanded={isExpanded}
+                  aria-label={`${isExpanded ? 'Hide' : 'Show'} ${s.user_name} standup details`}
                 >
+                  {isExpanded && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute inset-y-0 left-0 w-1 bg-[var(--accent)]"
+                    />
+                  )}
                   {/* Member */}
                   <div className="flex min-w-0 items-center gap-2.5">
                     <Avatar fullName={s.user_name} src={user?.avatar_url ?? null} size="sm" />
@@ -1274,12 +1353,24 @@ function TeamOverviewSection({ date }: { date: string }) {
                     )}
                   </div>
 
-                  {/* Expand indicator */}
+                  {/* Details affordance — explicit labeled button reading
+                      "Details ›" / "Hide ›" so users have a clear CTA in
+                      addition to the whole-row click target. */}
                   <div className="flex items-center justify-end">
-                    <ChevronRight className={cn(
-                      'h-4 w-4 text-text-faint transition-transform',
-                      isExpanded && 'rotate-90',
-                    )} />
+                    <span
+                      className={cn(
+                        'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold transition-colors',
+                        isExpanded
+                          ? 'border-[var(--accent)]/40 bg-surface text-[var(--accent)]'
+                          : 'border-border-color bg-surface text-text-muted group-hover:border-[var(--accent)]/40 group-hover:text-[var(--accent)]',
+                      )}
+                    >
+                      {isExpanded ? 'Hide' : 'Details'}
+                      <ChevronRight className={cn(
+                        'h-3 w-3 transition-transform',
+                        isExpanded && 'rotate-90',
+                      )} />
+                    </span>
                   </div>
                 </button>
 

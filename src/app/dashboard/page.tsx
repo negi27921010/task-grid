@@ -46,6 +46,10 @@ import { useProjects } from '@/lib/hooks/use-projects';
 import { useUsers } from '@/lib/hooks/use-users';
 import { useCurrentUser } from '@/lib/hooks/use-current-user';
 import { useFilters } from '@/lib/hooks/use-filters';
+import { useTeamStandups } from '@/lib/hooks/use-standups';
+import { getTodayIST } from '@/lib/api/standups';
+import Link from 'next/link';
+import { ClipboardCheck, Flame, ArrowRight } from 'lucide-react';
 import { isAdmin, can } from '@/lib/utils/permissions';
 import { filterTasks } from '@/lib/utils/search';
 import { cn } from '@/lib/utils/cn';
@@ -115,6 +119,36 @@ function DashboardContent() {
     : isTeamView ? teamTasks : myTasks;
   const { data: tasks, isLoading: tasksLoading } = activeQuery;
   const isLoading = !userReady || tasksLoading;
+
+  // Today's team-wide standup roll-up — drives the Standup Overview
+  // card on the analytics view. Only fetched on the analytics tab to
+  // keep round-trips small on the table/kanban paths.
+  const today = useMemo(() => getTodayIST(), []);
+  const { data: teamStandups } = useTeamStandups(today);
+  const standupSummary = useMemo(() => {
+    const all = teamStandups ?? [];
+    const submitted = all.filter(s => s.morning_status !== 'not_submitted').length;
+    const closed = all.filter(s => s.evening_status !== 'not_submitted').length;
+    const late = all.filter(s => s.morning_status === 'late').length;
+    const stuckMembers = all.filter(s => s.stuck_count > 0);
+    const notSubmitted = all.filter(s => s.morning_status === 'not_submitted');
+    const totalOutcomes = all.reduce((acc, s) => acc + s.total_outcomes, 0);
+    const doneOutcomes = all.reduce((acc, s) => acc + s.done_count, 0);
+    const totalEffort = all.reduce((acc, s) => acc + s.total_effort_hours, 0);
+    return {
+      total: all.length,
+      submitted,
+      closed,
+      late,
+      notSubmitted,
+      stuckMembers,
+      totalOutcomes,
+      doneOutcomes,
+      totalEffort,
+      submitRate: all.length > 0 ? Math.round((submitted / all.length) * 100) : 0,
+      completionRate: totalOutcomes > 0 ? Math.round((doneOutcomes / totalOutcomes) * 100) : 0,
+    };
+  }, [teamStandups]);
 
   const {
     filters, sort, presets,
@@ -502,6 +536,81 @@ function DashboardContent() {
                   <CompletionSpark daily={completionDaily} total={stats.total} done={stats.completed} />
                 </DSCard>
               </div>
+
+              {/* Daily Standup overview — today's roll-up, with a deep
+                  link to /standups for the full team table. */}
+              {standupSummary.total > 0 && (
+                <DSCard
+                  title="Daily Standup — today"
+                  subtitle={`Live roll-up for ${new Date(today).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })}`}
+                  rightSlot={
+                    <Link
+                      href="/standups"
+                      className="inline-flex items-center gap-1 rounded-md border border-border-color bg-surface px-2.5 py-1 text-[11.5px] font-medium text-text-muted transition-colors hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
+                    >
+                      <ClipboardCheck className="h-3 w-3" />
+                      Open Team Overview
+                      <ArrowRight className="h-3 w-3" />
+                    </Link>
+                  }
+                >
+                  {/* KPI row */}
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <StandupKpi
+                      label="Submitted"
+                      value={`${standupSummary.submitted}/${standupSummary.total}`}
+                      sub={`${standupSummary.submitRate}%`}
+                      tone={standupSummary.submitRate >= 80 ? 'green' : standupSummary.submitRate >= 50 ? 'amber' : 'red'}
+                    />
+                    <StandupKpi
+                      label="Closed"
+                      value={`${standupSummary.closed}/${standupSummary.total}`}
+                      sub={`${standupSummary.late} late`}
+                      tone={standupSummary.late === 0 ? 'green' : 'amber'}
+                    />
+                    <StandupKpi
+                      label="Outcomes"
+                      value={`${standupSummary.doneOutcomes}/${standupSummary.totalOutcomes}`}
+                      sub={`${standupSummary.completionRate}% done`}
+                      tone={standupSummary.completionRate >= 70 ? 'green' : standupSummary.completionRate >= 40 ? 'amber' : 'red'}
+                    />
+                    <StandupKpi
+                      label="Effort"
+                      value={`${standupSummary.totalEffort}h`}
+                      sub="committed today"
+                      tone="blue"
+                    />
+                  </div>
+
+                  {/* Action lists side by side */}
+                  <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <StandupList
+                      title="Not submitted yet"
+                      items={standupSummary.notSubmitted.slice(0, 6).map((s) => ({
+                        userId: s.user_id,
+                        name: s.user_name,
+                        secondary: s.department,
+                        emphasis: 'red',
+                      }))}
+                      emptyText="🎉 Everyone has submitted today."
+                      moreCount={Math.max(0, standupSummary.notSubmitted.length - 6)}
+                      usersById={usersById}
+                    />
+                    <StandupList
+                      title="Stuck members"
+                      items={standupSummary.stuckMembers.slice(0, 6).map((s) => ({
+                        userId: s.user_id,
+                        name: s.user_name,
+                        secondary: `${s.stuck_count} stuck · carry ≥ 3d`,
+                        emphasis: 'amber',
+                      }))}
+                      emptyText="No stuck items 👍"
+                      moreCount={Math.max(0, standupSummary.stuckMembers.length - 6)}
+                      usersById={usersById}
+                    />
+                  </div>
+                </DSCard>
+              )}
             </div>
           )
         )}
@@ -510,6 +619,92 @@ function DashboardContent() {
       <TaskDetailPanel taskId={selectedTaskId} onClose={handleClosePanel} />
       <BulkUploadDialog open={bulkUploadOpen} onOpenChange={setBulkUploadOpen} />
     </RefinedAppShell>
+  );
+}
+
+const STANDUP_KPI_TONE = {
+  green: { bg: 'bg-emerald-50 dark:bg-emerald-500/15', text: 'text-emerald-700 dark:text-emerald-300', border: 'border-emerald-200 dark:border-emerald-500/30' },
+  amber: { bg: 'bg-amber-50 dark:bg-amber-500/15',     text: 'text-amber-700 dark:text-amber-300',     border: 'border-amber-200 dark:border-amber-500/30' },
+  red:   { bg: 'bg-red-50 dark:bg-red-500/15',         text: 'text-red-700 dark:text-red-300',         border: 'border-red-200 dark:border-red-500/30' },
+  blue:  { bg: 'bg-accent-soft',                       text: 'text-[var(--accent)]',                  border: 'border-[var(--accent)]/30' },
+} as const;
+
+function StandupKpi({
+  label, value, sub, tone,
+}: { label: string; value: string; sub: string; tone: keyof typeof STANDUP_KPI_TONE }) {
+  const t = STANDUP_KPI_TONE[tone];
+  return (
+    <div className={cn('rounded-lg border px-3 py-2.5', t.bg, t.border)}>
+      <p className="text-[10.5px] font-semibold uppercase tracking-wider text-text-muted">{label}</p>
+      <p
+        className={cn('mt-0.5 text-[20px] font-bold leading-none tabular-nums', t.text)}
+        style={{ fontFamily: 'var(--font-display)' }}
+      >
+        {value}
+      </p>
+      <p className="mt-1 text-[11px] text-text-muted">{sub}</p>
+    </div>
+  );
+}
+
+interface StandupListItem {
+  userId: string;
+  name: string;
+  secondary: string;
+  emphasis: 'red' | 'amber';
+}
+
+function StandupList({
+  title, items, emptyText, moreCount, usersById,
+}: {
+  title: string;
+  items: StandupListItem[];
+  emptyText: string;
+  moreCount: number;
+  usersById: Record<string, { name: string; src: string | null }>;
+}) {
+  return (
+    <div>
+      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-text-muted">{title}</p>
+      {items.length === 0 ? (
+        <p className="rounded-lg border border-border-color bg-canvas px-3 py-3 text-[12.5px] text-text-muted">
+          {emptyText}
+        </p>
+      ) : (
+        <ul className="space-y-1.5">
+          {items.map((item) => {
+            const u = usersById[item.userId];
+            return (
+              <li
+                key={item.userId}
+                className="flex items-center gap-2.5 rounded-lg border border-border-color bg-canvas px-3 py-2"
+              >
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'h-1.5 w-1.5 shrink-0 rounded-full',
+                    item.emphasis === 'red' ? 'bg-red-500' : 'bg-amber-500',
+                  )}
+                />
+                <Avatar fullName={item.name} src={u?.src ?? null} size="sm" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] font-medium text-text">{item.name}</p>
+                  <p className="truncate text-[11px] text-text-muted">{item.secondary}</p>
+                </div>
+                {item.emphasis === 'amber' && (
+                  <Flame className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                )}
+              </li>
+            );
+          })}
+          {moreCount > 0 && (
+            <li className="px-3 py-1 text-[11px] text-text-faint">
+              + {moreCount} more
+            </li>
+          )}
+        </ul>
+      )}
+    </div>
   );
 }
 

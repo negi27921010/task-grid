@@ -77,7 +77,7 @@ function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
   return (
     <div
       aria-live="polite"
-      className="pointer-events-none fixed bottom-4 right-4 z-[100] flex flex-col gap-2"
+      className="pointer-events-none fixed bottom-4 right-4 z-[100] flex flex-col gap-2.5"
     >
       {toasts.map((t) => (
         <ToastItem key={t.id} toast={t} onDismiss={onDismiss} />
@@ -89,10 +89,17 @@ function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
 /* ─── Individual Toast ─── */
 
 const variantStyles: Record<ToastVariant, string> = {
-  success: 'border-green-200 bg-green-50 text-green-800 dark:border-green-500/30 dark:bg-green-500/15 dark:text-green-200',
-  error:   'border-red-200 bg-red-50 text-red-800 dark:border-red-500/30 dark:bg-red-500/15 dark:text-red-200',
-  warning: 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-200',
-  info:    'border-[var(--accent)]/30 bg-accent-soft text-[var(--accent)]',
+  success:
+    'border-[rgba(0,185,92,0.28)] bg-[rgba(0,185,92,0.10)] text-[#0a7a3d] ' +
+    'dark:border-[rgba(0,185,92,0.32)] dark:bg-[rgba(0,185,92,0.14)] dark:text-[#1fd57e]',
+  error:
+    'border-[rgba(252,65,61,0.28)] bg-[rgba(252,65,61,0.10)] text-[#b22622] ' +
+    'dark:border-[rgba(252,65,61,0.32)] dark:bg-[rgba(252,65,61,0.14)] dark:text-[#ff6864]',
+  warning:
+    'border-[rgba(251,188,4,0.32)] bg-[rgba(251,188,4,0.12)] text-[#7a5400] ' +
+    'dark:border-[rgba(251,188,4,0.36)] dark:bg-[rgba(251,188,4,0.16)] dark:text-[var(--brand-yellow)]',
+  info:
+    'border-[rgba(var(--accent-rgb),0.28)] bg-accent-soft-strong text-[var(--accent)]',
 };
 
 const variantIcons: Record<ToastVariant, typeof CheckCircle> = {
@@ -122,17 +129,19 @@ function ToastItem({
   return (
     <div
       className={cn(
-        'pointer-events-auto flex w-80 items-start gap-2.5 rounded-md border p-3 shadow-lg',
-        'animate-in slide-in-from-right-full fade-in-0 duration-200',
-        variantStyles[toast.variant]
+        'pointer-events-auto flex w-80 items-start gap-2.5',
+        'rounded-[var(--radius-lg)] border p-3.5 backdrop-blur-xl',
+        'shadow-[var(--shadow-lg)]',
+        'animate-in slide-in-from-right-full fade-in-0 duration-300',
+        variantStyles[toast.variant],
       )}
       role="alert"
     >
       <Icon className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-      <p className="flex-1 text-sm font-medium">{toast.message}</p>
+      <p className="flex-1 text-sm font-medium leading-snug">{toast.message}</p>
       <button
         onClick={() => onDismiss(toast.id)}
-        className="shrink-0 rounded-sm p-0.5 opacity-70 transition-opacity hover:opacity-100"
+        className="shrink-0 rounded-[var(--radius-sm)] p-0.5 opacity-70 hover:opacity-100 transition-opacity"
       >
         <X className="h-3.5 w-3.5" />
         <span className="sr-only">Dismiss</span>

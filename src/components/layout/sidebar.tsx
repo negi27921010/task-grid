@@ -4,10 +4,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { CheckSquare, Users, ClipboardCheck, BookOpen, PanelLeftClose, PanelLeft, FolderKanban, Settings, LogOut, Plus, X } from 'lucide-react';
+import { CheckSquare, Users, ClipboardCheck, BookOpen, PanelLeftClose, PanelLeft, FolderKanban, Settings, LogOut, Plus, X, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useCurrentUser } from '@/lib/hooks/use-current-user';
-import { useProjects, useCreateProject } from '@/lib/hooks/use-projects';
+import { useProjects, useCreateProject, useDeleteProject } from '@/lib/hooks/use-projects';
 import { isAdmin, can } from '@/lib/utils/permissions';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -79,9 +79,11 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const { currentUser, signOut } = useCurrentUser();
   const { data: projects } = useProjects();
   const createProject = useCreateProject();
+  const deleteProject = useDeleteProject();
 
   const [showNewProject, setShowNewProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const activeProjects = (projects ?? []).filter((p) => p.status === 'active');
   const userIsAdmin = isAdmin(currentUser);
@@ -230,39 +232,93 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           {activeProjects.map((project, idx) => {
             const isActive = pathname === `/project/${project.id}`;
             const color = getProjectColor(idx);
-
-            const content = (
-              <Link
-                key={project.id}
-                href={`/project/${project.id}`}
-                className={cn(
-                  'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-150',
-                  isActive
-                    ? 'bg-blue-50 text-blue-700 font-medium'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
-                  collapsed && 'justify-center px-0'
-                )}
-              >
-                <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full ring-2 ring-white"
-                  style={{ backgroundColor: color }}
-                  aria-hidden="true"
-                />
-                {!collapsed && (
-                  <span className="truncate">{project.name}</span>
-                )}
-              </Link>
-            );
+            const isConfirming = deleteConfirmId === project.id;
 
             if (collapsed) {
               return (
                 <Tooltip key={project.id} content={project.name} side="right">
-                  {content}
+                  <Link
+                    href={`/project/${project.id}`}
+                    className={cn(
+                      'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-150 justify-center px-0',
+                      isActive
+                        ? 'bg-blue-50 text-blue-700 font-medium'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+                    )}
+                  >
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-full ring-2 ring-white"
+                      style={{ backgroundColor: color }}
+                      aria-hidden="true"
+                    />
+                  </Link>
                 </Tooltip>
               );
             }
 
-            return <div key={project.id}>{content}</div>;
+            return (
+              <div key={project.id}>
+                <div
+                  className={cn(
+                    'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-150',
+                    isActive
+                      ? 'bg-blue-50 text-blue-700 font-medium'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+                  )}
+                >
+                  <Link
+                    href={`/project/${project.id}`}
+                    className="flex min-w-0 flex-1 items-center gap-3"
+                  >
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-full ring-2 ring-white"
+                      style={{ backgroundColor: color }}
+                      aria-hidden="true"
+                    />
+                    <span className="truncate">{project.name}</span>
+                  </Link>
+                  {userIsAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => setDeleteConfirmId(isConfirming ? null : project.id)}
+                      className="ml-auto shrink-0 rounded p-0.5 text-slate-300 opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500"
+                      aria-label={`Delete ${project.name}`}
+                      title="Delete project"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+                {isConfirming && (
+                  <div className="mx-3 mb-1 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px]">
+                    <p className="mb-1.5 text-red-700">
+                      Delete <strong>{project.name}</strong>? All tasks removed.
+                    </p>
+                    <div className="flex gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          deleteProject.mutate(project.id, {
+                            onSuccess: () => setDeleteConfirmId(null),
+                          });
+                        }}
+                        disabled={deleteProject.isPending}
+                        className="rounded bg-red-600 px-2 py-0.5 text-[11px] font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                      >
+                        {deleteProject.isPending ? '…' : 'Delete'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteConfirmId(null)}
+                        className="rounded px-2 py-0.5 text-[11px] text-slate-500 hover:text-slate-700"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
           })}
         </div>
 

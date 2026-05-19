@@ -14,6 +14,7 @@ import {
   Pencil,
   Check,
   X,
+  Trash2,
   FolderOpen,
   Table as TableIcon,
   Kanban as KanbanIcon,
@@ -24,14 +25,14 @@ import { FilterBar } from '@/components/task/filter-bar';
 import { TaskDetailPanel } from '@/components/task/task-detail-panel';
 import { BulkUploadDialog } from '@/components/task/bulk-upload-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useProject, useUpdateProject } from '@/lib/hooks/use-projects';
+import { useProject, useUpdateProject, useDeleteProject } from '@/lib/hooks/use-projects';
 import { useTasks } from '@/lib/hooks/use-tasks';
 import { useUsers } from '@/lib/hooks/use-users';
 import { useFilters } from '@/lib/hooks/use-filters';
 import { useCurrentUser } from '@/lib/hooks/use-current-user';
-import { can } from '@/lib/utils/permissions';
+import { can, isAdmin } from '@/lib/utils/permissions';
 import { filterTasks } from '@/lib/utils/search';
-import type { AgingStatus } from '@/lib/types';
+import type { AgingStatus, TaskStatus } from '@/lib/types';
 
 type View = 'table' | 'kanban';
 
@@ -60,6 +61,9 @@ function ProjectContent({ id }: { id: string }) {
   } = useFilters();
 
   const updateProject = useUpdateProject();
+  const deleteProject = useDeleteProject();
+  const userIsAdmin = isAdmin(currentUser);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -81,9 +85,31 @@ function ProjectContent({ id }: { id: string }) {
     }
   }, [taskFromUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const [showCreateRow, setShowCreateRow] = useState(false);
-  const handleAddTask = useCallback(() => setShowCreateRow(true), []);
-  const handleCloseCreateRow = useCallback(() => setShowCreateRow(false), []);
+  // Inline create flow — both the FilterBar's "+ New task" button and the
+  // per-group "+ Add task" buttons feed into this. createInStatus drives
+  // RefinedTaskTable to render its inline create bar above the matching
+  // group. Defaults to 'in_progress' for the header button so new tasks
+  // land in the Working column (now the leftmost column).
+  const [createInStatus, setCreateInStatus] = useState<TaskStatus | null>(null);
+  const handleAddTask = useCallback(
+    (status: TaskStatus = 'in_progress') => {
+      // If the user is on Kanban, switch to table view so the inline
+      // create bar is visible (Kanban has its own card UI for creates;
+      // routing through the table keeps the experience consistent).
+      if (view === 'kanban') {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('view', 'table');
+        router.replace(`?${params.toString()}`);
+      }
+      setCreateInStatus(status);
+    },
+    [view, searchParams, router],
+  );
+  const handleCancelCreate = useCallback(() => setCreateInStatus(null), []);
+  const handleCreatedTask = useCallback(() => {
+    // Keep the bar open so users can keep adding tasks; React Query
+    // invalidation refreshes the list automatically.
+  }, []);
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
 
   useEffect(() => {
@@ -130,6 +156,15 @@ function ProjectContent({ id }: { id: string }) {
       setEditingDesc(true);
     }
   };
+
+  const handleDeleteProject = useCallback(() => {
+    if (!project) return;
+    deleteProject.mutate(project.id, {
+      onSuccess: () => {
+        router.push('/dashboard');
+      },
+    });
+  }, [project, deleteProject, router]);
 
   const allTasks = tasks ?? [];
   const filteredTasks = useMemo(
@@ -178,21 +213,63 @@ function ProjectContent({ id }: { id: string }) {
         activeTab={view}
         onTabChange={(id) => updateView(id as View)}
         rightSlot={
-          project && can(currentUser, 'canEditProjects') && !editingName ? (
-            <button
-              type="button"
-              onClick={startEditName}
-              className="rounded-md p-1.5 text-text-faint transition-colors hover:bg-hover hover:text-text"
-              aria-label="Edit project name"
-              title="Edit project name"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </button>
+          project && !editingName ? (
+            <div className="flex items-center gap-1.5">
+              {can(currentUser, 'canEditProjects') && (
+                <button
+                  type="button"
+                  onClick={startEditName}
+                  className="rounded-md p-1.5 text-text-faint transition-colors hover:bg-hover hover:text-text"
+                  aria-label="Edit project name"
+                  title="Edit project name"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+              )}
+              {userIsAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(true)}
+                  className="rounded-md p-1.5 text-text-faint transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/15 dark:hover:text-red-400"
+                  aria-label="Delete project"
+                  title="Delete project"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
           ) : undefined
         }
       />
 
       <div className="mx-auto w-full max-w-[1400px] space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+        {/* Delete confirmation banner — admin only */}
+        {confirmDelete && project && (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-500/30 dark:bg-red-500/10">
+            <p className="text-sm font-medium text-red-700 dark:text-red-300">
+              Permanently delete <strong>{project.name}</strong>? All tasks will be removed. This cannot be undone.
+            </p>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                disabled={deleteProject.isPending}
+                className="rounded-md border border-border-color bg-surface px-3 py-1.5 text-sm text-text-muted transition-colors hover:text-text disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteProject}
+                disabled={deleteProject.isPending}
+                className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleteProject.isPending ? 'Deleting…' : 'Delete project'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Inline name editor — appears in place when triggered */}
         {editingName && project && (
           <div className="flex items-center gap-2 rounded-lg border border-border-color bg-surface p-3">
@@ -419,21 +496,13 @@ function ProjectContent({ id }: { id: string }) {
           />
         )}
 
-        {/* Refined views */}
+        {/* Refined views — always render the board view, even when empty.
+            The per-status group renders its own "No tasks in [group]"
+            placeholder, so empty projects still get the inline create
+            bar from the "+ New task" button. Showing a separate empty
+            state previously blocked that flow. */}
         {project && !isLoading && (
-          allTasks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border-color bg-surface px-6 py-16 text-center">
-              <p
-                className="text-base font-semibold text-text"
-                style={{ fontFamily: 'var(--font-display)' }}
-              >
-                No tasks in this project yet
-              </p>
-              <p className="mt-1 text-sm text-text-muted">
-                Click <strong>+ New task</strong> in the toolbar above to add the first one.
-              </p>
-            </div>
-          ) : view === 'kanban' ? (
+          view === 'kanban' ? (
             <RefinedKanban
               tasks={filteredTasks}
               users={users ?? []}
@@ -446,24 +515,23 @@ function ProjectContent({ id }: { id: string }) {
               users={users ?? []}
               onTaskClick={handleSelectTask}
               onAddTask={can(currentUser, 'canCreateTasks') ? handleAddTask : undefined}
+              createInStatus={createInStatus}
+              onCancelCreate={handleCancelCreate}
+              onCreatedTask={handleCreatedTask}
+              projectId={id}
               canCreate={can(currentUser, 'canCreateTasks')}
             />
           )
         )}
 
-        {/* Inline create row indicator */}
-        {showCreateRow && (
-          <div className="flex items-center justify-between rounded-lg border border-[var(--accent)]/40 bg-accent-soft px-4 py-3 text-sm">
-            <span className="text-text-muted">
-              Inline task creation is in the legacy panel — open the Task Detail panel to add subtasks here, or use the Add Task button.
-            </span>
-            <button
-              type="button"
-              onClick={handleCloseCreateRow}
-              className="rounded-md px-3 py-1 text-xs font-medium text-text-muted hover:bg-hover hover:text-text"
-            >
-              Dismiss
-            </button>
+        {/* First-task hint — shown ABOVE the empty board the very first
+            time only. Disappears as soon as a task exists or the user
+            opens the create bar. */}
+        {project && !isLoading && allTasks.length === 0 && createInStatus === null && can(currentUser, 'canCreateTasks') && (
+          <div className="rounded-lg border border-dashed border-[var(--accent)]/40 bg-accent-soft px-4 py-3 text-sm">
+            <p className="text-text">
+              <strong>This project is empty.</strong> Click <strong>+ New task</strong> in the toolbar above (or <strong>+ Add task</strong> in any column) to add the first one.
+            </p>
           </div>
         )}
       </div>

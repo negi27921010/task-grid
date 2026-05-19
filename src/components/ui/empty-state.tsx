@@ -22,21 +22,34 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center px-6 py-12 text-center',
-        className
+        'flex flex-col items-center justify-center px-6 py-14 text-center',
+        className,
       )}
     >
       {Icon && (
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100">
-          <Icon className="h-6 w-6 text-text-faint" aria-hidden="true" />
+        <div
+          className={cn(
+            'mb-5 flex h-14 w-14 items-center justify-center rounded-full',
+            'bg-accent-soft text-[var(--accent)]',
+            'ring-8 ring-accent-soft/40',
+          )}
+        >
+          <Icon className="h-6 w-6" aria-hidden="true" />
         </div>
       )}
-      <h3 className="text-sm font-semibold text-text">{title}</h3>
+      <h3
+        className="text-base font-semibold text-text"
+        style={{ fontFamily: 'var(--font-display)' }}
+      >
+        {title}
+      </h3>
       {description && (
-        <p className="mt-1 max-w-sm text-sm text-text-muted">{description}</p>
+        <p className="mt-1.5 max-w-sm text-sm text-text-muted leading-relaxed">
+          {description}
+        </p>
       )}
       {actionLabel && onAction && (
-        <Button className="mt-4" size="sm" onClick={onAction}>
+        <Button className="mt-5" size="md" onClick={onAction}>
           {actionLabel}
         </Button>
       )}

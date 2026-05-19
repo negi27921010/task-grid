@@ -296,7 +296,65 @@ Open Team Overview: ${appUrl('/standups')}
   return { subject, text, html };
 }
 
-/* ─────────────────────────── 6. Generic test email ────────────────────────── */
+/* ─────────────────── 6. Carried-task closure nudge ───────────────────────── */
+// Sent twice a day (11 AM IST and 6 PM IST) to anyone who has standup
+// outcomes still flagged as `is_carried` from earlier days. Goal: get
+// them to either close (set evening_status='done') or update with a
+// reason. The 11 AM version is a soft reminder; the 6 PM version names
+// the streak ("blocked X days") and asks for an explicit close.
+export function carriedTaskNudge(input: {
+  fullName: string;
+  slot: 'morning' | 'evening';
+  carriedItems: { title: string; carry_streak: number; reason_not_done?: string | null }[];
+}): { subject: string; text: string; html: string } {
+  const greeting = `Hi ${input.fullName.split(' ')[0]},`;
+  const isMorning = input.slot === 'morning';
+  const total = input.carriedItems.length;
+  const stuckThree = input.carriedItems.filter(i => i.carry_streak >= 3).length;
+
+  const subject = isMorning
+    ? `Carry-over from yesterday — ${total} item${total === 1 ? '' : 's'} need an update`
+    : `Close before EOD — ${total} carried task${total === 1 ? '' : 's'} still open`;
+
+  const introText = isMorning
+    ? `You have ${total} task${total === 1 ? '' : 's'} carried from yesterday's standup. Please update them in today's standup or mark them done if they're already finished.`
+    : `It's evening closure time and ${total} carried task${total === 1 ? '' : 's'} ${total === 1 ? 'is' : 'are'} still open. Close ${total === 1 ? 'it' : 'them'} now or leave a reason so the team knows where it stands.`;
+
+  const itemsText = input.carriedItems
+    .map(i => `  • [${i.carry_streak}d carried] ${i.title}${i.reason_not_done ? ` — last reason: "${i.reason_not_done}"` : ''}`)
+    .join('\n');
+  const text = `${greeting}\n\n${introText}\n\n${itemsText}\n\nUpdate in app: ${appUrl('/standups')}\n\n— ${BRAND}`;
+
+  const itemRows = input.carriedItems.map(i => [
+    `<strong>${escapeHtml(i.title)}</strong>${i.reason_not_done ? `<br><span style="color:${MUTED};font-size:12px">last reason: ${escapeHtml(i.reason_not_done)}</span>` : ''}`,
+    statusPill(`${i.carry_streak}d carried`, i.carry_streak >= 3 ? 'red' : i.carry_streak >= 2 ? 'amber' : 'gray'),
+  ]);
+
+  const stuckCallout = stuckThree > 0
+    ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;margin:0 0 12px;color:#991b1b;font-size:13px">
+        <strong>⚠ ${stuckThree} task${stuckThree === 1 ? '' : 's'} stuck for 3+ days.</strong> Consider escalating to your lead or unblocking with help.
+       </div>`
+    : '';
+
+  const html = shell(
+    isMorning ? 'Carry-over from yesterday' : 'Close your carried tasks before EOD',
+    `<p>${greeting}</p>
+     <p>${introText}</p>
+     ${stuckCallout}
+     ${table(itemRows, ['Task', 'Streak'])}`,
+    isMorning ? 'Update in standup' : 'Close standup',
+    '/standups',
+  );
+  return { subject, text, html };
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]!));
+}
+
+/* ─────────────────────────── 7. Generic test email ────────────────────────── */
 export function testEmail(input: { recipientName?: string }): {
   subject: string; text: string; html: string;
 } {

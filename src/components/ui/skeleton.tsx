@@ -9,9 +9,9 @@ interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const shapeClasses: Record<SkeletonShape, string> = {
-  line: 'h-4 w-full rounded',
+  line: 'h-4 w-full rounded-[var(--radius-sm)]',
   circle: 'rounded-full',
-  rectangle: 'rounded-md',
+  rectangle: 'rounded-[var(--radius-md)]',
 };
 
 export function Skeleton({
@@ -25,9 +25,10 @@ export function Skeleton({
   return (
     <div
       className={cn(
-        'animate-pulse bg-neutral-200',
+        'relative overflow-hidden',
+        'bg-[var(--neutral-100)] dark:bg-[var(--neutral-100)]',
         shapeClasses[shape],
-        className
+        className,
       )}
       style={{
         width: typeof width === 'number' ? `${width}px` : width,
@@ -36,6 +37,15 @@ export function Skeleton({
       }}
       aria-hidden="true"
       {...props}
-    />
+    >
+      {/* Shimmer sweep — accent-tinted highlight */}
+      <div
+        className="absolute inset-0 -translate-x-full animate-shimmer"
+        style={{
+          background:
+            'linear-gradient(90deg, transparent 0%, rgba(var(--accent-rgb), 0.06) 40%, rgba(var(--accent-rgb), 0.14) 50%, rgba(var(--accent-rgb), 0.06) 60%, transparent 100%)',
+        }}
+      />
+    </div>
   );
 }

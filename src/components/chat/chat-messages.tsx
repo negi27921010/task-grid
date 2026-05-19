@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { Bot, Sparkles } from 'lucide-react';
+import { Bot, Sparkles, Zap } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils/cn';
 
@@ -9,6 +9,12 @@ export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  // Phase 3: agent-initiated nudge (cron-driven, not a reply to a user
+  // turn). Renders with a "Bolt reached out" badge.
+  isProactive?: boolean;
+  // Phase 3: was unread when the user opened this widget — hint to the
+  // UI to draw attention to this row in the current paint.
+  wasUnread?: boolean;
 }
 
 interface ChatMessagesProps {
@@ -121,23 +127,40 @@ export function ChatMessages({
           )}
 
           {/* Message bubble */}
-          <div
-            className={cn(
-              'max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm',
-              msg.role === 'user'
-                ? 'bg-[var(--accent)] text-white rounded-br-sm'
-                : 'bg-neutral-100 text-text rounded-bl-sm',
+          <div className="max-w-[80%]">
+            {msg.role === 'assistant' && msg.isProactive && (
+              <span
+                className={cn(
+                  'mb-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
+                  msg.wasUnread
+                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'
+                    : 'bg-neutral-200 text-text-muted dark:bg-neutral-700',
+                )}
+              >
+                <Zap className="h-2.5 w-2.5" />
+                Bolt reached out{msg.wasUnread ? ' · new' : ''}
+              </span>
             )}
-          >
-            {msg.role === 'assistant' ? (
-              msg.content ? (
-                <MarkdownLite text={msg.content} />
+            <div
+              className={cn(
+                'rounded-xl px-3.5 py-2.5 text-sm',
+                msg.role === 'user'
+                  ? 'bg-[var(--accent)] text-white rounded-br-sm'
+                  : msg.isProactive && msg.wasUnread
+                    ? 'bg-amber-50 ring-1 ring-amber-200 text-text rounded-bl-sm dark:bg-amber-500/10 dark:ring-amber-500/30'
+                    : 'bg-neutral-100 text-text rounded-bl-sm dark:bg-neutral-800',
+              )}
+            >
+              {msg.role === 'assistant' ? (
+                msg.content ? (
+                  <MarkdownLite text={msg.content} />
+                ) : (
+                  <StreamingDots />
+                )
               ) : (
-                <StreamingDots />
-              )
-            ) : (
-              <p className="whitespace-pre-wrap">{msg.content}</p>
-            )}
+                <p className="whitespace-pre-wrap">{msg.content}</p>
+              )}
+            </div>
           </div>
         </div>
       ))}

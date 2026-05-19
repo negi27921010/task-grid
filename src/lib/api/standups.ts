@@ -234,7 +234,18 @@ export async function createMorningStandup(
   input: CreateMorningStandupInput,
 ): Promise<DailyStandup> {
   const requireEffort = isEffortRequired(input.standup_date);
-  validateOutcomesInput(input.outcomes, requireEffort);
+
+  // Allow carried-only submissions. A user who has carries from
+  // yesterday but no new commitments today is still making a valid
+  // standup ("I'm closing yesterday's work"). Validate per-outcome
+  // shape only when the array is non-empty; empty + no carries is
+  // the only bad state.
+  if (input.outcomes.length === 0 && input.carried_outcome_ids.length === 0) {
+    throw new Error('Add at least one outcome, or carry forward yesterday\'s items.');
+  }
+  if (input.outcomes.length > 0) {
+    validateOutcomesInput(input.outcomes, requireEffort);
+  }
 
   const now = new Date().toISOString();
   const istHour = getISTHour();
@@ -490,6 +501,9 @@ export async function getTeamStandups(
 
   const standupIds = standups.map(s => s.id as string);
   let allOutcomes: StandupOutcome[] = [];
+  // outcome_id → comment count, lets us aggregate per-user without an
+  // N+1 query. Empty when standup_comments table doesn't exist yet.
+  const commentsByOutcome = new Map<string, number>();
 
   if (standupIds.length > 0) {
     const { data: outcomeRows, error: oErr } = await sb()
@@ -498,6 +512,23 @@ export async function getTeamStandups(
       .in('standup_id', standupIds);
     if (oErr) throw oErr;
     allOutcomes = (outcomeRows ?? []).map(r => mapOutcomeRow(r));
+
+    // Pull comment counts for each outcome — one extra query, no joins,
+    // safe to skip if the table isn't present.
+    if (allOutcomes.length > 0) {
+      const outcomeIds = allOutcomes.map(o => o.id);
+      const { data: commentRows, error: cErr } = await sb()
+        .from('standup_comments')
+        .select('outcome_id')
+        .in('outcome_id', outcomeIds);
+      if (!cErr && commentRows) {
+        for (const r of commentRows) {
+          const k = r.outcome_id as string;
+          commentsByOutcome.set(k, (commentsByOutcome.get(k) ?? 0) + 1);
+        }
+      }
+      // Silent on cErr — standup_comments may not exist yet.
+    }
   }
 
   return users.map((u) => {
@@ -520,6 +551,8 @@ export async function getTeamStandups(
         stuck_count: 0,
         completion_rate: 0,
         total_effort_hours: 0,
+        pushback_count: 0,
+        comments_count: 0,
       };
     }
 
@@ -548,6 +581,12 @@ export async function getTeamStandups(
           ? 'late'
           : 'submitted';
 
+    const pushbackCount = outcomes.filter(o => !!o.reason_not_done).length;
+    const commentsCount = outcomes.reduce(
+      (acc, o) => acc + (commentsByOutcome.get(o.id) ?? 0),
+      0,
+    );
+
     return {
       user_id: u.id as string,
       user_name: u.full_name as string,
@@ -562,6 +601,8 @@ export async function getTeamStandups(
       stuck_count: stuckCount,
       completion_rate: total > 0 ? Math.round((doneCount / total) * 100) : 0,
       total_effort_hours: totalEffortHours,
+      pushback_count: pushbackCount,
+      comments_count: commentsCount,
     };
   });
 }
@@ -711,6 +752,7 @@ export async function addStandupComment(
     author_id: authorId,
     content,
   };
+  let saved: StandupComment | null = null;
   try {
     const { data, error } = await sb()
       .from('standup_comments')
@@ -718,9 +760,53 @@ export async function addStandupComment(
       .select()
       .single();
     if (error) throw error;
-    return mapCommentRow(data);
+    saved = mapCommentRow(data);
   } catch {
     // standup_comments table may not exist until migration 005 is run
     throw new Error('Comments feature requires a database update. Please contact your admin.');
   }
+
+  // Notify the standup owner — but only if commenter ≠ owner (don't
+  // self-notify) and not the same author who's already noisily seen
+  // their own comment in the UI. Best-effort; silent on failure so a
+  // notifications-table outage never blocks comment posting.
+  try {
+    const { data: outcomeRow } = await sb()
+      .from('standup_outcomes')
+      .select('outcome_text, standup_id')
+      .eq('id', outcomeId)
+      .single();
+    if (outcomeRow) {
+      const { data: standup } = await sb()
+        .from('daily_standups')
+        .select('user_id')
+        .eq('id', outcomeRow.standup_id as string)
+        .single();
+      const ownerId = standup?.user_id as string | undefined;
+      if (ownerId && ownerId !== authorId) {
+        // Look up commenter's name for a friendlier title.
+        const { data: author } = await sb()
+          .from('users')
+          .select('full_name')
+          .eq('id', authorId)
+          .maybeSingle();
+        const authorName = (author?.full_name as string) ?? 'Someone';
+        const outcomeText = (outcomeRow.outcome_text as string) ?? '';
+        const snippet = outcomeText.length > 50 ? outcomeText.slice(0, 47) + '…' : outcomeText;
+        await sb().from('notifications').insert({
+          id: uuidv4(),
+          user_id: ownerId,
+          type: 'mention',
+          title: `${authorName} commented on "${snippet}"`,
+          body: content.length > 200 ? content.slice(0, 197) + '…' : content,
+          task_id: null,
+          project_id: null,
+        });
+      }
+    }
+  } catch {
+    // Notifications are best-effort.
+  }
+
+  return saved;
 }

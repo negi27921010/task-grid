@@ -8,6 +8,10 @@ export function useUsers() {
   return useQuery({
     queryKey: ['users'],
     queryFn: () => userApi.getUsers(),
+    // Users rarely change during a session — let the cache serve for
+    // 5 minutes before considering it stale. Mutations invalidate the
+    // key explicitly so admin add/edit still refreshes.
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -16,6 +20,7 @@ export function useUser(id: string) {
     queryKey: ['users', id],
     queryFn: () => userApi.getUserById(id),
     enabled: !!id,
+    staleTime: 5 * 60 * 1000,
   });
 }
 

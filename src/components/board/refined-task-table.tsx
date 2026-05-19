@@ -5,7 +5,7 @@
 // primitives (StatusPill, PriorityTag, Avatar, TimelineBar) and the same
 // data hooks (useChangeTaskStatus, useUpdateTask) so logic is preserved.
 
-import { useState, useMemo, useEffect, useCallback, Fragment } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, Fragment } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -27,6 +27,9 @@ import {
   GripVertical,
   Plus,
   MoreHorizontal,
+  Check,
+  X as XIcon,
+  Loader2,
 } from 'lucide-react';
 import {
   StatusPill,
@@ -34,9 +37,10 @@ import {
   Avatar,
   TimelineBar,
 } from '@/components/design-system';
-import { useChangeTaskStatus } from '@/lib/hooks/use-tasks';
+import { useChangeTaskStatus, useCreateTask } from '@/lib/hooks/use-tasks';
+import { useCurrentUser } from '@/lib/hooks/use-current-user';
 import { cn } from '@/lib/utils/cn';
-import type { Task, TaskStatus, User } from '@/lib/types';
+import type { Task, TaskStatus, User, Priority } from '@/lib/types';
 import {
   STATUS_META,
   STATUS_OPTIONS,
@@ -49,7 +53,21 @@ interface RefinedTaskTableProps {
   tasks: Task[];
   users: User[];
   onTaskClick?: (taskId: string) => void;
+  // When invoked, the parent should set `createInStatus` to render the
+  // inline create row at the top of the matching group. Pre-fills the
+  // status field of the new task.
   onAddTask?: (status: TaskStatus) => void;
+  // Controlled inline-create state: when set, renders the inline create
+  // row at the top of the matching status group. Parent owns the state so
+  // the FilterBar's "+ New task" button and the per-group "+ Add task"
+  // buttons can both feed into it.
+  createInStatus?: TaskStatus | null;
+  onCancelCreate?: () => void;
+  onCreatedTask?: () => void;
+  // Project id is required when createInStatus is set — task inserts
+  // need a project_id. Optional otherwise (e.g. cross-project Dashboard
+  // table where create is disabled).
+  projectId?: string;
   // Multi-select integration with the floating BulkBar
   selected?: Record<string, boolean>;
   onSelectChange?: (selected: Record<string, boolean>) => void;
@@ -84,6 +102,10 @@ export function RefinedTaskTable({
   users,
   onTaskClick,
   onAddTask,
+  createInStatus = null,
+  onCancelCreate,
+  onCreatedTask,
+  projectId,
   selected = {},
   onSelectChange,
   canCreate = false,
@@ -236,12 +258,24 @@ export function RefinedTaskTable({
                         ))}
                       </div>
 
+                      {/* Inline create row — pinned to the top of the
+                          group whose status matches createInStatus. */}
+                      {createInStatus === status && projectId && onCancelCreate && onCreatedTask && (
+                        <InlineCreateBar
+                          projectId={projectId}
+                          status={status}
+                          totalWidth={TOTAL_WIDTH}
+                          onCancel={onCancelCreate}
+                          onCreated={onCreatedTask}
+                        />
+                      )}
+
                       {/* Body rows */}
-                      {groupTasks.length === 0 ? (
+                      {groupTasks.length === 0 && createInStatus !== status ? (
                         <div className="flex items-center justify-center py-6 text-[12.5px] text-text-faint">
                           No tasks in {meta.label}
                         </div>
-                      ) : (
+                      ) : groupTasks.length === 0 ? null : (
                         groupTasks.map((task, idx) => (
                           <Fragment key={task.id}>
                             <TaskRow
@@ -553,6 +587,199 @@ function TaskRow({
         }
         return null;
       })}
+    </div>
+  );
+}
+
+// ─── Inline create bar ──────────────────────────────────────────────────
+// Slim single-row form pinned to the top of a status group. Title is
+// required; everything else has a sensible default (priority P3, owner
+// = current user, no ETA). Enter saves, Esc cancels. The bar matches
+// the table's grid width but uses a flex row instead of column-aligned
+// cells — column alignment with the data rows isn't important here, the
+// bar is a self-contained mini-form.
+const PRIORITY_DOT_COLOR: Record<Priority, string> = {
+  P1: 'bg-red-500',
+  P2: 'bg-orange-500',
+  P3: 'bg-amber-500',
+  P4: 'bg-neutral-300 dark:bg-neutral-600',
+};
+
+interface InlineCreateBarProps {
+  projectId: string;
+  status: TaskStatus;
+  totalWidth: number;
+  onCancel: () => void;
+  onCreated: () => void;
+}
+
+function InlineCreateBar({
+  projectId, status, totalWidth, onCancel, onCreated,
+}: InlineCreateBarProps) {
+  const [title, setTitle] = useState('');
+  const [priority, setPriority] = useState<Priority>('P3');
+  const [eta, setEta] = useState('');
+  const [showPriorityMenu, setShowPriorityMenu] = useState(false);
+  const create = useCreateTask();
+  const { currentUser } = useCurrentUser();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const submit = () => {
+    const t = title.trim();
+    if (!t || create.isPending) return;
+    create.mutate(
+      {
+        project_id: projectId,
+        parent_id: null,
+        title: t,
+        status,
+        priority,
+        owner_id: currentUser.id,
+        eta: eta || null,
+      },
+      {
+        onSuccess: () => {
+          // Keep the bar open so users can add multiple tasks in a row;
+          // just clear the title. Esc / Cancel closes the bar.
+          setTitle('');
+          setEta('');
+          onCreated();
+          inputRef.current?.focus();
+        },
+      },
+    );
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      submit();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      onCancel();
+    }
+  };
+
+  const today = new Date().toISOString().slice(0, 10);
+  const canSave = title.trim().length > 0 && !create.isPending;
+
+  return (
+    <div
+      className="flex items-center gap-2 border-b border-[var(--accent)]/30 bg-accent-soft px-3 py-2"
+      style={{ minWidth: totalWidth }}
+    >
+      <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[color:rgba(0,115,234,0.18)] text-[11px] font-bold text-[var(--accent)]">
+        +
+      </span>
+
+      {/* Priority */}
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setShowPriorityMenu((v) => !v)}
+          className="flex h-7 items-center gap-1.5 rounded-md border border-[var(--accent)]/30 bg-surface px-2 text-xs hover:border-[var(--accent)]"
+        >
+          <span className={cn('h-2 w-2 rounded-full', PRIORITY_DOT_COLOR[priority])} />
+          <span className="text-text">{priority}</span>
+          <ChevronDown className="h-3 w-3 text-text-faint" />
+        </button>
+        {showPriorityMenu && (
+          <div className="absolute left-0 top-full z-50 mt-1 w-36 rounded-lg border border-border-color bg-surface shadow-lg">
+            {(Object.keys(PRIORITY_META) as Priority[]).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => { setPriority(p); setShowPriorityMenu(false); }}
+                className={cn(
+                  'flex w-full items-center gap-2 px-3 py-1.5 text-xs hover:bg-accent-soft',
+                  p === priority && 'bg-accent-soft text-[var(--accent)]',
+                )}
+              >
+                <span className={cn('h-2 w-2 rounded-full', PRIORITY_DOT_COLOR[p])} />
+                <span>{p} — {PRIORITY_META[p].label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Title */}
+      <input
+        ref={inputRef}
+        type="text"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={handleKeyDown}
+        maxLength={200}
+        placeholder="What needs to be done?  (Enter to save · Esc to cancel)"
+        aria-label="New task title"
+        disabled={create.isPending}
+        className={cn(
+          'h-7 flex-1 rounded-md border bg-surface px-2.5 text-sm text-text',
+          'placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20',
+          title.trim()
+            ? 'border-[var(--accent)] focus:border-[var(--accent)]'
+            : 'border-[var(--accent)]/30 focus:border-[var(--accent)]',
+        )}
+      />
+
+      {/* ETA */}
+      <input
+        type="date"
+        value={eta}
+        onChange={(e) => setEta(e.target.value)}
+        onKeyDown={handleKeyDown}
+        min={today}
+        title="ETA (optional)"
+        disabled={create.isPending}
+        className="h-7 rounded-md border border-[var(--accent)]/30 bg-surface px-1.5 text-xs text-text focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]/20"
+      />
+
+      {/* Owner avatar (current user — keep simple) */}
+      <div title={`Owner: ${currentUser.full_name}`}>
+        <Avatar fullName={currentUser.full_name} src={currentUser.avatar_url} size="sm" />
+      </div>
+
+      {/* Add / Cancel — explicit labeled buttons. Icon-only was confusing
+          (users didn't know which button did what). */}
+      <button
+        type="button"
+        onClick={submit}
+        disabled={!canSave}
+        title="Add task (Enter)"
+        className={cn(
+          'inline-flex h-7 items-center gap-1 rounded-md px-2.5 text-xs font-semibold transition-all',
+          canSave
+            ? 'bg-green-600 text-white shadow-sm hover:bg-green-700'
+            : 'cursor-not-allowed bg-neutral-100 text-text-faint dark:bg-neutral-800',
+        )}
+      >
+        {create.isPending ? (
+          <>
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <span>Adding…</span>
+          </>
+        ) : (
+          <>
+            <Check className="h-3.5 w-3.5" />
+            <span>Add task</span>
+          </>
+        )}
+      </button>
+      <button
+        type="button"
+        onClick={onCancel}
+        title="Cancel (Esc)"
+        disabled={create.isPending}
+        className="inline-flex h-7 items-center gap-1 rounded-md border border-border-color bg-surface px-2.5 text-xs font-medium text-text-muted transition-colors hover:bg-hover hover:text-text disabled:opacity-50"
+      >
+        <XIcon className="h-3.5 w-3.5" />
+        <span>Cancel</span>
+      </button>
     </div>
   );
 }

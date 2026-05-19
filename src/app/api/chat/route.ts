@@ -2,6 +2,19 @@ import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import {
+  getOrCreateActiveConversation,
+  appendMessage,
+  loadActiveHistory,
+  formatHistoryForPrompt,
+  getActiveMemories,
+  formatMemoriesForPrompt,
+  markMemoriesUsed,
+  setConversationTitleIfMissing,
+  extractAndSaveMemories,
+} from '@/lib/api/bolt-memory';
+
+export const runtime = 'nodejs';
 
 /* ---- IST helper ---- */
 
@@ -99,9 +112,30 @@ export async function POST(request: Request) {
     }
 
     // 3. Parse request
-    const { message, history = [] } = await request.json();
+    const { message } = await request.json();
     if (!message || typeof message !== 'string') {
       return NextResponse.json({ error: 'Message is required.' }, { status: 400 });
+    }
+
+    // 3a. Load (or create) the user's active conversation, pull recent
+    //     history from DB, and persist this turn's user message. The
+    //     client no longer sends `history` — it lives in the DB now so
+    //     reloads / device-switches preserve context.
+    const conversation = await getOrCreateActiveConversation(profile.id as string);
+    const { messages: dbHistory } = await loadActiveHistory(profile.id as string);
+    const userMsgRow = await appendMessage(conversation.id, profile.id as string, 'user', message);
+    if (!conversation.title) {
+      // Fire and forget — title set on the FIRST user message of a convo.
+      void setConversationTitleIfMissing(conversation.id, message);
+    }
+
+    // 3b. Pull active memories for this user — the durable facts Bolt has
+    //     learned across past conversations. Used both to inject into the
+    //     prompt and to deduplicate during extraction below.
+    const activeMemories = await getActiveMemories(profile.id as string);
+    if (activeMemories.length > 0) {
+      // Bump last_used_at — best-effort, don't block on it.
+      void markMemoriesUsed(activeMemories.map(m => m.id));
     }
 
     // 4. Classify intent
@@ -332,6 +366,14 @@ export async function POST(request: Request) {
     }
 
     // 6. Build system prompt
+    const memoryBlock = formatMemoriesForPrompt(activeMemories);
+    const memorySection = memoryBlock
+      ? `\n\n=== WHAT YOU REMEMBER ABOUT THIS USER ===
+(Built up across prior conversations. If a memory contradicts the current
+turn, trust the current turn — the user has changed their mind or context.)
+${memoryBlock}`
+      : '';
+
     const systemPrompt = `You are **Bolt**, the in-app AI assistant for Task Grid (PW Academy's project & task management platform).
 
 Current user: ${profile.full_name} (${profile.email})
@@ -348,22 +390,25 @@ YOUR JOB
 - For aggregate questions ("how many overdue", "completion rate", etc.), compute from the data you have and show the math.
 - Use markdown: **bold** for names/titles/numbers, bullet lists for multi-item answers, short tables when comparing.
 - If the data doesn't contain what's needed (e.g. user asks about a project not in context), say so honestly — never fabricate.
+- Use REMEMBERED facts about this user when they make the answer more specific, but don't recite them unprompted.
 
 STYLE
 - Default to concise (2–6 sentences for simple Qs). Go longer only when asked for a report/summary.
 - Use INR (₹) and IST when relevant.
-- Skip preamble — answer directly.
+- Skip preamble — answer directly.${memorySection}
 
 === DATA CONTEXT ===
 ${JSON.stringify(contextData, null, 2)}`;
 
-    // 7. Build messages
+    // 7. Build messages — DB history is authoritative (replaces the
+    //    client-supplied last-5 turns).
+    const historyForPrompt = formatHistoryForPrompt(
+      // Drop the just-saved user turn from history so it isn't double-sent.
+      dbHistory.filter(m => m.id !== userMsgRow.id),
+    );
     const messages = [
       { role: 'system', content: systemPrompt },
-      ...history.slice(-5).map((m: { role: string; content: string }) => ({
-        role: m.role,
-        content: m.content,
-      })),
+      ...historyForPrompt,
       { role: 'user', content: message },
     ];
 
@@ -398,11 +443,41 @@ ${JSON.stringify(contextData, null, 2)}`;
       return NextResponse.json({ error: 'No response from AI service' }, { status: 502 });
     }
 
+    // Accumulate the assistant's full response while streaming. Once the
+    // stream closes, we (a) persist it to bolt_messages and (b) fire the
+    // memory extraction pass. Both happen async after controller.close()
+    // so the user sees no extra latency.
     const stream = new ReadableStream({
       async start(controller) {
         const reader = groqResponse.body!.getReader();
         const decoder = new TextDecoder();
         const encoder = new TextEncoder();
+        let assistantText = '';
+
+        const finalize = async () => {
+          // Persist + extract are best-effort; failures must never bubble
+          // up to the client (we've already streamed the answer).
+          try {
+            if (assistantText.trim()) {
+              const assistantRow = await appendMessage(
+                conversation.id,
+                profile.id as string,
+                'assistant',
+                assistantText,
+              );
+              // Fire-and-forget extraction.
+              void extractAndSaveMemories({
+                userId: profile.id as string,
+                userMessage: message,
+                assistantMessage: assistantText,
+                sourceMessageId: assistantRow.id,
+                existingMemories: activeMemories,
+              });
+            }
+          } catch (err) {
+            console.error('[bolt] post-stream persistence failed:', err);
+          }
+        };
 
         try {
           let buffer = '';
@@ -420,20 +495,25 @@ ${JSON.stringify(contextData, null, 2)}`;
               const data = trimmed.slice(6);
               if (data === '[DONE]') {
                 controller.close();
+                void finalize();
                 return;
               }
               try {
                 const parsed = JSON.parse(data);
                 const content = parsed.choices?.[0]?.delta?.content;
                 if (content) {
+                  assistantText += content;
                   controller.enqueue(encoder.encode(content));
                 }
               } catch { /* skip malformed chunks */ }
             }
           }
           controller.close();
+          void finalize();
         } catch (err) {
           controller.error(err);
+          // Still try to persist whatever we got — the user saw it on screen.
+          void finalize();
         }
       },
     });

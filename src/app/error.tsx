@@ -15,21 +15,29 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
-      <div className="rounded-full bg-red-50 p-4">
-        <AlertTriangle className="h-8 w-8 text-red-500" />
+    <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center bg-canvas animate-fade-in-up">
+      <div className="relative">
+        <div className="rounded-2xl p-5" style={{ background: 'rgba(239, 68, 68, 0.08)' }}>
+          <AlertTriangle className="h-8 w-8 text-red-500" />
+        </div>
+        {/* Glow */}
+        <div className="absolute -inset-2 rounded-2xl animate-pulse-glow" style={{ background: 'rgba(239, 68, 68, 0.1)', filter: 'blur(12px)' }} />
       </div>
-      <h2 className="mt-4 text-lg font-semibold text-slate-900">Something went wrong</h2>
-      <p className="mt-1 max-w-md text-sm text-slate-500">
+      <h2 className="mt-6 text-xl font-bold text-text" style={{ fontFamily: 'var(--font-display)' }}>
+        Something went wrong
+      </h2>
+      <p className="mt-2 max-w-md text-sm text-text-muted leading-relaxed">
         An unexpected error occurred. Please try again or contact support if the issue persists.
       </p>
       <button
         type="button"
         onClick={reset}
-        className="mt-6 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+        className="mt-8 group inline-flex items-center gap-2 rounded-[var(--radius-md)] px-5 py-2.5 text-sm font-semibold text-white overflow-hidden relative"
+        style={{ background: 'var(--accent-gradient)', boxShadow: 'var(--shadow-glow)' }}
       >
-        <RotateCcw className="h-4 w-4" />
-        Try Again
+        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-shimmer" />
+        <RotateCcw className="h-4 w-4 relative" />
+        <span className="relative">Try Again</span>
       </button>
     </div>
   );

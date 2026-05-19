@@ -86,10 +86,10 @@ export const PRIORITY_ORDER: Record<Priority, number> = {
 
 export const STATUS_LABELS: Record<TaskStatus, string> = {
   not_started: 'To Do',
-  in_progress: 'In Progress',
-  blocked: 'Blocked',
-  completed: 'Done',
-  cancelled: 'Cancelled',
+  in_progress: 'Working',
+  blocked: 'Stuck',
+  completed: 'Completed',
+  cancelled: 'Closed',
 };
 
 export const PRIORITY_LABELS: Record<Priority, string> = {

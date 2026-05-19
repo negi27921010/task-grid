@@ -15,6 +15,9 @@ import {
   Users,
   Plus,
   Search,
+  Bell,
+  Loader2,
+  CheckCircle2,
 } from 'lucide-react';
 import { RefinedAppShell, RefinedPageHeader, type PageTab } from '@/components/shell';
 import { Button } from '@/components/ui/button';
@@ -40,14 +43,18 @@ import {
 import { getTodayIST, getISTHour, isEffortRequired } from '@/lib/api/standups';
 import { cn } from '@/lib/utils/cn';
 import { formatDistanceToNow } from 'date-fns';
-import type { StandupOutcome, OutcomeEveningStatus, CreateMorningStandupInput } from '@/lib/types';
+import type { StandupOutcome, OutcomeEveningStatus, CreateMorningStandupInput, TeamStandupSummary } from '@/lib/types';
 
 /* ---- Layout constants ---- */
 
 // One source of truth so the team table header and rows stay in lockstep.
-// Columns: Member · Morning · Evening · Outcomes · Effort · Carried · Stuck · Rate · Details
+// Columns: Member · Morning · Evening · Done·Total · Hours · Carried · Stuck · Done% · Action
+//
+// Action column is sized exactly to fit the widest button label ("Nudge"
+// with bell icon ~ 88px). Center-aligned content matches the data
+// columns so the column doesn't read as a stray floating pill.
 const TEAM_TABLE_GRID =
-  'grid items-center gap-3 grid-cols-[minmax(180px,1fr)_80px_80px_72px_64px_60px_60px_60px_84px]';
+  'grid items-center gap-2 grid-cols-[minmax(180px,1fr)_72px_72px_72px_60px_56px_56px_56px_96px]';
 
 /* ---- Outcome validation ---- */
 
@@ -173,7 +180,12 @@ function MorningSection({
     const filledIndices = outcomes
       .map((o, i) => (o.trim() ? i : -1))
       .filter(i => i >= 0);
-    if (filledIndices.length === 0) return;
+
+    // A standup with ONLY carried items (no new outcomes) is still
+    // a valid commitment for today — "I'm closing yesterday's work."
+    // Block only when nothing at all is being committed.
+    const hasCarried = (carriedOutcomes?.length ?? 0) > 0;
+    if (filledIndices.length === 0 && !hasCarried) return;
 
     const newErrors = outcomes.map(o => (o.trim() ? validateOutcome(o) : null));
     const newHourErrors = outcomes.map((o, i) =>
@@ -228,9 +240,17 @@ function MorningSection({
   };
 
   const isPending = createStandup.isPending || updateStandup.isPending;
+  // Allow submit when there's at least one new outcome OR at least one
+  // carried item — a "carried-only" submit is valid (member commits to
+  // closing yesterday's work, no new asks). Without this, a member
+  // whose previous day's outcomes all carried over has no way to
+  // submit today's standup → which then blocks "Mark done" on the
+  // carried items because OutcomeCards only render after submit.
+  const hasCarried = (carriedOutcomes?.length ?? 0) > 0;
+  const hasNewOutcomes = outcomes.some(o => o.trim());
   const submitDisabled =
     isPending ||
-    outcomes.filter(o => o.trim()).length === 0 ||
+    (!hasNewOutcomes && !hasCarried) ||
     (effortRequired &&
       outcomes.some((o, i) => o.trim() && validateEffortHours(effortHours[i]) !== null));
 
@@ -869,14 +889,22 @@ function CarriedOutcomeCard({
           )}>
             {o.evening_status === 'done' ? 'Done' : o.evening_status === 'not_done' ? 'Not Done' : 'Pending'}
           </span>
-          {/* Expand reason toggle */}
-          {(o.reason_not_done || o.carry_streak > 0) && (
+          {/* "Why?" reveals the reason_not_done text. Only show when
+              there's actually a reason — a carried-but-no-reason row
+              has nothing to expand, so the button was empty noise. */}
+          {o.reason_not_done && (
             <button
               type="button"
               onClick={() => setExpanded(v => !v)}
-              className="rounded px-1.5 py-0.5 text-[10px] text-text-muted border border-border-color hover:bg-hover"
+              className={cn(
+                'rounded px-1.5 py-0.5 text-[10px] font-medium border transition-colors',
+                expanded
+                  ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-300'
+                  : 'border-border-color text-text-muted hover:bg-hover',
+              )}
+              title="Show last given reason"
             >
-              {expanded ? 'Hide' : 'Details'}
+              {expanded ? 'Hide reason' : 'Why?'}
             </button>
           )}
           {/* Push back button — available on all outcomes */}
@@ -1101,12 +1129,82 @@ function MemberStandupDetail({ userId, date }: { userId: string; date: string })
 
 /* ---- Admin Team Overview ---- */
 
+// One of four triage buckets. Order is the priority an admin should act
+// in: pending (need a nudge) → stuck (need to unblock) → working (in
+// progress, morning done) → closed (evening submitted, all wrapped up).
+type TriageBucket = 'pending' | 'stuck' | 'working' | 'closed';
+
+function classifySummary(s: TeamStandupSummary): TriageBucket {
+  if (s.morning_status === 'not_submitted') return 'pending';
+  if (s.stuck_count > 0) return 'stuck';
+  if (s.evening_status === 'submitted') return 'closed';
+  return 'working';
+}
+
+const BUCKET_ORDER: Record<TriageBucket, number> = {
+  pending: 0, stuck: 1, working: 2, closed: 3,
+};
+
+const BUCKET_META: Record<TriageBucket, { label: string; tone: 'red' | 'amber' | 'blue' | 'green' }> = {
+  pending: { label: 'Needs nudge', tone: 'red' },
+  stuck:   { label: 'Stuck',       tone: 'amber' },
+  working: { label: 'Working',     tone: 'blue' },
+  closed:  { label: 'Closed',      tone: 'green' },
+};
+
+// Filter chip used for the triage bar. Active state lights up in the
+// chip's bucket tone; inactive chips get a quiet outline so the bar
+// stays readable even with five chips visible at once.
+function ChipButton({
+  label, count, active, onClick, disabled, tone,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+  tone: 'red' | 'amber' | 'blue' | 'green' | 'gray';
+}) {
+  const toneActive: Record<typeof tone, string> = {
+    red:    'border-red-300 bg-red-50 text-red-700 dark:border-red-500/40 dark:bg-red-500/15 dark:text-red-300',
+    amber:  'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-300',
+    blue:   'border-[var(--accent)]/40 bg-accent-soft text-[var(--accent)]',
+    green:  'border-green-300 bg-green-50 text-green-700 dark:border-green-500/40 dark:bg-green-500/15 dark:text-green-300',
+    gray:   'border-border-color bg-hover text-text',
+  };
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+        active
+          ? toneActive[tone]
+          : 'border-border-color bg-surface text-text-muted hover:border-text-faint hover:text-text',
+        disabled && 'cursor-not-allowed opacity-40',
+      )}
+    >
+      {label}
+      <span className={cn(
+        'inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums',
+        active ? 'bg-white/60 text-current dark:bg-black/20' : 'bg-neutral-100 text-text-muted dark:bg-neutral-800',
+      )}>{count}</span>
+    </button>
+  );
+}
+
 function TeamOverviewSection({ date }: { date: string }) {
   const { data: team, isLoading } = useTeamStandups(date);
   const { data: allUsers } = useUsers();
+  const { toast } = useToast();
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [deptFilter, setDeptFilter] = useState<string>('all');
+  // Triage chip filter — null means show all buckets.
+  const [bucketFilter, setBucketFilter] = useState<TriageBucket | null>(null);
+  // user_id of an in-flight nudge (so we can spinner-disable the button).
+  const [nudgingId, setNudgingId] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -1121,23 +1219,72 @@ function TeamOverviewSection({ date }: { date: string }) {
   // Get unique departments for filter
   const departments = [...new Set(allSummaries.map(s => s.department).filter(Boolean))].sort();
 
-  // Apply filters
-  const summaries = allSummaries.filter(s => {
+  // Annotate each summary with its bucket once — used for both filtering
+  // and sorting so we don't classify twice.
+  const annotated = allSummaries.map(s => ({ s, bucket: classifySummary(s) }));
+
+  const bucketCounts: Record<TriageBucket, number> = {
+    pending: 0, stuck: 0, working: 0, closed: 0,
+  };
+  for (const a of annotated) bucketCounts[a.bucket]++;
+
+  // Apply filters: search + department + bucket chip.
+  const filtered = annotated.filter(({ s, bucket }) => {
+    if (bucketFilter && bucket !== bucketFilter) return false;
+    if (deptFilter !== 'all' && s.department !== deptFilter) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       if (!s.user_name.toLowerCase().includes(q) && !s.department.toLowerCase().includes(q)) return false;
     }
-    if (deptFilter !== 'all' && s.department !== deptFilter) return false;
     return true;
   });
 
+  // Urgency sort: bucket order first, then within bucket a sensible
+  // tiebreaker (stuck count for the stuck bucket; completion rate ascending
+  // for working; alphabetical for the rest).
+  filtered.sort((a, b) => {
+    const bo = BUCKET_ORDER[a.bucket] - BUCKET_ORDER[b.bucket];
+    if (bo !== 0) return bo;
+    if (a.bucket === 'stuck')   return b.s.stuck_count - a.s.stuck_count;
+    if (a.bucket === 'working') return a.s.completion_rate - b.s.completion_rate;
+    return a.s.user_name.localeCompare(b.s.user_name);
+  });
+
+  const summaries = filtered.map(a => a.s);
+
   const totalOutcomes = summaries.reduce((s, m) => s + m.total_outcomes, 0);
   const totalDone = summaries.reduce((s, m) => s + m.done_count, 0);
-  const totalCarried = summaries.reduce((s, m) => s + m.carried_count, 0);
   const totalStuck = summaries.reduce((s, m) => s + m.stuck_count, 0);
   const morningDone = summaries.filter(s => s.morning_status !== 'not_submitted').length;
-  const eveningDone = summaries.filter(s => s.evening_status !== 'not_submitted').length;
+  const eveningDone = summaries.filter(s => s.evening_status === 'submitted').length;
   const teamRate = totalOutcomes > 0 ? Math.round((totalDone / totalOutcomes) * 100) : 0;
+
+  // Single-user nudge — fires the same email runner the cron uses.
+  const handleNudge = async (userId: string, kind: 'morning' | 'carried' | 'evening') => {
+    setNudgingId(userId);
+    try {
+      const res = await fetch('/api/standups/nudge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, kind }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast(body.error ?? 'Could not send nudge', 'error');
+        return;
+      }
+      const member = allSummaries.find(s => s.user_id === userId)?.user_name ?? 'member';
+      if (body.nothing_to_send) {
+        toast(`No nudge sent to ${member} — ${body.reason ?? 'nothing pending'}`, 'info');
+        return;
+      }
+      toast(`Nudge sent to ${member}`, 'success');
+    } catch (err) {
+      toast(`Nudge failed: ${err instanceof Error ? err.message : 'unknown'}`, 'error');
+    } finally {
+      setNudgingId(null);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -1173,69 +1320,174 @@ function TeamOverviewSection({ date }: { date: string }) {
         )}
       </div>
 
-      {/* Team stats bar */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-xl border border-border-color bg-surface p-3">
-          <p className="text-2xl font-bold text-text">{morningDone}/{summaries.length}</p>
-          <p className="text-xs text-text-muted">Morning Done</p>
+      {/* Headline KPI + triage chips. One big number tells admins
+          how the team is tracking; the chips below let them filter
+          to a specific action group with one click. Each chip shows
+          its count so a glance answers "is anyone stuck?". */}
+      <div className="rounded-xl border border-border-color bg-surface p-4">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          {/* Headline — completion rate is the single number that matters */}
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-text-faint">Today's completion</p>
+            <div className="mt-0.5 flex items-baseline gap-3">
+              <span className={cn(
+                'text-4xl font-bold tabular-nums',
+                totalOutcomes === 0 && 'text-text-muted',
+                totalOutcomes > 0 && teamRate >= 70 && 'text-green-600 dark:text-green-300',
+                totalOutcomes > 0 && teamRate >= 40 && teamRate < 70 && 'text-amber-600 dark:text-amber-300',
+                totalOutcomes > 0 && teamRate < 40 && 'text-red-600 dark:text-red-300',
+              )}>
+                {totalOutcomes > 0 ? `${teamRate}%` : '—'}
+              </span>
+              <span className="text-xs text-text-muted">
+                {totalDone} of {totalOutcomes} outcomes done
+              </span>
+            </div>
+          </div>
+          {/* Inline secondary stats — readable without dominating */}
+          <div className="flex items-center gap-4 text-xs">
+            <div>
+              <span className="font-semibold tabular-nums text-text">{morningDone}/{allSummaries.length}</span>
+              <span className="ml-1 text-text-faint">submitted</span>
+            </div>
+            <div>
+              <span className={cn(
+                'font-semibold tabular-nums',
+                eveningDone === allSummaries.length && allSummaries.length > 0 ? 'text-green-600 dark:text-green-300' : 'text-text',
+              )}>{eveningDone}/{allSummaries.length}</span>
+              <span className="ml-1 text-text-faint">closed</span>
+            </div>
+            <div>
+              <span className={cn(
+                'font-semibold tabular-nums',
+                totalStuck > 0 ? 'text-red-600 dark:text-red-300' : 'text-text',
+              )}>{totalStuck}</span>
+              <span className="ml-1 text-text-faint">stuck</span>
+            </div>
+          </div>
         </div>
-        <div className="rounded-xl border border-border-color bg-surface p-3">
-          <p className="text-2xl font-bold text-text">{eveningDone}/{summaries.length}</p>
-          <p className="text-xs text-text-muted">Evening Closed</p>
-        </div>
-        <div className="rounded-xl border border-border-color bg-surface p-3">
-          <p className={cn('text-2xl font-bold', teamRate >= 70 ? 'text-green-600 dark:text-green-300' : teamRate >= 40 ? 'text-amber-600 dark:text-amber-300' : 'text-red-600 dark:text-red-300')}>{teamRate}%</p>
-          <p className="text-xs text-text-muted">Completion Rate</p>
-        </div>
-        <div className="rounded-xl border border-border-color bg-surface p-3">
-          <p className={cn('text-2xl font-bold', totalStuck > 0 ? 'text-red-600 dark:text-red-300' : 'text-text')}>{totalStuck}</p>
-          <p className="text-xs text-text-muted">Stuck Items</p>
+
+        {/* Triage chips — one-click filter into a single bucket */}
+        <div className="mt-4 flex flex-wrap items-center gap-1.5">
+          <ChipButton
+            active={bucketFilter === null}
+            onClick={() => setBucketFilter(null)}
+            label="All"
+            count={allSummaries.length}
+            tone="gray"
+          />
+          {(['pending', 'stuck', 'working', 'closed'] as const).map(b => (
+            <ChipButton
+              key={b}
+              active={bucketFilter === b}
+              onClick={() => setBucketFilter(bucketFilter === b ? null : b)}
+              label={BUCKET_META[b].label}
+              count={bucketCounts[b]}
+              tone={BUCKET_META[b].tone}
+              disabled={bucketCounts[b] === 0}
+            />
+          ))}
+          {bucketFilter === 'pending' && bucketCounts.pending > 0 && (
+            <button
+              type="button"
+              onClick={async () => {
+                const targets = annotated.filter(a => a.bucket === 'pending').map(a => a.s.user_id);
+                for (const id of targets) await handleNudge(id, 'morning');
+              }}
+              disabled={!!nudgingId}
+              className="ml-auto inline-flex items-center gap-1.5 rounded-md bg-[var(--accent)] px-2.5 py-1 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[var(--accent-hover)] disabled:opacity-50"
+            >
+              <Bell className="h-3 w-3" />
+              Nudge all {bucketCounts.pending}
+            </button>
+          )}
         </div>
       </div>
 
       {/* Team table with expandable rows */}
       <div className="rounded-xl border border-border-color bg-surface shadow-sm">
-        <div className="flex items-center gap-3 border-b border-border-color px-6 py-4">
-          <div className="rounded-lg p-2" style={{ background: 'var(--accent-soft)' }}>
-            <Users className="h-5 w-5" style={{ color: 'var(--accent)' }} />
+        <div className="flex items-center justify-between gap-3 border-b border-border-color px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg p-2" style={{ background: 'var(--accent-soft)' }}>
+              <Users className="h-5 w-5" style={{ color: 'var(--accent)' }} />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-text">
+                {bucketFilter
+                  ? `${BUCKET_META[bucketFilter].label} · ${summaries.length} member${summaries.length === 1 ? '' : 's'}`
+                  : 'Team standups'}
+              </h2>
+              <p className="text-xs text-text-muted">
+                Sorted by urgency · click row to expand
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-sm font-semibold text-text">Team Standups</h2>
-            <p className="text-xs text-text-muted">Click a row to see full details</p>
-          </div>
+          {bucketFilter && (
+            <button
+              type="button"
+              onClick={() => setBucketFilter(null)}
+              className="text-xs text-text-muted underline-offset-2 hover:text-text hover:underline"
+            >
+              Clear filter
+            </button>
+          )}
         </div>
 
-        {/* Column headers (aligned with row widths below — same grid template) */}
+        {/* Column headers — language tightened for cognitive load.
+            "Outcomes" → "Done · Total", "Effort" → "Hours", "Rate" →
+            "Done %" so a glance says what each column measures. */}
         <div className={cn(TEAM_TABLE_GRID, 'border-b border-border-color bg-hover px-6 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-text-muted')}>
           <div className="truncate">Member</div>
-          <Tooltip content="Morning standup status. Submissions after 11:00 AM IST are marked Late.">
+          <Tooltip content="Morning standup. Late = submitted after 11:00 AM IST.">
             <div className="cursor-help">Morning</div>
           </Tooltip>
-          <Tooltip content="Evening closure status. Closures after 8:00 PM IST are marked Late.">
+          <Tooltip content="Evening closure. Late = closed after 8:00 PM IST.">
             <div className="cursor-help">Evening</div>
           </Tooltip>
-          <Tooltip content="Outcomes completed today vs. total committed (done / total).">
-            <div className="cursor-help text-center">Outcomes</div>
+          <Tooltip content="Outcomes done vs total committed for today.">
+            <div className="cursor-help text-center">Done · Total</div>
           </Tooltip>
-          <Tooltip content="Sum of effort hours committed across all outcomes the member submitted today (carried + new).">
-            <div className="cursor-help text-center">Effort</div>
+          <Tooltip content="Total hours committed across today's outcomes (carried + new).">
+            <div className="cursor-help text-center">Hours</div>
           </Tooltip>
           <Tooltip content="Outcomes carried over from previous days.">
             <div className="cursor-help text-center">Carried</div>
           </Tooltip>
-          <Tooltip content="Outcomes carried for 3 or more days — flagged as stuck.">
+          <Tooltip content="Carried for 3+ days — flagged as stuck.">
             <div className="cursor-help text-center">Stuck</div>
           </Tooltip>
-          <Tooltip content="Completion rate: done outcomes ÷ total outcomes for today.">
-            <div className="cursor-help text-center">Rate</div>
+          <Tooltip content="Done outcomes as a % of total. Hidden until something is committed.">
+            <div className="cursor-help text-center">Done %</div>
           </Tooltip>
-          <div aria-hidden="true" />
+          <div className="text-center">Action</div>
         </div>
 
         <div className="divide-y divide-border-color">
           {summaries.length === 0 && (
-            <div className="px-6 py-10 text-center text-sm text-text-faint">
-              No team members match the current filter.
+            <div className="px-6 py-12 text-center">
+              {bucketFilter === 'closed' || bucketFilter === null ? (
+                <>
+                  <CheckCircle2 className="mx-auto mb-2 h-7 w-7 text-green-500" />
+                  <p className="text-sm font-medium text-text">All caught up</p>
+                  <p className="mt-0.5 text-xs text-text-muted">
+                    No members in this view.
+                  </p>
+                </>
+              ) : bucketFilter === 'pending' ? (
+                <>
+                  <CheckCircle2 className="mx-auto mb-2 h-7 w-7 text-green-500" />
+                  <p className="text-sm font-medium text-text">Everyone's submitted today</p>
+                  <p className="mt-0.5 text-xs text-text-muted">No nudges needed.</p>
+                </>
+              ) : bucketFilter === 'stuck' ? (
+                <>
+                  <CheckCircle2 className="mx-auto mb-2 h-7 w-7 text-green-500" />
+                  <p className="text-sm font-medium text-text">No one's stuck</p>
+                  <p className="mt-0.5 text-xs text-text-muted">All carries within the 3-day window.</p>
+                </>
+              ) : (
+                <p className="text-sm text-text-faint">No members match the current filter.</p>
+              )}
             </div>
           )}
           {summaries.map((s) => {
@@ -1337,9 +1589,12 @@ function TeamOverviewSection({ date }: { date: string }) {
                     )}
                   </div>
 
-                  {/* Rate */}
+                  {/* Done % — only meaningful AFTER evening closure or when
+                      there are 'done' outcomes to count. Showing red 0%
+                      to a member who just submitted morning is a false
+                      alarm — they haven't had a chance to do anything yet. */}
                   <div className="flex items-center justify-center">
-                    {s.total_outcomes > 0 ? (
+                    {s.total_outcomes > 0 && (s.evening_status === 'submitted' || s.done_count > 0) ? (
                       <span className={cn(
                         'text-sm font-semibold',
                         s.completion_rate >= 80 && 'text-green-600 dark:text-green-300',
@@ -1349,28 +1604,95 @@ function TeamOverviewSection({ date }: { date: string }) {
                         {s.completion_rate}%
                       </span>
                     ) : (
-                      <span className="text-xs text-text-faint">—</span>
+                      <span className="text-xs text-text-faint" title="Not enough data — evening closure not in yet">—</span>
                     )}
                   </div>
 
-                  {/* Details affordance — explicit labeled button reading
-                      "Details ›" / "Hide ›" so users have a clear CTA in
-                      addition to the whole-row click target. */}
-                  <div className="flex items-center justify-end">
-                    <span
-                      className={cn(
-                        'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold transition-colors',
-                        isExpanded
-                          ? 'border-[var(--accent)]/40 bg-surface text-[var(--accent)]'
-                          : 'border-border-color bg-surface text-text-muted group-hover:border-[var(--accent)]/40 group-hover:text-[var(--accent)]',
-                      )}
-                    >
-                      {isExpanded ? 'Hide' : 'Details'}
-                      <ChevronRight className={cn(
-                        'h-3 w-3 transition-transform',
-                        isExpanded && 'rotate-90',
-                      )} />
-                    </span>
+                  {/* Action — every row with a submitted standup carries a
+                      chevron-bearing button so admins always see the row is
+                      expandable. Label + tone differ by what's interesting:
+                      Nudge (no standup) → Review (stuck) → Details (carries
+                      / comments / push-back) → View (clean). */}
+                  <div className="flex items-center justify-center">
+                    {(() => {
+                      const bucket = classifySummary(s);
+                      const isNudgingThis = nudgingId === s.user_id;
+
+                      // Pending → primary nudge button (no expand — the
+                      // detail panel would just say "no standup yet").
+                      if (bucket === 'pending') {
+                        return (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); void handleNudge(s.user_id, 'morning'); }}
+                            disabled={isNudgingThis || !!nudgingId}
+                            className="inline-flex w-full items-center justify-center gap-1 rounded-md bg-[var(--accent)] px-2 py-1 text-[11px] font-semibold text-white shadow-sm transition-colors hover:bg-[var(--accent-hover)] disabled:opacity-60"
+                          >
+                            {isNudgingThis ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Bell className="h-3 w-3" />
+                            )}
+                            Nudge
+                          </button>
+                        );
+                      }
+
+                      const hasFlag =
+                        s.stuck_count > 0 ||
+                        s.pushback_count > 0 ||
+                        s.carried_count > 0 ||
+                        s.comments_count > 0;
+
+                      // Pick the label + tone. All branches render a
+                      // chevron so the affordance is consistent.
+                      const label = isExpanded
+                        ? 'Hide'
+                        : s.stuck_count > 0
+                          ? 'Review'
+                          : hasFlag
+                            ? 'Details'
+                            : 'View';
+
+                      const toneClasses = isExpanded
+                        ? 'border-[var(--accent)]/40 bg-surface text-[var(--accent)]'
+                        : s.stuck_count > 0
+                          ? 'border-amber-300 bg-amber-50 text-amber-700 group-hover:bg-amber-100 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-300'
+                          : hasFlag
+                            ? 'border-border-color bg-surface text-text-muted group-hover:border-[var(--accent)]/40 group-hover:text-[var(--accent)]'
+                            : bucket === 'closed'
+                              ? 'border-green-200 bg-green-50 text-green-700 group-hover:bg-green-100 dark:border-green-500/40 dark:bg-green-500/15 dark:text-green-300'
+                              // Working / clean — quietest variant, but
+                              // still a visible button (no more "—").
+                              : 'border-border-color bg-surface text-text-faint group-hover:border-[var(--accent)]/40 group-hover:text-[var(--accent)]';
+
+                      const titleAttr = isExpanded
+                        ? 'Hide details'
+                        : [
+                            s.stuck_count > 0    && `${s.stuck_count} stuck`,
+                            s.pushback_count > 0 && `${s.pushback_count} push-back${s.pushback_count === 1 ? '' : 's'}`,
+                            s.carried_count > 0  && `${s.carried_count} carried`,
+                            s.comments_count > 0 && `${s.comments_count} comment${s.comments_count === 1 ? '' : 's'}`,
+                            !hasFlag && bucket === 'closed' && 'All wrapped up',
+                            !hasFlag && bucket !== 'closed' && 'Open today\'s standup',
+                          ].filter(Boolean).join(' · ');
+
+                      return (
+                        <span
+                          className={cn(
+                            'inline-flex w-full items-center justify-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold transition-colors',
+                            toneClasses,
+                          )}
+                          title={titleAttr}
+                        >
+                          {label}
+                          <ChevronRight className={cn(
+                            'h-3 w-3 transition-transform',
+                            isExpanded && 'rotate-90',
+                          )} />
+                        </span>
+                      );
+                    })()}
                   </div>
                 </button>
 

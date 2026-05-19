@@ -8,6 +8,7 @@ export function useProjects() {
   return useQuery({
     queryKey: ['projects'],
     queryFn: () => projectApi.getProjects(),
+    staleTime: 2 * 60 * 1000,   // projects change rarely
   });
 }
 
@@ -16,6 +17,7 @@ export function useProject(id: string) {
     queryKey: ['projects', id],
     queryFn: () => projectApi.getProjectById(id),
     enabled: !!id,
+    staleTime: 2 * 60 * 1000,
   });
 }
 

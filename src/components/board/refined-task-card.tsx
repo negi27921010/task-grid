@@ -34,10 +34,15 @@ export function RefinedTaskCard({
   const eta = task.eta ? new Date(task.eta) : null;
 
   return (
+    // The entire card is the drag handle. dnd-kit's PointerSensor distance
+    // constraint (5px) ensures a click without movement still fires onClick
+    // — so users get the natural "grab anywhere to drag" affordance while
+    // still being able to tap the card to open the detail panel.
     <div
       onClick={onClick}
+      {...dragHandleProps}
       className={cn(
-        'group relative cursor-pointer rounded-lg border border-border-color bg-surface p-3 shadow-sm transition-all hover:shadow-md hover:-translate-y-px',
+        'group relative cursor-grab rounded-lg border border-border-color bg-surface p-3 shadow-sm transition-all hover:shadow-md hover:-translate-y-px active:cursor-grabbing',
         isDragging && 'opacity-50',
         className,
       )}
@@ -49,12 +54,10 @@ export function RefinedTaskCard({
         style={{ background: statusColor(status.tone) }}
       />
 
-      {/* Drag grip — top right, fades in on hover */}
+      {/* Drag grip — visual hint only. The card itself is the handle now. */}
       <div
-        {...dragHandleProps}
-        onClick={(e) => e.stopPropagation()}
-        className="absolute right-1.5 top-1.5 cursor-grab rounded p-1 text-text-faint opacity-0 transition-opacity hover:bg-hover hover:text-text-muted group-hover:opacity-100 active:cursor-grabbing"
-        aria-label="Drag card"
+        aria-hidden="true"
+        className="absolute right-1.5 top-1.5 rounded p-1 text-text-faint opacity-0 transition-opacity group-hover:opacity-100"
       >
         <GripVertical className="h-3.5 w-3.5" />
       </div>

@@ -40,14 +40,14 @@ export function RefinedPageHeader({
   return (
     <div
       className={cn(
-        'flex-shrink-0 border-b border-border-color bg-surface px-6 pt-3.5',
+        'flex-shrink-0 border-b border-border-color bg-surface/80 backdrop-blur-xl px-6 pt-4',
         className,
       )}
     >
       {/* Top row */}
       <div className="flex items-center gap-2.5">
         <h1
-          className="text-[22px] font-semibold tracking-tight text-text"
+          className="text-[22px] font-bold tracking-tight text-text"
           style={{ fontFamily: 'var(--font-display)' }}
         >
           {title}
@@ -55,14 +55,14 @@ export function RefinedPageHeader({
         <button
           type="button"
           aria-label="Title actions"
-          className="rounded p-1 text-text-faint transition-colors hover:bg-hover hover:text-text"
+          className="rounded-[var(--radius-sm)] p-1 text-text-faint hover:bg-hover hover:text-text active:scale-95"
         >
           <ChevronDown className="h-3.5 w-3.5" />
         </button>
         <button
           type="button"
           aria-label="Favorite"
-          className="rounded p-1 text-text-faint transition-colors hover:bg-hover hover:text-amber-500"
+          className="rounded-[var(--radius-sm)] p-1 text-text-faint hover:bg-hover hover:text-amber-500 active:scale-95"
         >
           <Star className="h-3.5 w-3.5" />
         </button>
@@ -95,7 +95,7 @@ export function RefinedPageHeader({
 
       {/* Tabs */}
       {tabs && tabs.length > 0 && (
-        <div className="mt-2.5 flex items-center -mb-px">
+        <div className="mt-3 flex items-center -mb-px">
           {tabs.map((t) => {
             const active = t.id === activeTab;
             const IconComponent = t.icon;
@@ -105,14 +105,21 @@ export function RefinedPageHeader({
                 type="button"
                 onClick={() => onTabChange?.(t.id)}
                 className={cn(
-                  'flex items-center gap-1.5 border-b-2 px-3.5 py-2 text-[13px] transition-colors',
+                  'relative flex items-center gap-1.5 px-3.5 py-2.5 text-[13px]',
                   active
-                    ? 'border-[var(--accent)] font-semibold text-text'
-                    : 'border-transparent font-medium text-text-muted hover:text-text',
+                    ? 'font-semibold text-text'
+                    : 'font-medium text-text-muted hover:text-text',
                 )}
               >
                 {IconComponent && <IconComponent className="h-3.5 w-3.5" />}
                 {t.label}
+                {/* Active indicator — gradient line */}
+                {active && (
+                  <span
+                    className="absolute bottom-0 left-3.5 right-3.5 h-[2px] rounded-full"
+                    style={{ background: 'var(--accent-gradient)' }}
+                  />
+                )}
               </button>
             );
           })}
@@ -134,7 +141,7 @@ function HeaderAction({
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12.5px] font-medium text-text-muted transition-colors hover:bg-hover hover:text-text"
+      className="flex items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-[12.5px] font-medium text-text-muted hover:bg-hover hover:text-text active:scale-[0.98]"
     >
       <IconComponent className={cn('h-3.5 w-3.5', accent && 'text-[var(--accent)]')} />
       {label}

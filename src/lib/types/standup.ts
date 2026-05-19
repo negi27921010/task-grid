@@ -75,4 +75,10 @@ export interface TeamStandupSummary {
   // recorded — older standups with NULL hours backfilled to 1 by
   // migration 007 still aggregate cleanly.
   total_effort_hours: number;
+  // Counts of outcomes flagged with a reason (push-back) and total
+  // comments left on this user's outcomes today. Together with
+  // carried_count, drive whether the "Details" CTA shows in the
+  // admin Team Overview row.
+  pushback_count: number;
+  comments_count: number;
 }

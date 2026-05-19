@@ -17,6 +17,7 @@ import {
   Table as TableIcon,
   Kanban as KanbanIcon,
   PieChart as PieChartIcon,
+  Plus,
 } from 'lucide-react';
 import { RefinedAppShell } from '@/components/shell';
 import { RefinedPageHeader, type PageTab } from '@/components/shell';
@@ -42,7 +43,7 @@ import {
   useTasksByOwner,
   useTasksByDepartment,
 } from '@/lib/hooks/use-tasks';
-import { useProjects } from '@/lib/hooks/use-projects';
+import { useProjects, useCreateProject } from '@/lib/hooks/use-projects';
 import { useUsers } from '@/lib/hooks/use-users';
 import { useCurrentUser } from '@/lib/hooks/use-current-user';
 import { useFilters } from '@/lib/hooks/use-filters';
@@ -98,6 +99,7 @@ function DashboardContent() {
   const { currentUser, isLoading: userLoading } = useCurrentUser();
   const { data: allUsersData } = useUsers();
   const { data: projectsData } = useProjects();
+  const createProject = useCreateProject();
 
   const userIsAdmin = !userLoading && isAdmin(currentUser);
   const userReady = !userLoading && !!currentUser.id;
@@ -157,6 +159,8 @@ function DashboardContent() {
   } = useFilters();
 
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [newProjectOpen, setNewProjectOpen] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
   const handleSelectTask = useCallback(
     (taskId: string) => setSelectedTaskId(taskId), []
   );
@@ -187,6 +191,22 @@ function DashboardContent() {
     },
     [router],
   );
+
+  const canCreateProjects = userReady && can(currentUser, 'canCreateProjects');
+
+  const handleCreateProjectDashboard = useCallback(() => {
+    const name = newProjectName.trim();
+    if (!name || !currentUser.id) return;
+    createProject.mutate(
+      { name, owner_id: currentUser.id },
+      {
+        onSuccess: () => {
+          setNewProjectName('');
+          setNewProjectOpen(false);
+        },
+      },
+    );
+  }, [newProjectName, currentUser.id, createProject]);
 
   const allTasks = tasks ?? [];
   const filteredTasks = useMemo(
@@ -328,6 +348,16 @@ function DashboardContent() {
         onTabChange={(id) => updateView(id as View)}
         rightSlot={
           <div className="flex items-center gap-2">
+            {canCreateProjects && (
+              <button
+                type="button"
+                onClick={() => setNewProjectOpen((o) => !o)}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border-color bg-surface px-2.5 py-1.5 text-[12px] font-medium text-text transition-colors hover:bg-accent-soft hover:border-[var(--accent)]"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                New project
+              </button>
+            )}
             {!userIsAdmin && !userLoading && (
               <div className="inline-flex items-center rounded-md border border-border-color bg-surface p-0.5 text-[12px]">
                 <ScopeButton active={scope === 'mine'} onClick={() => updateScope('mine')}>My</ScopeButton>
@@ -345,6 +375,48 @@ function DashboardContent() {
           </div>
         }
       />
+
+      {newProjectOpen && canCreateProjects && (
+        <div className="mx-auto w-full max-w-[1400px] border-b border-border-color bg-surface px-4 py-3 sm:px-6 lg:px-8">
+          <p className="mb-2 text-[11.5px] font-medium text-text-muted">Create a new project</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="text"
+              value={newProjectName}
+              onChange={(e) => setNewProjectName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleCreateProjectDashboard();
+                }
+              }}
+              placeholder="Project name"
+              className="min-w-[200px] flex-1 rounded-md border border-border-color bg-background px-3 py-2 text-sm text-text placeholder:text-text-faint focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+              autoFocus
+              disabled={createProject.isPending}
+            />
+            <button
+              type="button"
+              onClick={handleCreateProjectDashboard}
+              disabled={createProject.isPending || !newProjectName.trim()}
+              className="rounded-md px-3 py-2 text-sm font-medium text-white transition-opacity disabled:opacity-50"
+              style={{ background: 'var(--accent)' }}
+            >
+              Create
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setNewProjectOpen(false);
+                setNewProjectName('');
+              }}
+              className="rounded-md px-3 py-2 text-sm text-text-muted hover:text-text"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="mx-auto w-full max-w-[1400px] space-y-5 px-4 py-6 sm:px-6 lg:px-8">
         {!isLoading && allTasks.length > 0 && (

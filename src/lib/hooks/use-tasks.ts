@@ -18,6 +18,7 @@ export function useChildTasks(parentId: string, enabled: boolean = true) {
     queryKey: ['tasks', 'children', parentId],
     queryFn: () => taskApi.getChildTasks(parentId),
     enabled,
+    staleTime: 60 * 1000,   // match parent useTasks — invalidated on mutate anyway
   });
 }
 
@@ -26,6 +27,7 @@ export function useTask(id: string) {
     queryKey: ['tasks', 'detail', id],
     queryFn: () => taskApi.getTaskById(id),
     enabled: !!id,
+    staleTime: 30 * 1000,   // detail panel reopen shouldn't refetch instantly
   });
 }
 
@@ -52,11 +54,12 @@ export function useCreateTask() {
   const { toast } = useToast();
   return useMutation({
     mutationFn: (input: CreateTaskInput) => taskApi.createTask(input),
-    onSuccess: () => {
+    onSuccess: (task) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast(`Task created: ${task.title}`, 'success');
     },
     onError: (err: Error) => {
-      toast(`Failed to create task: ${err.message}`, 'error');
+      toast(`Could not create task — ${err.message}`, 'error');
     },
   });
 }

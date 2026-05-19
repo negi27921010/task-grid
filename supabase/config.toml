@@ -1,0 +1,8 @@
+# Minimal Supabase config — only present so `supabase functions deploy`
+# knows which project to target without a `--project-ref` flag every time.
+# Full local-dev config (db, auth, storage stubs) is intentionally omitted;
+# we use the hosted Supabase project, not local emulation.
+project_id = "wuxkcrbarsutnvxzzmly"
+
+[functions.cron-dispatch]
+verify_jwt = false

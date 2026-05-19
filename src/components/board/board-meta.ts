@@ -12,12 +12,15 @@ export interface StatusMeta {
   order: number;
 }
 
+// Column order: Working first, then To Do, then Completed (per product
+// direction). Stuck and Closed trail at the end since they're exception
+// states. Order numbers are 0-indexed left-to-right.
 export const STATUS_META: Record<TaskStatus, StatusMeta> = {
-  not_started: { label: 'Backlog', tone: 'gray',   order: 0 },
-  in_progress: { label: 'Working', tone: 'blue',   order: 1 },
-  blocked:     { label: 'Stuck',   tone: 'red',    order: 2 },
-  completed:   { label: 'Done',    tone: 'green',  order: 3 },
-  cancelled:   { label: 'Closed',  tone: 'neutral', order: 4 },
+  in_progress: { label: 'Working',   tone: 'blue',    order: 0 },
+  not_started: { label: 'To Do',     tone: 'gray',    order: 1 },
+  completed:   { label: 'Completed', tone: 'green',   order: 2 },
+  blocked:     { label: 'Stuck',     tone: 'red',     order: 3 },
+  cancelled:   { label: 'Closed',    tone: 'neutral', order: 4 },
 };
 
 export const STATUS_ORDER: TaskStatus[] = (

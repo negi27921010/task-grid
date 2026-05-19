@@ -101,11 +101,20 @@ export function NotificationBell() {
           className="relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-border-color bg-surface text-text-muted transition-colors hover:bg-hover hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/40"
           aria-label="Notifications"
         >
-          <Bell className="h-4 w-4" />
+          <Bell className={cn('h-4 w-4', unreadCount > 0 && 'text-red-500')} />
           {unreadCount > 0 && (
-            <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-surface">
-              {unreadCount > 99 ? '99+' : unreadCount}
-            </span>
+            <>
+              {/* Pulsing halo behind the badge — gives the "live blink"
+                  effect without animating the badge itself (so the count
+                  stays readable). */}
+              <span
+                aria-hidden="true"
+                className="absolute -right-1 -top-1 inline-flex h-4 w-4 animate-ping rounded-full bg-red-500/60"
+              />
+              <span className="absolute -right-1 -top-1 z-10 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-surface">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            </>
           )}
         </button>
       </Popover.Trigger>

@@ -1,13 +1,12 @@
-// Cron dispatcher — single endpoint for all five scheduled jobs.
+// Cron dispatcher — single endpoint for all scheduled jobs.
 //
-// Invoked by Vercel Cron every 30 minutes. The endpoint reads the current
-// IST time and only runs the job whose scheduled minute matches. This
-// keeps us within Vercel Hobby's 2-cron-job limit while still hitting
-// each business-hour slot precisely.
+// Invoked by Supabase pg_cron → Edge Function `cron-dispatch` → here.
+// pg_cron fires at specific IST minutes (see migration 008); the endpoint
+// can also fall back to its own time-of-day matcher when called without
+// an explicit `?job=` argument.
 //
-// Auth: requires either Vercel's automatic `Authorization: Bearer
-// VERCEL_CRON_SIG` header (only present in real cron invocations) or a
-// `?secret=CRON_SECRET` query for manual / curl testing.
+// Auth: `?secret=CRON_SECRET` query (or `Authorization: Bearer <secret>`
+// header) — checked by isAuthorized().
 //
 // Manual invocation patterns:
 //   GET /api/cron/dispatch?secret=...&dry=1            // health + plan only
@@ -21,12 +20,23 @@ import {
   verifySmtp,
 } from '@/lib/email';
 import {
-  morningStandupNudge,
-  eveningClosureNudge,
   etaNudge,
   adminDefaulterDigest,
   adminEveningDigest,
 } from '@/lib/email-templates';
+import {
+  runMissingStandupNudge,
+  runOverdueP1P2Nudge,
+} from '@/lib/api/bolt-proactive';
+// Three runners moved into a shared lib so /api/standups/nudge can call
+// them directly (HTTP-bouncing through this route was returning 401
+// under Vercel cross-route auth).
+import {
+  runMorningStandupNudge,
+  runEveningClosureNudge,
+  runCarriedTaskNudge,
+  type JobReport as RunnerJobReport,
+} from '@/lib/api/standup-runners';
 
 export const runtime = 'nodejs';   // nodemailer needs Node, not Edge
 export const maxDuration = 60;
@@ -36,7 +46,15 @@ type JobName =
   | 'eta_nudge'
   | 'admin_defaulter_digest'
   | 'evening_closure_nudge'
-  | 'admin_evening_digest';
+  | 'admin_evening_digest'
+  // Phase 3: in-app proactive nudges from Bolt (write to bolt_messages,
+  // not email). Same dispatcher because pg_cron already targets this URL.
+  | 'proactive_missing_standup'
+  | 'proactive_overdue_p1p2'
+  // Phase 4: nudge members whose carried outcomes are still open. Fires
+  // at 11 AM IST (soft "update yesterday's items") and 6 PM IST (firm
+  // "close before EOD"). Slot is derived from current IST hour.
+  | 'carried_task_nudge';
 
 interface JobReport {
   job: JobName;
@@ -64,8 +82,10 @@ function jobsForTime(hour: number, minute: number): JobName[] {
     hour === h && Math.abs(minute - m) <= 5;
 
   if (within(10, 30)) matches.push('morning_standup_nudge');
-  if (within(11, 0))  matches.push('eta_nudge', 'admin_defaulter_digest');
-  if (within(18, 0)) matches.push('evening_closure_nudge');
+  if (within(11, 0))  matches.push('eta_nudge', 'admin_defaulter_digest', 'carried_task_nudge');
+  if (within(11, 30)) matches.push('proactive_missing_standup');
+  if (within(14, 30)) matches.push('proactive_overdue_p1p2');
+  if (within(18, 0))  matches.push('evening_closure_nudge', 'carried_task_nudge');
   if (within(18, 30)) matches.push('admin_evening_digest');
 
   return matches;
@@ -109,101 +129,9 @@ function flagOutcomeQuality(text: string): string | null {
   return null;
 }
 
-// ─── Job: morning standup nudge ────────────────────────────────────────────
-async function runMorningStandupNudge(targetUserId?: string): Promise<JobReport> {
-  const sb = admin();
-  const today = nowIST().date;
-
-  const usersQuery = sb
-    .from('users')
-    .select('id, email, full_name, role')
-    .eq('role', 'member');
-  const { data: members, error: memberErr } = targetUserId
-    ? await usersQuery.eq('id', targetUserId)
-    : await usersQuery;
-  if (memberErr) throw memberErr;
-
-  const { data: standups, error: stErr } = await sb
-    .from('daily_standups')
-    .select('user_id, morning_submitted_at')
-    .eq('standup_date', today);
-  if (stErr) throw stErr;
-
-  const submittedIds = new Set(
-    (standups ?? [])
-      .filter(s => s.morning_submitted_at)
-      .map(s => s.user_id as string),
-  );
-
-  const targets = (members ?? []).filter(u => !submittedIds.has(u.id as string) && u.email);
-
-  const errors: JobReport['errors'] = [];
-  let sent = 0;
-  for (const m of targets) {
-    try {
-      const { subject, text, html } = morningStandupNudge({
-        fullName: (m.full_name as string) ?? 'there',
-      });
-      await sendEmail({ to: m.email as string, subject, text, html, tag: 'morning_standup_nudge' });
-      sent++;
-    } catch (e) {
-      errors.push({ recipient: m.email as string, error: e instanceof Error ? e.message : String(e) });
-    }
-  }
-  return { job: 'morning_standup_nudge', attempted: targets.length, sent, errors };
-}
-
-// ─── Job: evening closure nudge ────────────────────────────────────────────
-async function runEveningClosureNudge(targetUserId?: string): Promise<JobReport> {
-  const sb = admin();
-  const today = nowIST().date;
-
-  const { data: standups, error } = await sb
-    .from('daily_standups')
-    .select(`id, user_id, evening_submitted_at,
-             standup_outcomes(outcome_text, evening_status, is_carried)`)
-    .eq('standup_date', today)
-    .is('evening_submitted_at', null);
-  if (error) throw error;
-
-  const standupRows = (standups ?? []).filter(s =>
-    !targetUserId || s.user_id === targetUserId,
-  );
-
-  if (standupRows.length === 0) {
-    return { job: 'evening_closure_nudge', attempted: 0, sent: 0, errors: [] };
-  }
-
-  const userIds = standupRows.map(s => s.user_id as string);
-  const { data: users } = await sb
-    .from('users')
-    .select('id, full_name, email')
-    .in('id', userIds);
-  const userMap = Object.fromEntries((users ?? []).map(u => [u.id, u]));
-
-  const errors: JobReport['errors'] = [];
-  let sent = 0;
-  for (const s of standupRows) {
-    const u = userMap[s.user_id as string];
-    if (!u?.email) continue;
-    const outcomes = (s.standup_outcomes as { outcome_text: string; evening_status: string }[] | null) ?? [];
-    const pending = outcomes
-      .filter(o => o.evening_status === 'pending')
-      .map(o => ({ title: o.outcome_text }));
-    if (pending.length === 0) continue;
-    try {
-      const { subject, text, html } = eveningClosureNudge({
-        fullName: (u.full_name as string) ?? 'there',
-        pendingOutcomes: pending,
-      });
-      await sendEmail({ to: u.email as string, subject, text, html, tag: 'evening_closure_nudge' });
-      sent++;
-    } catch (e) {
-      errors.push({ recipient: u.email as string, error: e instanceof Error ? e.message : String(e) });
-    }
-  }
-  return { job: 'evening_closure_nudge', attempted: standupRows.length, sent, errors };
-}
+// Morning + evening standup nudge runners moved to lib/api/standup-runners.ts
+// so the admin one-shot nudge endpoint can call them directly without
+// HTTP-bouncing through this route (which broke under cross-route auth).
 
 // ─── Job: ETA nudge — in-progress tasks without an ETA ─────────────────────
 async function runEtaNudge(targetUserId?: string): Promise<JobReport> {
@@ -404,6 +332,9 @@ async function runAdminEveningDigest(): Promise<JobReport> {
   }
 }
 
+// Carried-task nudge runner moved to lib/api/standup-runners.ts (same
+// reason as the morning/evening pair above).
+
 // ─── Handler ───────────────────────────────────────────────────────────────
 export async function GET(request: Request) {
   if (!isAuthorized(request)) {
@@ -425,6 +356,11 @@ export async function GET(request: Request) {
     eta: 'eta_nudge',
     defaulter: 'admin_defaulter_digest',
     'evening-digest': 'admin_evening_digest',
+    // Phase 3 proactive nudges. Long-form names also accepted directly.
+    'proactive-missing-standup': 'proactive_missing_standup',
+    'proactive-overdue-p1p2':    'proactive_overdue_p1p2',
+    'carried':                   'carried_task_nudge',
+    'carried-task':              'carried_task_nudge',
   };
   const forced = forceJob ? (aliasMap[forceJob] ?? (forceJob as JobName)) : null;
   const jobs = forced ? [forced] : (scheduled ?? []);
@@ -449,21 +385,50 @@ export async function GET(request: Request) {
     });
   }
 
+  // The shared-lib runners type their `job` as plain string (so the lib
+  // doesn't have to import the dispatcher's JobName union). Cast their
+  // returns into the local JobReport shape — they always set `job` to
+  // the right name string.
+  const fromRunner = (r: RunnerJobReport): JobReport => ({
+    job: r.job as JobName,
+    attempted: r.attempted,
+    sent: r.sent,
+    errors: r.errors,
+  });
+
   const reports: JobReport[] = [];
   for (const job of jobs) {
     try {
       let report: JobReport;
       switch (job) {
         case 'morning_standup_nudge':
-          report = await runMorningStandupNudge(userId); break;
+          report = fromRunner(await runMorningStandupNudge(userId)); break;
         case 'evening_closure_nudge':
-          report = await runEveningClosureNudge(userId); break;
+          report = fromRunner(await runEveningClosureNudge(userId)); break;
         case 'eta_nudge':
           report = await runEtaNudge(userId); break;
         case 'admin_defaulter_digest':
           report = await runAdminDefaulterDigest(); break;
         case 'admin_evening_digest':
           report = await runAdminEveningDigest(); break;
+        case 'proactive_missing_standup': {
+          const r = await runMissingStandupNudge();
+          report = {
+            job, attempted: r.considered, sent: r.nudged,
+            errors: r.errors > 0 ? [{ error: `${r.errors} failures · skipped ${r.skipped_dedupe}` }] : [],
+          };
+          break;
+        }
+        case 'proactive_overdue_p1p2': {
+          const r = await runOverdueP1P2Nudge();
+          report = {
+            job, attempted: r.considered, sent: r.nudged,
+            errors: r.errors > 0 ? [{ error: `${r.errors} failures · skipped ${r.skipped_dedupe}` }] : [],
+          };
+          break;
+        }
+        case 'carried_task_nudge':
+          report = fromRunner(await runCarriedTaskNudge(userId)); break;
         default:
           report = { job, attempted: 0, sent: 0,
             errors: [{ error: `Unknown job: ${job}` }] };

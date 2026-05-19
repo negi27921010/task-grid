@@ -529,6 +529,41 @@ export async function addComment(
 
   const task = await getTaskById(taskId);
   if (!task) throw new Error('Task not found');
+
+  // Fan out a notification to anyone who should know about this comment:
+  // the task owner + every assignee, minus the author (no self-notify).
+  // Best-effort — failures here mustn't fail the comment write.
+  try {
+    const recipients = new Set<string>();
+    if (task.owner_id) recipients.add(task.owner_id);
+    for (const aid of task.assignee_ids ?? []) recipients.add(aid);
+    recipients.delete(authorId);
+
+    if (recipients.size > 0) {
+      const { data: author } = await sb()
+        .from('users')
+        .select('full_name')
+        .eq('id', authorId)
+        .maybeSingle();
+      const authorName = (author?.full_name as string) ?? 'Someone';
+      const titleSnippet = task.title.length > 50 ? task.title.slice(0, 47) + '…' : task.title;
+      const bodySnippet = content.length > 200 ? content.slice(0, 197) + '…' : content;
+
+      const rows = Array.from(recipients).map(uid => ({
+        id: uuidv4(),
+        user_id: uid,
+        type: 'mention',
+        title: `${authorName} commented on "${titleSnippet}"`,
+        body: bodySnippet,
+        task_id: task.id,
+        project_id: task.project_id ?? null,
+      }));
+      await sb().from('notifications').insert(rows);
+    }
+  } catch {
+    // Notification fan-out is best-effort.
+  }
+
   return task;
 }
 

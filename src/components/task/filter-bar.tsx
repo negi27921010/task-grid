@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   X,
   Filter,
@@ -10,6 +10,7 @@ import {
   Check,
   Plus,
   Upload,
+  Search,
 } from 'lucide-react';
 import * as CheckboxPrimitive from '@radix-ui/react-checkbox';
 import { cn } from '@/lib/utils/cn';
@@ -81,6 +82,7 @@ function FilterDropdown<T extends string>({
   onChange,
 }: FilterDropdownProps<T>) {
   const activeCount = selected.length;
+  const [query, setQuery] = useState('');
 
   const handleToggle = useCallback(
     (value: T) => {
@@ -93,8 +95,17 @@ function FilterDropdown<T extends string>({
     [selected, onChange]
   );
 
+  const filteredOptions = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter((o) => o.label.toLowerCase().includes(q));
+  }, [options, query]);
+
+  // Show the search input only when there are enough options to need it.
+  const showSearch = options.length > 5;
+
   return (
-    <Popover.Root>
+    <Popover.Root onOpenChange={(open) => !open && setQuery('')}>
       <Popover.Trigger asChild>
         <button
           type="button"
@@ -113,9 +124,32 @@ function FilterDropdown<T extends string>({
           )}
         </button>
       </Popover.Trigger>
-      <Popover.Content align="start" className="w-56 p-2">
+      <Popover.Content align="start" className="w-60 p-2">
+        {showSearch && (
+          <div className="mb-2 flex items-center gap-1.5 rounded border border-border-color bg-hover px-2 py-1">
+            <Search className="h-3 w-3 text-text-faint" />
+            <input
+              autoFocus
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={`Search ${label.toLowerCase()}…`}
+              className="flex-1 bg-transparent text-xs outline-none placeholder:text-text-faint"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                aria-label="Clear search"
+                className="text-text-faint hover:text-text"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        )}
         <div className="max-h-64 overflow-y-auto space-y-1">
-          {options.map((option) => (
+          {filteredOptions.map((option) => (
             <label
               key={option.value}
               htmlFor={`filter-${label}-${option.value}`}
@@ -129,6 +163,9 @@ function FilterDropdown<T extends string>({
               {option.render ?? <span className="text-text">{option.label}</span>}
             </label>
           ))}
+          {filteredOptions.length === 0 && (
+            <p className="px-2 py-3 text-center text-xs text-text-faint">No matches</p>
+          )}
         </div>
       </Popover.Content>
     </Popover.Root>
@@ -385,12 +422,16 @@ export function FilterBar({
       {/* Filter dropdowns row */}
       <div className="flex flex-wrap items-center gap-2">
         {/* Add Task CTA */}
+        {/* Wrap so we don't pass the React MouseEvent into the parent
+            handler — handleAddTask in project page accepts an optional
+            TaskStatus, and a leaked event object short-circuits the
+            default value, breaking the create-bar render. */}
         {onAddTask && (
           <Button
             variant="primary"
             size="sm"
             className="gap-1.5 shadow-sm"
-            onClick={onAddTask}
+            onClick={() => onAddTask()}
           >
             <Plus className="h-3.5 w-3.5" />
             Add Task

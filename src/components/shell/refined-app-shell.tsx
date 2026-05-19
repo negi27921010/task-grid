@@ -5,6 +5,8 @@ import { Menu } from 'lucide-react';
 import { RefinedSidebar } from './refined-sidebar';
 import { CommandPalette } from './command-palette';
 import { ChatWidget } from '@/components/chat/chat-widget';
+import { CarriedTaskAlerter } from '@/components/notifications/carried-task-alerter';
+import { NotificationAlerter } from '@/components/notifications/notification-alerter';
 import { cn } from '@/lib/utils/cn';
 
 const SIDEBAR_STORAGE_KEY = 'taskflow-refined-sidebar-width';
@@ -88,11 +90,11 @@ export function RefinedAppShell({ children, className }: RefinedAppShellProps) {
       {mobileOpen && (
         <>
           <div
-            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-md lg:hidden"
             onClick={() => setMobileOpen(false)}
             aria-hidden="true"
           />
-          <div className="fixed inset-y-0 left-0 z-50 lg:hidden">
+          <div className="fixed inset-y-0 left-0 z-50 lg:hidden animate-in slide-in-from-left duration-300">
             <RefinedSidebar width={SIDEBAR_DEFAULT} onToggle={() => setMobileOpen(false)} />
           </div>
         </>
@@ -106,7 +108,7 @@ export function RefinedAppShell({ children, className }: RefinedAppShellProps) {
           type="button"
           onClick={() => setMobileOpen(true)}
           aria-label="Open sidebar"
-          className="absolute left-3 top-3 z-30 rounded-md p-1.5 text-text-muted transition-colors hover:bg-hover hover:text-text lg:hidden"
+          className="absolute left-3 top-3 z-30 rounded-[var(--radius-md)] p-1.5 text-text-muted hover:bg-hover hover:text-text active:scale-95 lg:hidden"
         >
           <Menu className="h-4 w-4" />
         </button>
@@ -119,6 +121,19 @@ export function RefinedAppShell({ children, className }: RefinedAppShellProps) {
       {/* Bolt — global chat assistant. Renders its own fixed-position
           floating button in the bottom-right corner. */}
       <ChatWidget />
+
+      {/* Carried-task alerter — invisible component that polls
+          /api/standups/my-carried every 5 min and fires a browser
+          notification + chime at 11 AM and 6 PM IST when carried items
+          are still open. Mount it once at the shell so every signed-in
+          page has the alert behavior. */}
+      <CarriedTaskAlerter />
+
+      {/* Notification alerter — fires a chime + popup whenever the
+          user's unread notification count goes up (admin nudges,
+          comment mentions, status changes). Independent of the
+          carried-task alerter; both are passive listeners. */}
+      <NotificationAlerter />
     </div>
   );
 }

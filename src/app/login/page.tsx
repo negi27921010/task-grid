@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase';
 import Image from 'next/image';
-import { AlertCircle, ArrowRight, Eye, EyeOff, Zap, Shield, BarChart3 } from 'lucide-react';
+import { AlertCircle, ArrowRight, Eye, EyeOff, Zap, Shield, BarChart3, CalendarCheck } from 'lucide-react';
 
 const FEATURES = [
   { icon: Zap, text: 'Hierarchical task management with infinite nesting', delay: 0 },
@@ -221,7 +221,7 @@ export default function LoginPage() {
                 className="flex h-11 w-11 items-center justify-center rounded-xl text-white"
                 style={{ background: 'var(--accent-gradient)', boxShadow: '0 0 30px rgba(59,130,246,0.3)' }}
               >
-                <Zap className="h-5 w-5" strokeWidth={2.2} />
+                <CalendarCheck className="h-5 w-5" strokeWidth={2.2} />
               </span>
               {/* Glow ring */}
               <span className="absolute -inset-1 rounded-xl animate-pulse-glow" style={{ background: 'var(--accent-gradient)', opacity: 0.15, filter: 'blur(8px)' }} />
@@ -293,7 +293,7 @@ export default function LoginPage() {
               className="flex h-10 w-10 items-center justify-center rounded-xl text-white"
               style={{ background: 'var(--accent-gradient)' }}
             >
-              <Zap className="h-5 w-5" strokeWidth={2.2} />
+              <CalendarCheck className="h-5 w-5" strokeWidth={2.2} />
             </span>
             <div>
               <h1 className="text-lg font-bold text-text">Task Grid</h1>

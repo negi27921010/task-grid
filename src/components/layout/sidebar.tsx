@@ -125,8 +125,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       >
         <Link href="/dashboard" className="flex items-center gap-2.5">
           <Image
-            src="/logo.png"
-            alt="PW Academy"
+            src="/logo.svg"
+            alt="Taskly"
             width={32}
             height={32}
             className="h-8 w-8 shrink-0 rounded-lg object-contain"

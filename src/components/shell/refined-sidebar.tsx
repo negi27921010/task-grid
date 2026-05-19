@@ -16,7 +16,7 @@ import {
   ChevronDown,
   PanelLeftClose,
   PanelLeft,
-  Zap,
+  CalendarCheck,
 } from 'lucide-react';
 import { useCurrentUser } from '@/lib/hooks/use-current-user';
 import { useProjects, useCreateProject, useDeleteProject } from '@/lib/hooks/use-projects';
@@ -94,7 +94,7 @@ export function RefinedSidebar({ width = 240, onToggle }: RefinedSidebarProps) {
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-white relative"
           style={{ background: 'var(--accent-gradient)' }}
         >
-          <Zap className="h-3.5 w-3.5" strokeWidth={2.4} />
+          <CalendarCheck className="h-3.5 w-3.5" strokeWidth={2.4} />
           {/* Subtle glow */}
           <span className="absolute -inset-0.5 rounded-[var(--radius-md)] opacity-30" style={{ background: 'var(--accent-gradient)', filter: 'blur(6px)' }} />
         </span>

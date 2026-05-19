@@ -33,8 +33,12 @@ export const metadata: Metadata = {
   title: 'Task Grid | PW Academy',
   description: 'Enterprise Task & Project Management Platform',
   icons: {
-    icon: '/logo.png',
-    apple: '/logo.png',
+    icon: [
+      { url: '/logo.svg', type: 'image/svg+xml' },
+      { url: '/logo.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: '/logo.svg',
+    shortcut: '/logo.svg',
   },
 };
 

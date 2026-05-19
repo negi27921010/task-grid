@@ -1,49 +1,29 @@
-import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value),
-          );
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options),
-          );
-        },
-      },
-    },
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+// Why this is just a cookie-presence check (not a real auth call):
+//
+// The previous version awaited supabase.auth.getUser() on every request.
+// Under intermittent Edge → Supabase latency that exceeded Vercel's
+// middleware time budget, every page started 504-ing with
+// MIDDLEWARE_INVOCATION_TIMEOUT. Auth validation still happens — server
+// components and API routes go through @/lib/supabase-server, which both
+// validates the session and refreshes the token on each render. So this
+// middleware's only job is the cheap gate: "no auth cookie at all → push
+// to /login". Stale cookies fall through here and get rejected by the
+// page-level Supabase client, which is the correct boundary anyway.
+export function middleware(request: NextRequest) {
   const isLoginPage = request.nextUrl.pathname === '/login';
+  const hasAuthCookie = request.cookies
+    .getAll()
+    .some(c => c.name.startsWith('sb-') && c.name.endsWith('-auth-token'));
 
-  if (!user && !isLoginPage) {
+  if (!hasAuthCookie && !isLoginPage) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
 
-  if (user && isLoginPage) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/dashboard';
-    return NextResponse.redirect(url);
-  }
-
-  return supabaseResponse;
+  return NextResponse.next({ request });
 }
 
 export const config = {
